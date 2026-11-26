@@ -188,7 +188,7 @@ def build_profile(
         quote are dropped; skills with the same canonical name are merged.
     """
     by_id = {f"S{i}": d for i, d in enumerate(documents, start=1)}
-    normalised = {sid: _normalise(d.text) for sid, d in by_id.items()}
+    normalised = {sid: normalise_quote(d.text) for sid, d in by_id.items()}
     evidence: dict[tuple[str, str], Evidence] = {}
     result = ExtractionResult(profile=Profile())
 
@@ -196,10 +196,14 @@ def build_profile(
         found: list[Evidence] = []
         for q in quotes:
             text = normalised.get(q.source)
-            if text is None or not q.quote.strip() or _normalise(q.quote) not in text:
+            if (
+                text is None
+                or not q.quote.strip()
+                or normalise_quote(q.quote) not in text
+            ):
                 result.rejected_quotes.append(q)
                 continue
-            key = (q.source, _normalise(q.quote))
+            key = (q.source, normalise_quote(q.quote))
             if key not in evidence:
                 evidence[key] = Evidence(
                     source_id=by_id[q.source].source.id, quote=q.quote.strip()
@@ -281,8 +285,20 @@ def canonical_skill(name: str) -> str:
     return " ".join(name.lower().split())
 
 
-def _normalise(text: str) -> str:
-    """Normalise text for quote matching: Unicode, case, quotes, dashes, whitespace."""
+def normalise_quote(text: str) -> str:
+    """Normalise text for quote matching: Unicode, case, quotes, dashes, whitespace.
+
+    Parameters
+    ----------
+    text : str
+        A quote, or the text it should be found in.
+
+    Returns
+    -------
+    str
+        The text in a form where `normalise_quote(q) in normalise_quote(source)`
+        ignores differences in case, quote marks, dashes and spacing.
+    """
     text = unicodedata.normalize("NFKC", text).lower()
     text = re.sub(r"[‘’‚′]", "'", text)
     text = re.sub(r"[“”„″]", '"', text)

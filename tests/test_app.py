@@ -10,7 +10,8 @@ import anthropic
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from unapply.workspace import Workspace
+from unapply.app import employer
+from unapply.workspace import Workspace, jobs_dir
 
 APP = Path(__file__).parents[1] / "src" / "unapply" / "app" / "main.py"
 # Words that would give the hidden assessment away on a candidate's page.
@@ -141,3 +142,44 @@ def test_invalid_candidate_names_are_refused():
     click(at, "create")
     assert at.error and "lowercase" in at.error[0].value
     assert Workspace.names() == []
+
+
+def test_fjord_grocery_demo_job_from_ad_to_approved_rubric():
+    at = start()
+    at.sidebar.segmented_control(key="side").set_value("Employer").run()
+    assert at.title[0].value == "Hire from a shortlist"
+    click(at, "demo_job")
+    assert at.session_state["job_workspace"] == "fjord-grocery-demo"
+    assert "Fjord Grocery" in at.text_area(key="job_ad").value
+    assert at.text_area(key="job_ad").disabled
+
+    # Extract (replayed); the app moves on to the rubric.
+    click(at, "extract_rubric")
+    assert "Found 6 must-haves and 4 nice-to-haves" in flash(at)
+    assert at.session_state["job_step"] == "Rubric"
+    assert at.header[0].value == "Senior Data Scientist, Pricing and Forecasting"
+    assert at.number_input[0].value == 4  # Minimum years
+
+    # Approve without edits: same version, now approved.
+    [approve] = [t for t in at.toggle if t.label.startswith("The rubric is right")]
+    approve.set_value(True).run()
+    click(at, "save_rubric")
+    assert "Approved: version 1, 10 criteria." in flash(at)
+    ws = Workspace(jobs_dir() / "fjord-grocery-demo")
+    assert employer.steps_done(ws) == {"Job ad", "Rubric"}
+    assert ws.history() == ["extracted", "rubric"]
+
+    # The candidate side is unaffected by the employer's choice of job.
+    at.sidebar.segmented_control(key="side").set_value("Candidate").run()
+    assert at.title[0].value == "Apply without applying"
+
+
+def test_job_extraction_needs_permission():
+    at = start()
+    at.sidebar.segmented_control(key="side").set_value("Employer").run()
+    at.text_input(key="new_job_name").input("acme-data-engineer").run()
+    click(at, "create_job")
+    assert at.session_state["job_workspace"] == "acme-data-engineer"
+    assert at.button(key="extract_rubric").disabled
+    at.toggle(key="allow_api").set_value(True).run()
+    assert not at.button(key="extract_rubric").disabled

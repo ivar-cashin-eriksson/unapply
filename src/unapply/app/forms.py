@@ -15,7 +15,7 @@ import yaml
 
 from unapply.interview.questions import Question, Reason
 from unapply.interview.sheet import export_interview_sheet
-from unapply.schemas import Profile, SourceKind
+from unapply.schemas import Job, Profile, SourceKind
 
 LEVEL_NAMES = {1: "aware", 2: "basic", 3: "working", 4: "advanced", 5: "expert"}
 # How levels are shown and chosen in the app, such as "4 · advanced".
@@ -327,3 +327,95 @@ def _level(value: Any) -> int | None:  # noqa: ANN401
     if isinstance(value, str):
         return int(value.strip().split()[0])
     return int(value)
+
+
+# How criterion kinds are shown and chosen in the app.
+KIND_LABELS = {"must_have": "Must have", "nice_to_have": "Nice to have"}
+
+
+def criterion_rows(job: Job) -> list[dict[str, Any]]:
+    """Rows for the rubric editor's table of criteria.
+
+    Parameters
+    ----------
+    job : Job
+        The job whose rubric is edited.
+
+    Returns
+    -------
+    list of dict
+        One row per criterion: id, kind, description, skill, level, weight, quote.
+    """
+    return [
+        {
+            "id": str(c.id),
+            "kind": KIND_LABELS[c.kind.value],
+            "description": c.description,
+            "skill": c.skill or "",
+            "level": level_label(c.min_level) or NO_LEVEL,
+            "weight": int(round(c.weight)),
+            "quote": c.source_quote or "",
+        }
+        for c in job.rubric.criteria
+    ]
+
+
+def rubric_sheet(
+    job: Job,
+    *,
+    company: str,
+    title: str,
+    filters: dict[str, Any],
+    rows: list[dict[str, Any]],
+    approve: bool,
+) -> str:
+    """Build a rubric sheet from the app's edited rubric.
+
+    Rows deleted in the table are removed from the rubric; rows added have no id
+    and become new criteria. Rows with no description are ignored.
+
+    Parameters
+    ----------
+    job : Job
+        The job being edited.
+    company : str
+        Company name.
+    title : str
+        Job title.
+    filters : dict
+        Hard filters, with the keys of `HardFilters`.
+    rows : list of dict
+        Rows from `criterion_rows`, as edited.
+    approve : bool
+        Whether the recruiter approves the rubric.
+
+    Returns
+    -------
+    str
+        A sheet for `apply_rubric_sheet`.
+    """
+    kinds = {label: value for value, label in KIND_LABELS.items()}
+    criteria = []
+    for r in rows:
+        description = _text(r.get("description"))
+        if not description:
+            continue
+        row = {
+            "kind": kinds.get(_text(r.get("kind")), "must_have"),
+            "description": description,
+            "skill": _blank(r.get("skill")),
+            "min_level": _level(r.get("level")),
+            "weight": 3 if _missing(r.get("weight")) else int(r["weight"]),
+        }
+        if _blank(r.get("id")):
+            row = {"id": _text(r["id"]), **row}
+        criteria.append(row)
+    sheet = {
+        "job": str(job.id),
+        "approve": approve,
+        "company": company,
+        "title": title,
+        "hard_filters": filters,
+        "criteria": criteria,
+    }
+    return yaml.safe_dump(sheet, allow_unicode=True, sort_keys=False)

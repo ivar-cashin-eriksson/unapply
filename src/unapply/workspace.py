@@ -1,13 +1,18 @@
-"""A candidate's workspace: their material, current profile and a history of steps.
+"""Workspaces: a folder per candidate or per job, with a history of every step.
 
-Each workspace is a folder in the data folder (`$UNAPPLY_DATA`, by default `data/`):
+Each workspace is a folder in the data folder (`$UNAPPLY_DATA`, by default `data/`).
+Candidates live directly in it, jobs in `jobs/`:
 
-    data/<name>/
+    data/<candidate>/
         workspace.json        settings, such as the GitHub username
         material/             uploaded files
         profile.json          the current profile
         history/              the profile after every step, numbered
         questions.json        interview questions waiting for answers, if any
+    data/jobs/<job>/
+        workspace.json        settings
+        job.json              the job: ad, rubric
+        history/              the job after every step, numbered
 """
 
 from __future__ import annotations
@@ -19,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from unapply.schemas import Profile
+from unapply.schemas import Job, Profile
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
@@ -33,6 +38,17 @@ def data_dir() -> Path:
         The folder. It may not exist yet.
     """
     return Path(os.environ.get("UNAPPLY_DATA", "data"))
+
+
+def jobs_dir() -> Path:
+    """Return the folder of job workspaces: `jobs/` in the data folder.
+
+    Returns
+    -------
+    Path
+        The folder. It may not exist yet.
+    """
+    return data_dir() / "jobs"
 
 
 @dataclass(frozen=True)
@@ -147,6 +163,38 @@ class Workspace:
             return None
         return Profile.model_validate_json(path.read_text(encoding="utf-8"))
 
+    def job(self) -> Job | None:
+        """Read the job, for a job workspace.
+
+        Returns
+        -------
+        Job or None
+            The job, or None before it is saved the first time.
+        """
+        path = self.root / "job.json"
+        if not path.exists():
+            return None
+        return Job.model_validate_json(path.read_text(encoding="utf-8"))
+
+    def save_job(self, job: Job, step: str) -> Path:
+        """Make `job` the current job and keep a copy in the history.
+
+        Parameters
+        ----------
+        job : Job
+            The job after `step`.
+        step : str
+            What produced it, such as "ad" or "rubric".
+
+        Returns
+        -------
+        Path
+            The history file written.
+        """
+        text = job.model_dump_json(indent=2)
+        (self.root / "job.json").write_text(text, encoding="utf-8")
+        return self._keep(text, step)
+
     def save_profile(self, profile: Profile, step: str) -> Path:
         """Make `profile` the current profile and keep a copy in the history.
 
@@ -164,6 +212,9 @@ class Workspace:
         """
         text = profile.model_dump_json(indent=2)
         (self.root / "profile.json").write_text(text, encoding="utf-8")
+        return self._keep(text, step)
+
+    def _keep(self, text: str, step: str) -> Path:
         history = self.root / "history"
         history.mkdir(exist_ok=True)
         path = history / f"{len(self.history()) + 1:03d}_{step}.json"
