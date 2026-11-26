@@ -1,3 +1,5 @@
+"""Pydantic schemas for profiles, jobs, rubrics and matches."""
+
 from unapply.schemas.job import (
     Criterion,
     CriterionKind,

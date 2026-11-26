@@ -1,16 +1,24 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
+# Python build output
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
+__pycache__/
+*.py[oc]
 
-# Virtual environments
-.venv
-
-# Local env and data
+# Environments and secrets
+.venv/
 .env
+
+# Tool caches
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+
+# Local data: uploaded CVs and other personal data never go in git
 data/
+
+# Personal exploration (see scratch/README.md)
+scratch/**
+!scratch/README.md

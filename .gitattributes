@@ -1,0 +1,2 @@
+# Store and check out text files with LF, matching Ruff's line-ending setting.
+* text=auto eol=lf
