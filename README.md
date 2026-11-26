@@ -39,9 +39,42 @@ are personal data under GDPR. These principles are product features, not afterth
 
 Early proof of concept. See [docs/poc-plan.md](docs/poc-plan.md).
 
-## Development
+See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and the Git workflow.
 
-```sh
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- VS Code (recommended). Accept the recommended extensions when prompted.
+
+## Getting started
+
+```bash
 uv sync
 uv run pytest
 ```
+
+## Common commands
+
+| Command | What it does |
+|---|---|
+| `uv sync` | Create or update `.venv/` from `uv.lock` |
+| `uv sync --all-extras` | Also install the optional extras (API, LLM, MCP, database, ingestion) |
+| `uv run pytest` | Run the tests |
+| `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
+| `uv run ruff format .` | Format |
+| `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
+
+## Layout
+
+| Path | Contents |
+|---|---|
+| `src/unapply/` | The Python package |
+| `src/unapply/schemas/` | Pydantic schemas: profiles, evidence, skills, jobs, rubrics, matches |
+| `config/` | JSON configuration, such as skill taxonomies and thresholds |
+| `docs/` | Plans and design notes |
+| `tests/` | Tests for the package |
+| `tests/fixtures/` | Synthetic test data |
+| `data/` | Local uploads and real personal data, gitignored |
+| `scratch/` | Personal exploration, gitignored |
+| `pyproject.toml` | Python project, dependencies, and Ruff and pytest settings |
+| `AGENTS.md` | Instructions for AI coding agents (`CLAUDE.md` points to it) |

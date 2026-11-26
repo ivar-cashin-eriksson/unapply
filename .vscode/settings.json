@@ -1,0 +1,25 @@
+{
+    "files.exclude": {
+        "**/*.egg-info": true,
+        "**/__pycache__": true,
+        ".pytest_cache": true,
+        ".ruff_cache": true,
+        "dist": true
+    },
+
+    // Pylance. Set typeCheckingMode to "basic" to turn on type checking.
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.extraPaths": ["src"],
+    "python.analysis.diagnosticMode": "workspace",
+
+    // Testing
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": ["tests"],
+
+    // Formatting
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true
+    }
+}

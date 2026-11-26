@@ -19,7 +19,9 @@ from unapply.schemas import (
 
 def _profile_with_python(self_level: SkillLevel, estimated: SkillLevel) -> Profile:
     src = Source(kind=SourceKind.CV)
-    ev = Evidence(source_id=src.id, quote="Built a Python ETL service processing 2M rows/day")
+    ev = Evidence(
+        source_id=src.id, quote="Built a Python ETL service processing 2M rows/day"
+    )
     return Profile(
         sources=[src],
         evidence=[ev],
