@@ -7,6 +7,8 @@ import logging
 import sys
 from pathlib import Path
 
+from dotenv import find_dotenv, load_dotenv
+
 from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import fetch_github
@@ -28,6 +30,9 @@ def main(argv: list[str] | None = None) -> int:
     """
     # Windows consoles default to cp1252, which can't print most CV text.
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    # Secrets such as ANTHROPIC_API_KEY live in a gitignored .env in the project.
+    # Variables already set in the environment take precedence.
+    load_dotenv(find_dotenv(usecwd=True))
     parser = argparse.ArgumentParser(prog="unapply")
     commands = parser.add_subparsers(dest="command", required=True)
 

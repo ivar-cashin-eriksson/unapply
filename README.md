@@ -53,6 +53,9 @@ uv sync
 uv run pytest
 ```
 
+To call the Claude API, copy `.env.example` to `.env` and add your key. `.env` is
+gitignored; variables already set in your environment take precedence over it.
+
 ## Common commands
 
 | Command | What it does |
@@ -63,7 +66,7 @@ uv run pytest
 | `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
 | `uv run ruff format .` | Format |
 | `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
-| `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` or `ant auth login`) |
+| `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` in `.env`) |
 
 ## Layout
 
