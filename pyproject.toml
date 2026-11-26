@@ -8,19 +8,22 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.13",
     "anthropic>=2.14.0",
+    "fastapi>=0.115",
     "pydantic>=2.8",
     "pypdf>=7.1.1",
     "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.20",
     "pyyaml>=6.0.4",
     "sqlalchemy>=2.0",
     "streamlit>=1.67.0",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]
 # Added as each POC milestone needs them (see docs/poc-plan.md).
-api = ["fastapi>=0.115", "uvicorn>=0.30"]
 mcp = ["mcp>=1.2"]
-# SQLAlchemy and Alembic are core (SQLite works without extras); this adds Postgres.
+# SQLAlchemy, Alembic and FastAPI are core (SQLite works without extras); this adds
+# Postgres.
 db = ["psycopg[binary]>=3.2", "pgvector>=0.3"]
 
 [project.scripts]
@@ -31,6 +34,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "ipykernel",
+    "httpx>=0.27",
 ]
 
 [build-system]
