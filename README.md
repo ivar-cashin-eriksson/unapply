@@ -56,6 +56,13 @@ uv run pytest
 To call the Claude API, copy `.env.example` to `.env` and add your key. `.env` is
 gitignored; variables already set in your environment take precedence over it.
 
+**Paid API calls are off by default.** A command that would call Claude stops with a
+message unless you add `--allow-api` to it (or set `UNAPPLY_ALLOW_API_CALLS=1`), and
+the app has a toggle that starts off in every session. Tests always run with calls
+off, except the opt-in live test. Every real call is logged with its estimated cost
+in `data/api_calls.jsonl`. Use `--record` once and `--replay` after that to work
+without calling the API.
+
 ## Common commands
 
 | Command | What it does |

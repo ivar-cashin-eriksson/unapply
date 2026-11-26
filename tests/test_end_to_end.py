@@ -71,7 +71,7 @@ def test_john_doe_from_material_to_estimated_profile(out, capsys):
 
     # 1. Ingest his material.
     model = (
-        ["--record", out / "extraction.json"]
+        ["--allow-api", "--record", out / "extraction.json"]
         if LIVE
         else ["--replay", FIXTURE / "extraction.json"]
     )
@@ -133,7 +133,7 @@ def test_john_doe_from_material_to_estimated_profile(out, capsys):
     # 5. Estimate his levels from the evidence and check his claims.
     estimated = out / "profile.estimated.json"
     model = (
-        ["--record", out / "estimation.json"]
+        ["--allow-api", "--record", out / "estimation.json"]
         if LIVE
         else ["--replay", FIXTURE / "estimation.json"]
     )
@@ -162,7 +162,7 @@ def test_john_doe_from_material_to_estimated_profile(out, capsys):
     # 6. Follow-up questions about what his documents don't show.
     questions = out / "interview.yaml"
     model = (
-        ["--record", out / "questions.json"]
+        ["--allow-api", "--record", out / "questions.json"]
         if LIVE
         else ["--replay", FIXTURE / "questions.json"]
     )
@@ -188,7 +188,7 @@ def test_john_doe_from_material_to_estimated_profile(out, capsys):
 
     after = out / "profile.reestimated.json"
     model = (
-        ["--record", out / "estimation_after_interview.json"]
+        ["--allow-api", "--record", out / "estimation_after_interview.json"]
         if LIVE
         else ["--replay", FIXTURE / "estimation_after_interview.json"]
     )

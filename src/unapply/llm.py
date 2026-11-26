@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from datetime import datetime
 from pathlib import Path
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -18,6 +20,14 @@ log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 DEFAULT_MODEL = "claude-opus-5-5"
+# Environment switch that allows paid API calls; off unless set to "1".
+API_SWITCH = "UNAPPLY_ALLOW_API_CALLS"
+# US dollars per million input and output tokens, for the call log's estimates.
+PRICES_PER_MTOK = {
+    "claude-opus-5-5": (4.0, 20.0),
+    "claude-sonnet-5-5": (2.0, 10.0),
+    "claude-haiku-5-5": (0.10, 0.50),
+}
 # For light tasks such as wording interview questions.
 QUESTION_MODEL = "claude-sonnet-5-5"
 
@@ -62,11 +72,61 @@ class StructuredLLM(Protocol):
         ...
 
 
-class AnthropicLLM:
-    """`StructuredLLM` backed by the Claude API.
+class APICallsDisabled(LLMError):
+    """A paid API call was attempted without being allowed."""
 
-    Credentials are read from the environment (`ANTHROPIC_API_KEY`, or a profile
-    from `ant auth login`).
+
+def api_calls_allowed() -> bool:
+    """Whether paid API calls are switched on for this process.
+
+    They are only when the environment variable `UNAPPLY_ALLOW_API_CALLS` is "1",
+    for example in `.env`. Off by default, so nothing calls the API by accident.
+
+    Returns
+    -------
+    bool
+        True if the switch is on.
+    """
+    return os.environ.get(API_SWITCH) == "1"
+
+
+def call_log_path() -> Path:
+    """Where real API calls are logged: `api_calls.jsonl` in the data folder.
+
+    Returns
+    -------
+    Path
+        `$UNAPPLY_DATA/api_calls.jsonl`, by default `data/api_calls.jsonl`.
+    """
+    return Path(os.environ.get("UNAPPLY_DATA", "data")) / "api_calls.jsonl"
+
+
+def logged_spend() -> tuple[int, float]:
+    """Count the calls in the call log and add up their estimated cost.
+
+    Returns
+    -------
+    int
+        Number of logged calls.
+    float
+        Estimated total cost in US dollars.
+    """
+    path = call_log_path()
+    if not path.exists():
+        return 0, 0.0
+    entries = [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+    return len(entries), sum(e.get("cost_usd", 0.0) for e in entries)
+
+
+class AnthropicLLM:
+    """`StructuredLLM` backed by the Claude API. Every call costs money.
+
+    Calls are refused unless allowed: by `allow=True`, which callers set only after
+    an explicit choice (`--allow-api`, or the app's toggle), or by the
+    `UNAPPLY_ALLOW_API_CALLS` switch. Each call is logged to `call_log_path()`.
+    Credentials are read from the environment (`ANTHROPIC_API_KEY`).
 
     Parameters
     ----------
@@ -77,18 +137,40 @@ class AnthropicLLM:
         "high".
     max_tokens : int, optional
         Output cap per request, thinking included, by default 64000.
+    allow : bool, optional
+        Allow calls for this client even if the switch is off, by default False.
     """
 
     def __init__(
-        self, model: str = DEFAULT_MODEL, effort: str = "high", max_tokens: int = 64000
+        self,
+        model: str = DEFAULT_MODEL,
+        effort: str = "high",
+        max_tokens: int = 64000,
+        allow: bool = False,
     ) -> None:
-        # Imported here so the package and its tests work without the SDK configured.
-        import anthropic
-
         self.model = model
         self.effort = effort
         self.max_tokens = max_tokens
-        self._client = anthropic.Anthropic()
+        self.allow = allow
+        self._client = None
+
+    @property
+    def allowed(self) -> bool:
+        """Whether this client may make calls."""
+        return self.allow or api_calls_allowed()
+
+    def _connect(self) -> Any:  # noqa: ANN401 (the SDK's client)
+        if not self.allowed:
+            raise APICallsDisabled(
+                "paid API calls are off. Allow them for one command with --allow-api, "
+                f"with the app's toggle, or set {API_SWITCH}=1 in .env."
+            )
+        if self._client is None:
+            # Imported and created only once allowed, so nothing else can call.
+            import anthropic
+
+            self._client = anthropic.Anthropic()
+        return self._client
 
     def parse(self, *, system: str, prompt: str, output_type: type[T]) -> T:
         """Answer `prompt` with a validated instance of `output_type`.
@@ -112,8 +194,9 @@ class AnthropicLLM:
         LLMError
             If the model refuses, runs out of tokens or returns invalid output.
         """
+        client = self._connect()
         # Streamed, because large outputs time out as plain requests.
-        with self._client.beta.messages.stream(
+        with client.beta.messages.stream(
             model=self.model,
             max_tokens=self.max_tokens,
             system=system,
@@ -136,6 +219,9 @@ class AnthropicLLM:
                         f"output hit max_tokens={self.max_tokens} (request {request})"
                     ) from e
                 raise LLMError(f"output didn't match schema (request {request})") from e
+            finally:
+                # Failed calls are billed too, so log whatever was used.
+                self._log_call(stream, request, output_type.__name__)
         log.info(
             "model=%s request_id=%s stop_reason=%s input_tokens=%s output_tokens=%s",
             response.model,
@@ -153,6 +239,30 @@ class AnthropicLLM:
         if response.parsed_output is None:
             raise LLMError(f"no parsable output (request {request})")
         return response.parsed_output
+
+    def _log_call(self, stream: Any, request: str | None, purpose: str) -> None:  # noqa: ANN401
+        try:
+            snapshot = stream.current_message_snapshot
+        except Exception:  # noqa: BLE001 (nothing arrived; nothing to log)
+            return
+        usage = snapshot.usage
+        price_in, price_out = PRICES_PER_MTOK.get(
+            snapshot.model, PRICES_PER_MTOK[DEFAULT_MODEL]
+        )
+        cost = (usage.input_tokens * price_in + usage.output_tokens * price_out) / 1e6
+        entry = {
+            "time": datetime.now().isoformat(timespec="seconds"),
+            "model": snapshot.model,
+            "purpose": purpose,
+            "request_id": request,
+            "input_tokens": usage.input_tokens,
+            "output_tokens": usage.output_tokens,
+            "cost_usd": round(cost, 4),
+        }
+        path = call_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
 
 
 class RecordingLLM:

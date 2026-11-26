@@ -25,9 +25,11 @@ from unapply.interview.sheet import (
     export_interview_sheet,
 )
 from unapply.llm import (
+    API_SWITCH,
     DEFAULT_MODEL,
     QUESTION_MODEL,
     AnthropicLLM,
+    APICallsDisabled,
     RecordingLLM,
     ReplayLLM,
     StructuredLLM,
@@ -117,6 +119,14 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    try:
+        return _run(args)
+    except APICallsDisabled as e:
+        print(f"Stopped: {e}", file=sys.stderr)
+        return 3
+
+
+def _run(args: argparse.Namespace) -> int:
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -190,12 +200,23 @@ def _add_model_options(
         type=Path,
         help="Use an answer saved with --record instead of calling the model.",
     )
+    command.add_argument(
+        "--allow-api",
+        action="store_true",
+        help=f"Allow this command to make paid API calls (otherwise {API_SWITCH}=1).",
+    )
 
 
 def _llm(args: argparse.Namespace) -> StructuredLLM:
+    """Pick the model client; refuse up front if a paid call isn't allowed."""
     if args.replay:
         return ReplayLLM(args.replay)
-    llm = AnthropicLLM(args.model, args.effort)
+    llm = AnthropicLLM(args.model, args.effort, allow=args.allow_api)
+    if not llm.allowed:
+        raise APICallsDisabled(
+            "this would make a paid API call, which is off. Add --allow-api to allow "
+            f"it for this command, set {API_SWITCH}=1 in .env, or use --replay."
+        )
     return RecordingLLM(llm, args.record) if args.record else llm
 
 
@@ -280,6 +301,7 @@ def _review(args: argparse.Namespace) -> int:
 
 
 def _ingest(args: argparse.Namespace) -> int:
+    llm = _llm(args)  # Before any loading, so a refused call costs no time.
     documents: list[SourceDocument] = []
     for path in args.paths:
         documents.extend(load_path(path))
@@ -296,7 +318,7 @@ def _ingest(args: argparse.Namespace) -> int:
 
         args.dump_sources.write_text(render_sources(documents), encoding="utf-8")
 
-    result = extract_profile(documents, _llm(args))
+    result = extract_profile(documents, llm)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(result.profile.model_dump_json(indent=2), encoding="utf-8")
 
