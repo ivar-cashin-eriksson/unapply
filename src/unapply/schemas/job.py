@@ -37,7 +37,11 @@ class Criterion(BaseModel):
     min_level : SkillLevel or None
         Lowest acceptable level of `skill`.
     weight : float
-        Relative weight in the total score. Must be positive.
+        Relative weight in the total score. Must be positive; the app and review
+        sheet use 1 (minor) to 5 (essential).
+    source_quote : str or None
+        The words in the job ad the criterion comes from, verbatim. None for
+        criteria the recruiter added.
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -46,6 +50,7 @@ class Criterion(BaseModel):
     skill: str | None = None
     min_level: SkillLevel | None = None
     weight: float = Field(default=1.0, gt=0.0)
+    source_quote: str | None = None
 
 
 class HardFilters(BaseModel):
@@ -59,11 +64,14 @@ class HardFilters(BaseModel):
         Work modes the job offers. Empty means any.
     required_work_permits : list of str
         ISO country codes, or "EU", the candidate must be allowed to work in.
+    min_years_experience : int or None
+        Fewest years of relevant work experience required, if the ad sets one.
     """
 
     locations: list[str] = Field(default_factory=list)
     work_modes: list[WorkMode] = Field(default_factory=list)
     required_work_permits: list[str] = Field(default_factory=list)
+    min_years_experience: int | None = Field(default=None, ge=0)
 
 
 class Rubric(BaseModel):
@@ -79,11 +87,14 @@ class Rubric(BaseModel):
         Pass/fail requirements.
     criteria : list of Criterion
         Scored requirements.
+    approved_at : datetime or None
+        When the recruiter approved this version. None means it is a draft.
     """
 
     version: int = 1
     hard_filters: HardFilters = Field(default_factory=HardFilters)
     criteria: list[Criterion] = Field(default_factory=list)
+    approved_at: datetime | None = None
 
 
 class Job(BaseModel):

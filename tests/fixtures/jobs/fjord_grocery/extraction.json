@@ -1,0 +1,95 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Fjord Grocery ApS",
+    "title": "Senior Data Scientist, Pricing and Forecasting",
+    "hard_filters": {
+      "locations": ["Copenhagen"],
+      "work_modes": ["hybrid"],
+      "required_work_permits": ["EU"],
+      "min_years_experience": 4
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Strong Python",
+        "skill": "python",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Strong Python and SQL."
+      },
+      {
+        "kind": "must_have",
+        "description": "Strong SQL",
+        "skill": "sql",
+        "min_level": 4,
+        "weight": 4,
+        "quote": "Strong Python and SQL."
+      },
+      {
+        "kind": "must_have",
+        "description": "Production experience with time series forecasting",
+        "skill": "time series forecasting",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Hands-on experience with time series forecasting in production."
+      },
+      {
+        "kind": "must_have",
+        "description": "Solid statistics",
+        "skill": "statistics",
+        "min_level": 3,
+        "weight": 3,
+        "quote": "Solid understanding of statistics and A/B testing."
+      },
+      {
+        "kind": "must_have",
+        "description": "Designs and analyses A/B tests",
+        "skill": "a/b testing",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Solid understanding of statistics and A/B testing."
+      },
+      {
+        "kind": "must_have",
+        "description": "Communicates clearly with non-technical stakeholders",
+        "skill": "stakeholder communication",
+        "min_level": null,
+        "weight": 3,
+        "quote": "You communicate clearly with non-technical stakeholders."
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Experience with Spark or similar tools for large datasets",
+        "skill": "spark",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Experience with Spark or other tools for large datasets."
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Deep learning for forecasting",
+        "skill": "deep learning",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Experience with deep learning for forecasting."
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Retail or e-commerce experience",
+        "skill": "retail analytics",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Retail or e-commerce experience."
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Speaks Danish",
+        "skill": "danish",
+        "min_level": null,
+        "weight": 1,
+        "quote": "Danish is a plus"
+      }
+    ]
+  }
+}

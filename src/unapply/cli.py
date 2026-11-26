@@ -24,6 +24,8 @@ from unapply.interview.sheet import (
     apply_interview_sheet,
     export_interview_sheet,
 )
+from unapply.jobs.extract import extract_job
+from unapply.jobs.sheet import RubricError, apply_rubric_sheet, export_rubric_sheet
 from unapply.llm import (
     API_SWITCH,
     DEFAULT_MODEL,
@@ -35,7 +37,7 @@ from unapply.llm import (
     StructuredLLM,
 )
 from unapply.review import ReviewError, apply_review_sheet, export_review_sheet
-from unapply.schemas import Profile
+from unapply.schemas import CriterionKind, Job, Profile
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -107,7 +109,25 @@ def main(argv: list[str] | None = None) -> int:
         "--out", type=Path, required=True, help="Profile JSON to write."
     )
 
-    app = commands.add_parser("app", help="Open the candidate app in a browser.")
+    job = commands.add_parser("job", help="Turn a job ad into a rubric and review it.")
+    job_steps = job.add_subparsers(dest="step", required=True)
+    job_extract = job_steps.add_parser("extract", help="Extract a rubric from an ad.")
+    job_extract.add_argument("ad", type=Path, help="The job ad: text, Markdown or PDF.")
+    job_extract.add_argument(
+        "--out", type=Path, required=True, help="Job JSON to write."
+    )
+    job_extract.add_argument("--company", help="Company name, if not in the ad.")
+    job_extract.add_argument("--title", help="Job title, if not in the ad.")
+    _add_model_options(job_extract)
+    job_export = job_steps.add_parser("export", help="Write a rubric sheet to edit.")
+    job_export.add_argument("job", type=Path, help="Job JSON.")
+    job_export.add_argument("--sheet", type=Path, required=True, help="Sheet to write.")
+    job_apply = job_steps.add_parser("apply", help="Apply an edited rubric sheet.")
+    job_apply.add_argument("job", type=Path, help="Job JSON it was exported from.")
+    job_apply.add_argument("sheet", type=Path, help="The edited sheet.")
+    job_apply.add_argument("--out", type=Path, required=True, help="Job JSON to write.")
+
+    app = commands.add_parser("app", help="Open the app in a browser.")
     app.add_argument("--port", type=int, default=8501)
 
     review = commands.add_parser("review", help="Review and approve a profile.")
@@ -130,6 +150,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
+    if args.command == "job":
+        return _job(args)
     if args.command == "app":
         return _app(args)
     if args.command == "ingest":
@@ -187,6 +209,57 @@ def _interview(args: argparse.Namespace) -> int:
     if n:
         print("Run `unapply estimate` on it to update the estimates.")
     return 0
+
+
+def _job(args: argparse.Namespace) -> int:
+    if args.step == "extract":
+        llm = _llm(args)  # Before reading anything, so a refused call costs no time.
+        documents = load_path(args.ad)
+        if len(documents) != 1:
+            print(f"Expected one job ad file, got {len(documents)}.", file=sys.stderr)
+            return 2
+        result = extract_job(
+            documents[0].text, llm, company=args.company, title=args.title
+        )
+        _write(args.out, result.job.model_dump_json(indent=2))
+        rubric = result.job.rubric
+        musts = sum(c.kind == CriterionKind.MUST_HAVE for c in rubric.criteria)
+        print(f"{result.job.title} at {result.job.company}")
+        print(f"hard filters: {rubric.hard_filters.model_dump(exclude_defaults=True)}")
+        print(
+            f"{musts} must-haves, {len(rubric.criteria) - musts} nice-to-haves "
+            f"-> {args.out}"
+        )
+        for c in rubric.criteria:
+            print(f"  [{c.kind.value}] weight {c.weight:g}: {c.description}")
+        if result.dropped:
+            print(f"dropped ({len(result.dropped)}):")
+            for d in result.dropped:
+                print(f"  {d}")
+        return 0
+    job = Job.model_validate_json(args.job.read_text(encoding="utf-8"))
+    if args.step == "export":
+        if args.sheet.exists():
+            print(f"{args.sheet} exists; not overwriting your edits.", file=sys.stderr)
+            return 2
+        _write(args.sheet, export_rubric_sheet(job))
+        print(f"Wrote {args.sheet}. Edit it, then run `unapply job apply`.")
+        return 0
+    try:
+        updated = apply_rubric_sheet(job, args.sheet.read_text(encoding="utf-8"))
+    except RubricError as e:
+        print(f"Can't apply {args.sheet}: {e}", file=sys.stderr)
+        return 2
+    _write(args.out, updated.model_dump_json(indent=2))
+    r = updated.rubric
+    print(f"rubric version {r.version}: {len(r.criteria)} criteria -> {args.out}")
+    print("Approved." if r.approved_at else "Not approved yet.")
+    return 0
+
+
+def _write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
 
 
 def _app(args: argparse.Namespace) -> int:
