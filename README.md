@@ -88,7 +88,7 @@ with recorded answers.
 ## The database
 
 Candidates, jobs, rubric versions and matches can also be kept in a database, which
-the API (coming next) works on. It is a SQLite file, `data/unapply.db`, unless
+the API (below) works on. It is a SQLite file, `data/unapply.db`, unless
 `UNAPPLY_DATABASE_URL` in `.env` points elsewhere; the same tables work on Postgres
 (`uv sync --extra db` and a `postgresql+psycopg://` URL).
 
@@ -103,6 +103,29 @@ Importing a workspace brings its settings, history, current profile or job (ever
 rubric version in its history), and waiting interview questions. Uploaded material
 stays in the folder. A rubric version that a match refers to can't be changed: edit
 the rubric and it gets a new version.
+
+## The API
+
+`unapply api` serves the same steps over HTTP, on the database, for the new frontend:
+
+```bash
+uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
+```
+
+- **Candidates** (`/candidates`): create, upload material (PDF, Markdown, text,
+  LaTeX, YAML, JSON or a zipped LinkedIn export; up to 20 MB a file), extract a
+  draft profile, read and save the review form, prepare and answer questions, and
+  read the profile. Candidate routes never return the assessment.
+- **Jobs** (`/jobs`): create with the ad, extract a rubric, read any version and
+  save the recruiter's edit (any change raises the version).
+- **Demos** (`/demos/candidate`, `/demos/job`): John Doe and Fjord Grocery, which
+  replay recorded answers for free.
+
+**Paid model calls are refused** (403) unless the request adds `?allow_api=true` or
+`UNAPPLY_ALLOW_API_CALLS=1` is set, just like `--allow-api`. `unapply api --internal`
+adds `/internal/candidates/<name>/assessment` and `.../estimate`, for developers and
+data access requests; never run a server candidates use with it. Uploaded material
+goes in `data/uploads/<name>/`.
 
 ## The skill taxonomy
 
@@ -121,7 +144,7 @@ for a specific skill also counts for the general one. To use another file, set
 | Command | What it does |
 |---|---|
 | `uv sync` | Create or update `.venv/` from `uv.lock` |
-| `uv sync --all-extras` | Also install the optional extras (API, MCP, Postgres drivers) |
+| `uv sync --all-extras` | Also install the optional extras (MCP, Postgres drivers) |
 | `uv run pytest` | Run the tests |
 | `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
 | `uv run ruff format .` | Format |
@@ -131,6 +154,7 @@ for a specific skill also counts for the general one. To use another file, set
 | `uv run unapply job extract ad.md --out data/jobs/acme.json` | Extract a rubric from a job ad (calls the Claude API: add `--allow-api`) |
 | `uv run unapply job export data/jobs/acme.json --sheet data/jobs/acme.yaml` | Write a rubric sheet to edit and approve |
 | `uv run unapply job apply data/jobs/acme.json data/jobs/acme.yaml --out data/jobs/acme.json` | Apply the edited rubric sheet |
+| `uv run unapply api` | Start the HTTP API over the database (docs at http://127.0.0.1:8000/docs) |
 | `uv run unapply db init` | Create the database's tables, or migrate them to the newest version, and load the skill taxonomy |
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
@@ -153,6 +177,7 @@ for a specific skill also counts for the general one. To use another file, set
 | `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
+| `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, demo and internal routes |
 | `src/unapply/taxonomy.py` | The skill taxonomy: canonical names, synonyms, implied and broader skills |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | Configuration, such as the skill taxonomy (`skills.yaml`) |

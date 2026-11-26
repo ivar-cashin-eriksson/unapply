@@ -53,6 +53,28 @@ branch, what was done, what was tested, anything to know.
   but not fixed (outside this task): a profile with no experiences exports a review
   sheet with an empty `experiences:` that fails to apply ("Input should be a valid
   list").
+- 2026-11-26 · Task 4, API · `feat/api` · Added `src/unapply/api/` (FastAPI over
+  the database): candidates (create, settings, upload/list/remove material, extract,
+  review form read and save, prepare/discard questions, answers, profile), jobs
+  (create, ad, extract rubric, current and earlier rubric versions, edit and
+  approve), demos (`/demos/candidate`, `/demos/job`, plus John's filled-in review and
+  answers) and `/health`. `unapply api [--host] [--port] [--internal]` starts it with
+  uvicorn; OpenAPI docs at `/docs`. Paid calls are refused with 403 unless
+  `?allow_api=true` or the switch is on, checked before any work so a refused request
+  changes nothing; demos replay recordings. Candidate routes return the profile
+  without estimates or claim support, and questions only give their neutral reason;
+  the assessment is only on `/internal/...`, added with `--internal`. Package errors
+  map to status codes (404 unknown, 409 wrong step or locked rubric, 422 invalid
+  review/rubric/answers, 502 model errors). Tested (25 new tests, 153 in all) with
+  TestClient: every route, John Doe's demo journey end to end, refusal of paid calls
+  (with a fake factory, and with the real one never creating a client), the switch,
+  no assessment words in any candidate response, internal routes absent by default,
+  upload checks (type, size, paths in names), a matched rubric not replaced, and the
+  CLI command. To know: FastAPI, uvicorn and python-multipart are now core
+  dependencies (the `api` extra is gone) and httpx a dev one; uploads go in
+  `data/uploads/<name>/`; the Streamlit app still uses workspace folders; there is no
+  auth (out of scope for the POC), so `--internal` must never face candidates.
+  Matching routes come with task 5.
 
 ## Questions for Ivar
 

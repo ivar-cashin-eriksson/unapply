@@ -105,7 +105,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Done when: tests show synonyms merge, implied skills are found, and existing
   fixtures still pass.
 
-### 4. [ ] API (FastAPI)
+### 4. [x] API (FastAPI)
 
 - `src/unapply/api/`: endpoints over the database for candidates (create, upload
   material, extract, review, questions, answers, profile), jobs (create, ad, extract

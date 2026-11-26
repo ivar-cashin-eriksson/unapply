@@ -138,3 +138,14 @@ a URL change), FastAPI, the MCP Python SDK, the Claude API, and Streamlit for th
   a review merges skills that an older profile kept apart and estimates them again.
 - `Taxonomy.implied` and `Taxonomy.supporting` follow the relations, for matching.
   `unapply db init` copies the taxonomy into its tables.
+
+### API (done)
+- `src/unapply/api/`: FastAPI routes over the database for candidates (create,
+  upload material, extract, review, questions, answers, profile), jobs (create, ad,
+  extract rubric, read versions, edit and approve the rubric) and the two demos.
+  `unapply api` starts it; OpenAPI docs at `/docs`.
+- Candidate routes return the profile without the assessment; the assessment is only
+  on `/internal/...` routes, added with `unapply api --internal`.
+- Paid model calls are refused (403) unless the request adds `?allow_api=true` or the
+  switch is on; a refused request changes nothing. Demos replay recordings.
+- Matching routes come with matching (M4).

@@ -61,7 +61,7 @@ high-risk under the EU AI Act. See the design principles in the README.
 
 - **Runtime dependencies** go in `[project] dependencies` (`uv add <package>`), or in
   an optional extra under `[project.optional-dependencies]` if only one part needs them
-  (`uv add --optional api fastapi`).
+  (`uv add --optional mcp mcp`).
 - **Development tools** go in the `dev` dependency group (`uv add --dev <package>`).
 - Always commit `uv.lock` together with `pyproject.toml`.
 

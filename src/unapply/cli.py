@@ -148,6 +148,17 @@ def main(argv: list[str] | None = None) -> int:
     app = commands.add_parser("app", help="Open the app in a browser.")
     app.add_argument("--port", type=int, default=8501)
 
+    api = commands.add_parser(
+        "api", help="Start the HTTP API over the database (docs at /docs)."
+    )
+    api.add_argument("--host", default="127.0.0.1")
+    api.add_argument("--port", type=int, default=8000)
+    api.add_argument(
+        "--internal",
+        action="store_true",
+        help="Add the internal assessment routes. Never for a server candidates use.",
+    )
+
     review = commands.add_parser("review", help="Review and approve a profile.")
     steps = review.add_subparsers(dest="step", required=True)
     export = steps.add_parser("export", help="Write a review sheet to edit.")
@@ -172,6 +183,8 @@ def _run(args: argparse.Namespace) -> int:
         return _job(args)
     if args.command == "app":
         return _app(args)
+    if args.command == "api":
+        return _api(args)
     if args.command == "db":
         return _db(args)
     if args.command == "ingest":
@@ -321,6 +334,18 @@ def _app(args: argparse.Namespace) -> int:
     command = [sys.executable, "-m", "streamlit", "run", str(script)]
     command += ["--server.port", str(args.port), "--browser.gatherUsageStats", "false"]
     return subprocess.call(command)
+
+
+def _api(args: argparse.Namespace) -> int:
+    # Imported here, so other commands don't load FastAPI.
+    import uvicorn
+
+    from unapply.api import create_app
+
+    uvicorn.run(
+        create_app(internal_routes=args.internal), host=args.host, port=args.port
+    )
+    return 0
 
 
 def _add_model_options(
