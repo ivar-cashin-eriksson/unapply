@@ -1,0 +1,114 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 2,
+        "confidence": 0.6,
+        "rationale": "Analyses A/B tests of newsletters and product pages with a t-test template. Basic to working: the analysis follows a template and the design isn't described.",
+        "evidence": [
+          "E2",
+          "E8"
+        ]
+      },
+      {
+        "skill": "bigquery",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Writes the dashboard SQL in BigQuery. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 4,
+        "confidence": 0.5,
+        "rationale": "Danish is listed without a level; with a Danish degree and work it is likely fluent or native.",
+        "evidence": [
+          "E10"
+        ]
+      },
+      {
+        "skill": "e-commerce",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Over five years as analyst at an online furniture shop, after retail reporting. Working domain knowledge.",
+        "evidence": [
+          "E1",
+          "E4"
+        ]
+      },
+      {
+        "skill": "excel",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Reports and a simple forecast in Excel. Working use.",
+        "evidence": [
+          "E5",
+          "E6",
+          "E8"
+        ]
+      },
+      {
+        "skill": "looker",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Builds the weekly sales dashboards in Looker. Working use.",
+        "evidence": [
+          "E3",
+          "E8"
+        ]
+      },
+      {
+        "skill": "power bi",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Built Power BI reports on store sales. Working use.",
+        "evidence": [
+          "E6",
+          "E8"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 2,
+        "confidence": 0.6,
+        "rationale": "Uses a t-test template in Python and rates herself basic. Basic level.",
+        "evidence": [
+          "E2",
+          "E9"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Writes SQL in BigQuery for the weekly sales dashboards. Working use; nothing shows complex modelling or tuning.",
+        "evidence": [
+          "E3",
+          "E8"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Presents the monthly e-commerce report to the management team. Working level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 1,
+        "confidence": 0.6,
+        "rationale": "A simple sales forecast in Excel for one season. Aware level.",
+        "evidence": [
+          "E5"
+        ]
+      }
+    ]
+  }
+}

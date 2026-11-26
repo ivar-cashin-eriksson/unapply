@@ -1,0 +1,15 @@
+# What Ida sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  statistics: 5
+  randomised controlled trials: 5
+  mixed models: 5
+  survival analysis: 5
+  r: 5
+  sas: 4
+  python: 2
+  sql: 3
+  pharmaceuticals: 4
+  stakeholder communication: 4
+  teaching: 4

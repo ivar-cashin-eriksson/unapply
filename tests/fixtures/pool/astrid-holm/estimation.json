@@ -1,0 +1,176 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Designs price experiments end to end, from power analysis and sample size to the readout, with the commercial team. Advanced, repeated use; reported decisions or results would make it surer.",
+        "evidence": [
+          "E5",
+          "E11"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E12"
+        ]
+      },
+      {
+        "skill": "databricks",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Databricks is the platform of the forecasting pipeline. Working, independent use; administration or platform design isn't described.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "One deep learning forecasting model for promotion weeks, shown to beat gradient boosting on part of the range. Working level from one well-described use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 5,
+        "confidence": 0.8,
+        "rationale": "Owns demand forecasting for 15,000 products in production, retrained daily, with a 22% error reduction and a deep learning model for promotions. This is deep, owned expertise in the domain.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "grocery retail",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Over five years leading data science at an online grocer, on demand forecasting and pricing. Advanced domain knowledge.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "mentoring",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Mentors three data scientists. Working level; how the mentoring is done isn't described.",
+        "evidence": [
+          "E7"
+        ]
+      },
+      {
+        "skill": "power analysis",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Power analysis and sample size are part of every price experiment designed. Advanced use within experimentation.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "pyspark",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "PySpark carries a production forecasting pipeline over 2 billion order lines, which is advanced use at real scale.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.85,
+        "rationale": "Python is the language of a production forecasting pipeline over 2 billion order lines and of credit risk models in an earlier role. That is advanced, sustained professional use; open-source or library design work would show more.",
+        "evidence": [
+          "E3",
+          "E8",
+          "E11"
+        ]
+      },
+      {
+        "skill": "pytorch",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "A temporal fusion transformer was built in PyTorch and beat the existing model on fresh produce. One substantial model; more models or training infrastructure would raise the level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "scikit-learn",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Used for credit risk models in an earlier role. Working professional use.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "skill": "spark",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Spark appears in the skills list and, through PySpark on Databricks, in a pipeline over 2 billion order lines. Working use; little is said about tuning or cluster design.",
+        "evidence": [
+          "E11"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Writes and reviews the team's SQL models and tuned slow warehouse queries from hours to minutes, which goes beyond writing queries. Details of the data models would make this surer.",
+        "evidence": [
+          "E6",
+          "E11"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Gives experiment readouts to category managers and presented credit models to a risk committee, with documentation for non-technical readers. Repeated, varied communication with non-technical audiences.",
+        "evidence": [
+          "E5",
+          "E9"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 4,
+        "confidence": 0.8,
+        "rationale": "An MSc in Statistics, credit models validated with bootstrapped confidence intervals, and experiments planned with power analysis show advanced applied statistics.",
+        "evidence": [
+          "E8",
+          "E10",
+          "E11"
+        ]
+      },
+      {
+        "skill": "statsmodels",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Used for credit risk models alongside scikit-learn. Working use.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 4,
+        "confidence": 0.8,
+        "rationale": "Listed as a skill and backed by owning a daily-retrained production forecasting system that cut error by 22%.",
+        "evidence": [
+          "E11"
+        ]
+      }
+    ]
+  }
+}

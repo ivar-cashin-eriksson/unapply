@@ -1,0 +1,141 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "Helped the analytics team run a few checkout experiments. Basic level.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "databricks",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "The platform of the PySpark feature pipelines. Working use.",
+        "evidence": [
+          "E2",
+          "E8"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "An LSTM forecasting trips every 15 minutes in production in three cities, with monitoring and retraining. Advanced, production deep learning.",
+        "evidence": [
+          "E1",
+          "E8"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Ride demand forecasting in production in three cities. Advanced use.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "docker",
+        "level": 2,
+        "confidence": 0.3,
+        "rationale": "Docker appears only in the skills list. Little evidence either way.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "skill": "english",
+        "level": 4,
+        "confidence": 0.6,
+        "rationale": "English is stated as fluent.",
+        "evidence": [
+          "E10"
+        ]
+      },
+      {
+        "skill": "fastapi",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Wrote the model serving code with FastAPI. Working use.",
+        "evidence": [
+          "E3",
+          "E8"
+        ]
+      },
+      {
+        "skill": "java",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Backend services in Java and Python for a payments company. Working use.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "polish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Polish is stated as native.",
+        "evidence": [
+          "E9"
+        ]
+      },
+      {
+        "skill": "pyspark",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Runs the feature pipelines in PySpark on Databricks over 4 TB of trip data. Advanced use at scale.",
+        "evidence": [
+          "E2",
+          "E8"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.8,
+        "rationale": "Python carries a production forecasting service, its serving code and monitoring, and backend services before that. Advanced engineering use.",
+        "evidence": [
+          "E3",
+          "E5",
+          "E8"
+        ]
+      },
+      {
+        "skill": "pytorch",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Built a production LSTM forecasting service in PyTorch for three cities. Advanced use.",
+        "evidence": [
+          "E1",
+          "E8"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Queries the trip warehouse in SQL for analyses and features. Working use; nothing shows modelling or tuning.",
+        "evidence": [
+          "E4",
+          "E8"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "A production forecasting service predicting trips per zone every 15 minutes, with retraining on accuracy drops. Advanced use.",
+        "evidence": [
+          "E1"
+        ]
+      }
+    ]
+  }
+}

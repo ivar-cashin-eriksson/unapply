@@ -1,0 +1,14 @@
+# What Freja sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  sql: 4
+  excel: 4
+  looker: 4
+  power bi: 3
+  bigquery: 3
+  a/b testing: 3
+  time series forecasting: 2
+  e-commerce: 4
+  stakeholder communication: 4
+  danish: 5

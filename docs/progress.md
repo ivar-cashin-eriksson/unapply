@@ -145,6 +145,39 @@ branch, what was done, what was tested, anything to know.
   matches, which is redundant but makes each entry self-contained; matches stored
   before this task have no match entry (nothing was lost, `check_ranking` skips
   them). The API server from task 4 still runs on port 8765 (`uv run --no-sync`).
+- 2026-11-26 · Task 7, Synthetic candidate pool and evaluation · `feat/evaluation` ·
+  Added `tests/fixtures/pool/`: 12 fictional candidates for Fjord Grocery, each with
+  a short CV, a hand-written stand-in extraction (quotes verbatim from the CV), own
+  levels in `review.yaml`, a stand-in estimation, and for the nine who pass the hard
+  filters a stand-in LLM scorer answer; `pool.yaml` holds the intended ranking with a
+  reason for each place (clear fit; a great fit in synonyms; strong forecaster
+  outside retail; career changer; ML engineer weak on statistics; biostatistician;
+  honest analyst; overclaimer; frontend developer; and, sharing the last place,
+  strong but outside the EU, too junior (38 months), remote only). Added
+  `src/unapply/evaluation/` (`top_k_overlap`, Kendall's tau-b with ties,
+  `load_reference`, `load_pool`, `evaluate_pool`) and `unapply evaluate [pool]
+  [--reference FILE] [--scorer ...] [--k ...] [-v] [--record --allow-api]`, which
+  replays every candidate's journey in memory (extract, review and approve,
+  estimate, match), stores nothing and runs offline. Results on the pool (k = 3, 5):
+  baseline top-3 1.00, top-5 0.80, tau 0.84; LLM scorer stand-ins 1.00, 1.00, 1.00.
+  Tested (30 new tests, 257 in all): the metrics on known cases, ties, partial
+  references and bad input; the pool loads with no rejected quote, dropped item,
+  unknown review edit or estimation problem, every quote is in its CV, every
+  recording is marked as a stand-in, exactly the three intended candidates fail a
+  filter, synonyms map to the rubric's skills, the overclaimer is flagged, no
+  candidate's name reaches the LLM scorer's prompt; both scorers' rankings and
+  metrics; a missing recording fails loudly; the CLI, including `--record` refused
+  without `--allow-api` and leaving the pool unchanged. To know: the finding worth
+  a look is that the baseline ranks the overclaimer 4th instead of 8th, because it
+  blends own levels in by (1 - confidence) and his estimates are unsure; not
+  changed here (it would change the baseline's documented behaviour and John's
+  expected scores). The LLM scorer's perfect agreement only shows the stand-ins are
+  consistent with the intended ranking, which I wrote too; record them
+  (`docs/to-record.md`, about $1.50) for a real result. The evaluation doesn't read
+  matches from the database yet; `--reference` takes a human shortlist as YAML.
+  The pool imports `edit_review_sheet` from `unapply.app.demo` (no Streamlit
+  needed). Nothing listens on ports 8765 or 8599 any more, so the servers left
+  running by earlier sessions are gone; this session still used `uv run --no-sync`.
 
 ## Questions for Ivar
 

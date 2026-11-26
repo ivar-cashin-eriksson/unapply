@@ -1,0 +1,270 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Data scientist at a supermarket chain who moved from buying and category analysis into data science, focused on store-level forecasting and promotion analysis",
+    "experiences": [
+      {
+        "title": "Data Scientist",
+        "organisation": "Dagligvare Nord A/S",
+        "start": "2022-04",
+        "end": null,
+        "summary": "Built a store-level forecasting model for bake-off bread and fresh produce, in production in 60 stores and cutting waste by 12%. Analyses promotions for the buying team, presents at the weekly trading meeting, and analysed a first A/B test of shelf price labels.",
+        "skills": [
+          "demand forecasting",
+          "python",
+          "pandas",
+          "scikit-learn",
+          "a/b testing",
+          "promotion analysis",
+          "stakeholder communication",
+          "grocery retail"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data Scientist, Dagligvare Nord A/S (supermarket chain)"
+          },
+          {
+            "source": "S1",
+            "quote": "Built the store-level forecasting model for bake-off bread and fresh produce, in production in 60 stores since 2023; waste fell by 12%."
+          },
+          {
+            "source": "S1",
+            "quote": "Analyse promotion results for the buying team and present them at the weekly trading meeting."
+          },
+          {
+            "source": "S1",
+            "quote": "Use Python (pandas, scikit-learn) every day, with help from our senior engineers on deployment."
+          },
+          {
+            "source": "S1",
+            "quote": "Analysed our first A/B test of shelf price labels together with a colleague."
+          }
+        ]
+      },
+      {
+        "title": "Category Analyst",
+        "organisation": "Dagligvare Nord A/S",
+        "start": "2019-01",
+        "end": "2022-03",
+        "summary": "Weekly sales and margin reporting for 2,000 products in SQL and Excel, and the margin model all buyers use, in complex SQL.",
+        "skills": [
+          "sql",
+          "excel",
+          "grocery retail"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Weekly sales and margin reporting for 2,000 products in SQL and Excel."
+          },
+          {
+            "source": "S1",
+            "quote": "Wrote complex SQL against the sales warehouse, including the margin model used by all buyers."
+          }
+        ]
+      },
+      {
+        "title": "Buyer, Fresh Produce",
+        "organisation": "Dagligvare Nord A/S",
+        "start": "2012-08",
+        "end": "2018-12",
+        "summary": "Negotiated with 40 suppliers and planned orders and promotions for fresh produce.",
+        "skills": [
+          "supplier negotiation",
+          "grocery retail"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Negotiated with 40 suppliers and planned orders and promotions for fresh produce."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Use Python (pandas, scikit-learn) every day, with help from our senior engineers on deployment."
+          },
+          {
+            "source": "S1",
+            "quote": "Data science bootcamp (evenings), Kode Akademi, 2021: Python, machine learning, statistics."
+          }
+        ]
+      },
+      {
+        "name": "pandas",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Use Python (pandas, scikit-learn) every day, with help from our senior engineers on deployment."
+          }
+        ]
+      },
+      {
+        "name": "scikit-learn",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Use Python (pandas, scikit-learn) every day, with help from our senior engineers on deployment."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Weekly sales and margin reporting for 2,000 products in SQL and Excel."
+          },
+          {
+            "source": "S1",
+            "quote": "Wrote complex SQL against the sales warehouse, including the margin model used by all buyers."
+          }
+        ]
+      },
+      {
+        "name": "excel",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Weekly sales and margin reporting for 2,000 products in SQL and Excel."
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the store-level forecasting model for bake-off bread and fresh produce, in production in 60 stores since 2023; waste fell by 12%."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analysed our first A/B test of shelf price labels together with a colleague."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data science bootcamp (evenings), Kode Akademi, 2021: Python, machine learning, statistics."
+          },
+          {
+            "source": "S1",
+            "quote": "Statistics for analysts, open university course, 2020."
+          }
+        ]
+      },
+      {
+        "name": "machine learning",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data science bootcamp (evenings), Kode Akademi, 2021: Python, machine learning, statistics."
+          }
+        ]
+      },
+      {
+        "name": "promotion analysis",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analyse promotion results for the buying team and present them at the weekly trading meeting."
+          }
+        ]
+      },
+      {
+        "name": "grocery retail",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data Scientist, Dagligvare Nord A/S (supermarket chain)"
+          },
+          {
+            "source": "S1",
+            "quote": "Negotiated with 40 suppliers and planned orders and promotions for fresh produce."
+          }
+        ]
+      },
+      {
+        "name": "supplier negotiation",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Negotiated with 40 suppliers and planned orders and promotions for fresh produce."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analyse promotion results for the buying team and present them at the weekly trading meeting."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

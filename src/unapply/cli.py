@@ -185,6 +185,58 @@ def main(argv: list[str] | None = None) -> int:
         "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
     )
 
+    evaluate = commands.add_parser(
+        "evaluate",
+        help="Rank a synthetic candidate pool with each scorer and compare the "
+        "rankings with a reference: top-k overlap and Kendall's tau.",
+    )
+    evaluate.add_argument(
+        "pool",
+        type=Path,
+        nargs="?",
+        help="Pool folder with a pool.yaml, by default tests/fixtures/pool.",
+    )
+    evaluate.add_argument(
+        "--reference",
+        type=Path,
+        help="YAML ranking to compare with (see docs), by default the pool's "
+        "intended ranking.",
+    )
+    evaluate.add_argument(
+        "--scorer",
+        nargs="+",
+        choices=["baseline", "llm"],
+        default=["baseline", "llm"],
+        help="Scorers to evaluate, by default both. llm replays recorded answers.",
+    )
+    evaluate.add_argument(
+        "--k",
+        nargs="+",
+        type=int,
+        default=[3, 5],
+        help="Top-k overlaps to report, by default 3 and 5.",
+    )
+    evaluate.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Also list each scorer's problems, such as criteria it can't score.",
+    )
+    evaluate.add_argument(
+        "--record",
+        action="store_true",
+        help="Call the model instead of replaying, and record its answers in the "
+        "pool, overwriting the recordings: extraction, estimation and (with the llm "
+        "scorer) scores. Paid; needs --allow-api.",
+    )
+    evaluate.add_argument("--model", default=DEFAULT_MODEL)
+    evaluate.add_argument("--effort", default="high")
+    evaluate.add_argument(
+        "--allow-api",
+        action="store_true",
+        help=f"Allow paid API calls for --record (otherwise {API_SWITCH}=1).",
+    )
+
     app = commands.add_parser("app", help="Open the app in a browser.")
     app.add_argument("--port", type=int, default=8501)
 
@@ -231,6 +283,8 @@ def _run(args: argparse.Namespace) -> int:
         return _match(args)
     if args.command == "audit":
         return _audit(args)
+    if args.command == "evaluate":
+        return _evaluate(args)
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -483,6 +537,75 @@ def _audit(args: argparse.Namespace) -> int:
         for p in problems:
             print(f"    {p}")
     return 1 if failed else 0
+
+
+def _evaluate(args: argparse.Namespace) -> int:
+    from unapply.evaluation import (
+        DEFAULT_POOL,
+        evaluate_pool,
+        load_pool,
+        load_reference,
+    )
+    from unapply.evaluation.pool import LLMFor
+
+    if any(k < 1 for k in args.k):
+        print("--k must be 1 or more", file=sys.stderr)
+        return 2
+    llm_for: LLMFor = ReplayLLM
+    if args.record:
+        # Before anything else, so a refused paid call costs no time.
+        llm = _paid_llm(args)
+
+        def llm_for(path: Path) -> StructuredLLM:
+            return RecordingLLM(llm, path)
+
+    folder = args.pool or DEFAULT_POOL
+    try:
+        pool = load_pool(folder, llm_for)
+        reference = load_reference(args.reference) if args.reference else None
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Can't evaluate: {e}", file=sys.stderr)
+        return 2
+    reference = reference or pool.intended
+    job = pool.job
+    print(
+        f"{job.title} at {job.company}, rubric version {job.rubric.version}: "
+        f"{len(pool.candidates)} candidates in {folder}, roles counted to "
+        f"{pool.today:%Y-%m-%d}"
+    )
+    print(
+        "Reference: "
+        + (str(args.reference) if args.reference else "the pool's intended ranking")
+    )
+    for name, candidate in pool.candidates.items():
+        for p in candidate.problems:
+            print(f"  problem: {name}: {p}")
+    wanted = {e.candidate: e.rank for e in reference}
+    for kind in dict.fromkeys(args.scorer):
+        try:
+            evaluation = evaluate_pool(pool, kind, reference, tuple(args.k), llm_for)
+        except ValueError as e:
+            print(f"Can't evaluate {kind}: {e}", file=sys.stderr)
+            return 2
+        print()
+        print(f"{kind} ({evaluation.model})")
+        print("  rank  total  reference  candidate")
+        for name, ranked in evaluation.ranking:
+            status = (
+                "" if ranked.match.passed_hard_filters else "  (failed hard filters)"
+            )
+            ref = str(wanted.get(name, "-"))
+            print(f"  {ranked.rank:>4}  {ranked.total:5.2f}  {ref:>9}  {name}{status}")
+        overlaps = "  ".join(
+            f"top-{k} overlap {v:.2f}" for k, v in evaluation.top_k.items()
+        )
+        tau = "-" if evaluation.tau is None else f"{evaluation.tau:.2f}"
+        print(f"  {overlaps}  Kendall's tau {tau}")
+        if args.verbose:
+            for name, result in evaluation.results.items():
+                for p in result.problems:
+                    print(f"  problem: {name}: {p}")
+    return 0
 
 
 def _write(path: Path, text: str) -> None:

@@ -1,0 +1,145 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 5,
+        "confidence": 0.75,
+        "rationale": "Designed the pricing experimentation platform that runs 50 A/B tests a quarter. Expert-level experimentation.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "aws",
+        "level": 2,
+        "confidence": 0.4,
+        "rationale": "AWS EMR hosts the Spark pipelines. Basic to working.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "causal inference",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "Causal inference is named among client work. Working use.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "A deep learning model is part of production demand forecasting. Working to advanced.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 5,
+        "confidence": 0.8,
+        "rationale": "Leads production demand forecasting for 30,000 products across 300 stores. Deep, owned expertise.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "english",
+        "level": 4,
+        "confidence": 0.6,
+        "rationale": "English is stated as fluent.",
+        "evidence": [
+          "E7"
+        ]
+      },
+      {
+        "skill": "lightgbm",
+        "level": 4,
+        "confidence": 0.65,
+        "rationale": "One of the production demand forecasting models for 30,000 products. Advanced use.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.65,
+        "rationale": "Uses Python every day for production forecasting and experimentation. Advanced use; few details of the code itself.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "pytorch",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "A deep learning forecasting model in PyTorch in production. Working to advanced.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "retail analytics",
+        "level": 5,
+        "confidence": 0.8,
+        "rationale": "Ten years of data science for retailers, leading forecasting for 300 stores. Deep domain knowledge.",
+        "evidence": [
+          "E1",
+          "E5"
+        ]
+      },
+      {
+        "skill": "spark",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Runs the feature pipelines in Spark on AWS EMR. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "Uses SQL every day. Working to advanced; one line of evidence.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 4,
+        "confidence": 0.65,
+        "rationale": "Presents forecast accuracy and experiment results to category heads. Advanced.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 4,
+        "confidence": 0.8,
+        "rationale": "An MSc in Statistics and three years of statistical modelling, including causal inference. Advanced.",
+        "evidence": [
+          "E5",
+          "E6"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Production forecasting at large scale and time series modelling for clients. Advanced.",
+        "evidence": [
+          "E1",
+          "E5"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.55,
+        "rationale": "Uses Python with pandas and scikit-learn daily, with help on deployment, after a 2021 bootcamp: working Python, below the strong level asked for.",
+        "evidence": [
+          "E4",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.85,
+        "rationale": "Seven years of SQL, from weekly reporting for 2,000 products to the margin model every buyer uses: strong SQL.",
+        "evidence": [
+          "E6",
+          "E7"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.75,
+        "rationale": "A store-level forecasting model for bread and fresh produce, in production in 60 stores since 2023, cut waste by 12%: real production forecasting, at a smaller scope than this job.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.4,
+        "rationale": "A bootcamp and an open university course in statistics; the work evidence shows little statistics beyond promotion analysis.",
+        "evidence": [
+          "E9",
+          "E10"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.35,
+        "rationale": "Analysed one A/B test of shelf price labels together with a colleague: a start, not a solid understanding yet.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.9,
+        "rationale": "Presents promotion results at the weekly trading meeting and was a buyer himself: knows how to talk to buyers and store teams.",
+        "evidence": [
+          "E3",
+          "E8"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.0,
+        "rationale": "No Spark or other large-data tool.",
+        "evidence": []
+      },
+      {
+        "criterion": "C8",
+        "score": 0.0,
+        "rationale": "No deep learning; bootcamp machine learning only.",
+        "evidence": [
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 1.0,
+        "rationale": "Fourteen years at a supermarket chain as buyer, category analyst and data scientist: deep grocery retail experience.",
+        "evidence": [
+          "E1",
+          "E8"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E11"
+        ]
+      }
+    ]
+  }
+}

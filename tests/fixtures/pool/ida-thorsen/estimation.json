@@ -1,0 +1,118 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E7"
+        ]
+      },
+      {
+        "skill": "mixed models",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Mixed models are part of the trial analyses. Advanced use.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "pharmaceuticals",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Seven years in a pharma company on clinical trials. Advanced domain knowledge.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 2,
+        "confidence": 0.6,
+        "rationale": "Started using Python for simulation studies in 2024. Basic level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "r",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "R is the main tool for trial and registry analyses for nine years. Advanced use.",
+        "evidence": [
+          "E2",
+          "E5"
+        ]
+      },
+      {
+        "skill": "randomised controlled trials",
+        "level": 5,
+        "confidence": 0.8,
+        "rationale": "Lead statistician on four randomised clinical trials from sample size to final analysis. Expert level in trial design and analysis.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "sas",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Used with R for the trial analyses. Working use.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 2,
+        "confidence": 0.5,
+        "rationale": "Used SQL with R on registry data in an earlier role. Basic to working; one line of evidence.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Explains trial results to clinicians and regulators and teaches statistics to non-statisticians. Advanced communication of technical results.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 5,
+        "confidence": 0.85,
+        "rationale": "A PhD in biostatistics and lead statistician on four randomised clinical trials, with mixed models, survival analysis and multiple testing corrections. Deep, recognised expertise.",
+        "evidence": [
+          "E2",
+          "E1",
+          "E6"
+        ]
+      },
+      {
+        "skill": "survival analysis",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Survival analysis is part of the trial analyses. Advanced use.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "teaching",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Teaches a statistics course for non-statisticians in the company. Working level.",
+        "evidence": [
+          "E3"
+        ]
+      }
+    ]
+  }
+}

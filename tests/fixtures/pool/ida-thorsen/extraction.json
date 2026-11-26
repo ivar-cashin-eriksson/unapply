@@ -1,0 +1,237 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Senior biostatistician with nine years in clinical trials and health research, focused on trial design, mixed models and survival analysis",
+    "experiences": [
+      {
+        "title": "Senior Biostatistician",
+        "organisation": "Hvidsten Pharma A/S",
+        "start": "2019-10",
+        "end": null,
+        "summary": "Lead statistician on four randomised clinical trials, from sample size to final analysis, using R and SAS. Explains results to clinicians and regulators, teaches statistics to non-statisticians, and uses Python for simulation studies since 2024.",
+        "skills": [
+          "statistics",
+          "randomised controlled trials",
+          "sample size calculation",
+          "r",
+          "sas",
+          "mixed models",
+          "survival analysis",
+          "python",
+          "stakeholder communication",
+          "teaching"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead statistician on four randomised clinical trials, from sample size calculations to the final analysis."
+          },
+          {
+            "source": "S1",
+            "quote": "Statistical analysis in R and SAS: mixed models, survival analysis and multiple testing corrections."
+          },
+          {
+            "source": "S1",
+            "quote": "Explain results to clinicians and regulators, and teach a statistics course for non-statisticians in the company."
+          },
+          {
+            "source": "S1",
+            "quote": "Started using Python for simulation studies in 2024."
+          }
+        ]
+      },
+      {
+        "title": "Statistician",
+        "organisation": "Copenhagen Health Research Institute",
+        "start": "2017-02",
+        "end": "2019-09",
+        "summary": "Analysed national registry data with SQL and R.",
+        "skills": [
+          "sql",
+          "r",
+          "registry data"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analysed national registry data with SQL and R."
+          }
+        ]
+      },
+      {
+        "title": "PhD Biostatistics",
+        "organisation": "Fynske University",
+        "start": "2013",
+        "end": "2017",
+        "summary": "Doctorate in biostatistics.",
+        "skills": [
+          "statistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "PhD Biostatistics, Fynske University"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis in R and SAS: mixed models, survival analysis and multiple testing corrections."
+          },
+          {
+            "source": "S1",
+            "quote": "Lead statistician on four randomised clinical trials, from sample size calculations to the final analysis."
+          },
+          {
+            "source": "S1",
+            "quote": "PhD Biostatistics, Fynske University"
+          }
+        ]
+      },
+      {
+        "name": "randomised controlled trials",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead statistician on four randomised clinical trials, from sample size calculations to the final analysis."
+          }
+        ]
+      },
+      {
+        "name": "mixed models",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis in R and SAS: mixed models, survival analysis and multiple testing corrections."
+          }
+        ]
+      },
+      {
+        "name": "survival analysis",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis in R and SAS: mixed models, survival analysis and multiple testing corrections."
+          }
+        ]
+      },
+      {
+        "name": "r",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis in R and SAS: mixed models, survival analysis and multiple testing corrections."
+          },
+          {
+            "source": "S1",
+            "quote": "Analysed national registry data with SQL and R."
+          }
+        ]
+      },
+      {
+        "name": "sas",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis in R and SAS: mixed models, survival analysis and multiple testing corrections."
+          }
+        ]
+      },
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Started using Python for simulation studies in 2024."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analysed national registry data with SQL and R."
+          }
+        ]
+      },
+      {
+        "name": "pharmaceuticals",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead statistician on four randomised clinical trials, from sample size calculations to the final analysis."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Explain results to clinicians and regulators, and teach a statistics course for non-statisticians in the company."
+          }
+        ]
+      },
+      {
+        "name": "teaching",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Explain results to clinicians and regulators, and teach a statistics course for non-statisticians in the company."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# What Nadia sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  python: 5
+  sql: 3
+  pyspark: 4
+  databricks: 4
+  pytorch: 4
+  deep learning: 4
+  time series forecasting: 4
+  demand forecasting: 4
+  fastapi: 4
+  docker: 3
+  java: 3
+  a/b testing: 2

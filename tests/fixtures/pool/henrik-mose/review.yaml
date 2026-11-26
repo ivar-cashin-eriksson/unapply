@@ -1,0 +1,13 @@
+# What Henrik sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  react: 5
+  typescript: 5
+  javascript: 5
+  node.js: 3
+  html: 5
+  css: 5
+  accessibility: 4
+  design systems: 4
+  stakeholder communication: 3

@@ -1,0 +1,249 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Data analyst with seven years in e-commerce and retail reporting, focused on SQL dashboards and A/B test analysis",
+    "experiences": [
+      {
+        "title": "Data Analyst",
+        "organisation": "Hylde Home ApS",
+        "start": "2021-03",
+        "end": null,
+        "summary": "Analyses A/B tests of newsletters and product pages with a t-test template in Python, writes SQL in BigQuery for weekly sales dashboards in Looker, presents the monthly e-commerce report to management, and made a simple Christmas sales forecast in Excel.",
+        "skills": [
+          "a/b testing",
+          "python",
+          "sql",
+          "bigquery",
+          "looker",
+          "excel",
+          "sales forecasting",
+          "stakeholder communication",
+          "e-commerce"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data Analyst, Hylde Home ApS (online furniture shop)"
+          },
+          {
+            "source": "S1",
+            "quote": "Analyse A/B tests of newsletters and product pages for the marketing team, using a t-test template in Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Write SQL queries in BigQuery for the weekly sales dashboards in Looker."
+          },
+          {
+            "source": "S1",
+            "quote": "Present the monthly e-commerce report to the management team."
+          },
+          {
+            "source": "S1",
+            "quote": "Made a simple sales forecast in Excel for the Christmas season."
+          }
+        ]
+      },
+      {
+        "title": "Junior Analyst",
+        "organisation": "Kontor Retail A/S",
+        "start": "2019-08",
+        "end": "2021-02",
+        "summary": "Built Excel and Power BI reports on store sales.",
+        "skills": [
+          "excel",
+          "power bi",
+          "retail analytics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built Excel and Power BI reports on store sales."
+          }
+        ]
+      },
+      {
+        "title": "BSc Economics",
+        "organisation": "University of Copenhagen",
+        "start": "2016",
+        "end": "2019",
+        "summary": "Bachelor's degree in economics.",
+        "skills": [
+          "economics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "BSc Economics, University of Copenhagen"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL queries in BigQuery for the weekly sales dashboards in Looker."
+          },
+          {
+            "source": "S1",
+            "quote": "SQL, Excel, Looker, Power BI, Python (basic), A/B test analysis"
+          }
+        ]
+      },
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": 2,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analyse A/B tests of newsletters and product pages for the marketing team, using a t-test template in Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Python (basic)"
+          }
+        ]
+      },
+      {
+        "name": "excel",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Made a simple sales forecast in Excel for the Christmas season."
+          },
+          {
+            "source": "S1",
+            "quote": "Built Excel and Power BI reports on store sales."
+          },
+          {
+            "source": "S1",
+            "quote": "SQL, Excel, Looker, Power BI, Python (basic), A/B test analysis"
+          }
+        ]
+      },
+      {
+        "name": "looker",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL queries in BigQuery for the weekly sales dashboards in Looker."
+          },
+          {
+            "source": "S1",
+            "quote": "SQL, Excel, Looker, Power BI, Python (basic), A/B test analysis"
+          }
+        ]
+      },
+      {
+        "name": "power bi",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built Excel and Power BI reports on store sales."
+          },
+          {
+            "source": "S1",
+            "quote": "SQL, Excel, Looker, Power BI, Python (basic), A/B test analysis"
+          }
+        ]
+      },
+      {
+        "name": "bigquery",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL queries in BigQuery for the weekly sales dashboards in Looker."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analyse A/B tests of newsletters and product pages for the marketing team, using a t-test template in Python."
+          },
+          {
+            "source": "S1",
+            "quote": "SQL, Excel, Looker, Power BI, Python (basic), A/B test analysis"
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Made a simple sales forecast in Excel for the Christmas season."
+          }
+        ]
+      },
+      {
+        "name": "e-commerce",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data Analyst, Hylde Home ApS (online furniture shop)"
+          },
+          {
+            "source": "S1",
+            "quote": "Present the monthly e-commerce report to the management team."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Present the monthly e-commerce report to the management team."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Languages: Danish, English"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

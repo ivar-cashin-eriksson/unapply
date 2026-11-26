@@ -1,0 +1,161 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Designed A/B tests of tariff messages with pre-registered metrics and CUPED variance reduction, which is careful, advanced practice.",
+        "evidence": [
+          "E3",
+          "E9"
+        ]
+      },
+      {
+        "skill": "bayesian statistics",
+        "level": 4,
+        "confidence": 0.65,
+        "rationale": "Built a Bayesian model of wind power output in Stan and lists Bayesian modelling. Advanced use in one well-described model.",
+        "evidence": [
+          "E7",
+          "E9"
+        ]
+      },
+      {
+        "skill": "bigquery",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "One of the two databases the analytical SQL runs on. Working use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "cuped",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "CUPED variance reduction is used in the tariff experiments. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E10"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Electricity demand forecasting in production for 400,000 customers. Advanced domain-specific forecasting.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "gradient boosting",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "One of the model families behind the production forecasts. Working to advanced use.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "postgresql",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "One of the two databases the analytical SQL runs on. Working use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Python carries the production demand forecasts for 400,000 customers and earlier statistical analysis. Advanced professional use.",
+        "evidence": [
+          "E1",
+          "E6",
+          "E9"
+        ]
+      },
+      {
+        "skill": "r",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "R was used for statistical analysis of weather data in an earlier role. Working use.",
+        "evidence": [
+          "E6",
+          "E9"
+        ]
+      },
+      {
+        "skill": "sarima",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "SARIMA models are part of the production forecasts. Working use.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Writes most of the team's analytical SQL in PostgreSQL and BigQuery, with window functions over three years of meter readings. Advanced analytical SQL.",
+        "evidence": [
+          "E4",
+          "E9"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Explains forecast uncertainty to the trading desk and management in a monthly review: regular communication of a hard topic to non-specialists.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "stan",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Used for the Bayesian wind power model. Working use.",
+        "evidence": [
+          "E7"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 4,
+        "confidence": 0.85,
+        "rationale": "An MSc in Statistics, years of statistical analysis, a Bayesian model in Stan and experiments with CUPED. Advanced applied statistics.",
+        "evidence": [
+          "E6",
+          "E8",
+          "E9"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 5,
+        "confidence": 0.8,
+        "rationale": "Owns hourly production demand forecasts for 400,000 customers and cut day-ahead error from 7.9% to 5.1% MAPE. Deep, owned expertise with a measured result.",
+        "evidence": [
+          "E1",
+          "E2",
+          "E9"
+        ]
+      }
+    ]
+  }
+}

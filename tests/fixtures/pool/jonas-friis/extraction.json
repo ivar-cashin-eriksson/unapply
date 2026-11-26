@@ -1,0 +1,235 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "BI analyst with seven years in logistics reporting, building Power BI dashboards and SQL views, with a personal forecasting project and an online deep learning course",
+    "experiences": [
+      {
+        "title": "BI Analyst",
+        "organisation": "Bryggen Logistik A/S",
+        "start": "2021-06",
+        "end": null,
+        "summary": "Builds Power BI dashboards for the operations team and maintains the SQL views behind them.",
+        "skills": [
+          "power bi",
+          "sql"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Build Power BI dashboards for the operations team."
+          },
+          {
+            "source": "S1",
+            "quote": "Maintain SQL views for the dashboards."
+          }
+        ]
+      },
+      {
+        "title": "Reporting Assistant",
+        "organisation": "Bryggen Logistik A/S",
+        "start": "2019-09",
+        "end": "2021-05",
+        "summary": "Updated weekly Excel reports.",
+        "skills": [
+          "excel"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Updated weekly Excel reports."
+          }
+        ]
+      },
+      {
+        "title": "Personal project: sales forecasting",
+        "organisation": "Kaggle",
+        "start": "2023",
+        "end": "2023",
+        "summary": "Forecast Kaggle store sales with Prophet in a Jupyter notebook.",
+        "skills": [
+          "time series forecasting",
+          "prophet",
+          "python"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Forecast Kaggle store sales with Prophet in a Jupyter notebook."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python (expert)"
+          },
+          {
+            "source": "S1",
+            "quote": "Expert data scientist with deep expertise in Python, SQL, Spark, deep learning and forecasting."
+          },
+          {
+            "source": "S1",
+            "quote": "Forecast Kaggle store sales with Prophet in a Jupyter notebook."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "SQL (expert)"
+          },
+          {
+            "source": "S1",
+            "quote": "Expert data scientist with deep expertise in Python, SQL, Spark, deep learning and forecasting."
+          },
+          {
+            "source": "S1",
+            "quote": "Maintain SQL views for the dashboards."
+          }
+        ]
+      },
+      {
+        "name": "spark",
+        "category": "technology",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Spark (expert)"
+          },
+          {
+            "source": "S1",
+            "quote": "Expert data scientist with deep expertise in Python, SQL, Spark, deep learning and forecasting."
+          }
+        ]
+      },
+      {
+        "name": "deep learning",
+        "category": "method",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "deep learning (expert)"
+          },
+          {
+            "source": "S1",
+            "quote": "Expert data scientist with deep expertise in Python, SQL, Spark, deep learning and forecasting."
+          },
+          {
+            "source": "S1",
+            "quote": "Deep Learning Specialization (online course), 2022"
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "time series forecasting (expert)"
+          },
+          {
+            "source": "S1",
+            "quote": "Expert data scientist with deep expertise in Python, SQL, Spark, deep learning and forecasting."
+          },
+          {
+            "source": "S1",
+            "quote": "Forecast Kaggle store sales with Prophet in a Jupyter notebook."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "statistics (expert)"
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "A/B testing (expert)"
+          }
+        ]
+      },
+      {
+        "name": "prophet",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Forecast Kaggle store sales with Prophet in a Jupyter notebook."
+          }
+        ]
+      },
+      {
+        "name": "power bi",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Build Power BI dashboards for the operations team."
+          }
+        ]
+      },
+      {
+        "name": "excel",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Updated weekly Excel reports."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish, English"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid",
+        "onsite"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

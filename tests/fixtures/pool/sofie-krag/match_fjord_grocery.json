@@ -1,0 +1,91 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.85,
+        "rationale": "Python carries the production demand forecasts for 400,000 customers and earlier statistical work: strong Python.",
+        "evidence": [
+          "E1",
+          "E6",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.85,
+        "rationale": "Writes most of the team's analytical SQL in PostgreSQL and BigQuery, including window functions over three years of meter readings: strong SQL.",
+        "evidence": [
+          "E4",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 1.0,
+        "rationale": "Owns hourly electricity demand forecasts for 400,000 customers in production and cut day-ahead error from 7.9% to 5.1% MAPE: hands-on production forecasting with a measured result.",
+        "evidence": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.95,
+        "rationale": "An MSc in Statistics, statistical analysis since 2017, a Bayesian model in Stan and CUPED in experiments: a very solid understanding of statistics.",
+        "evidence": [
+          "E6",
+          "E8",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.85,
+        "rationale": "Designed A/B tests of tariff messages with pre-registered metrics and CUPED variance reduction: solid, careful A/B testing, though not on prices or promotions.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.85,
+        "rationale": "Explains forecast uncertainty to the trading desk and management in a monthly review: clear communication with non-technical audiences.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.15,
+        "rationale": "No Spark or other large-data tool is mentioned; three years of meter readings in BigQuery is sizeable data but not the experience asked for.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.0,
+        "rationale": "No deep learning; the forecasts use gradient boosting and SARIMA.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 0.0,
+        "rationale": "Energy and weather only; no retail or e-commerce experience.",
+        "evidence": []
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E10"
+        ]
+      }
+    ]
+  }
+}

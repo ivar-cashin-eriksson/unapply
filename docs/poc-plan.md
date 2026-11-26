@@ -129,6 +129,14 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - 2–3 people who hire each shortlist the top 10 by hand for each job.
 - Compare the system's ranking with theirs (top-k overlap, Kendall's tau), using agreement
   between the humans as the ceiling.
+- Done so far: `unapply evaluate` (`src/unapply/evaluation/`) computes both metrics
+  for each scorer against a reference ranking, a YAML file of candidates and ranks
+  (`--reference`), and runs on a synthetic pool of 12 candidates for Fjord Grocery
+  with an intended ranking (`tests/fixtures/pool/`). On it the baseline scores
+  top-3 1.00, top-5 0.80, tau 0.84; it ranks an overclaimer 4th instead of 8th,
+  because unsure estimates leave room for the candidate's own levels. The LLM
+  scorer's answers are hand-written stand-ins until recorded. Still to do: rankings
+  from the database (real matches) and agreement between human rankers.
 
 ## Out of scope for the POC
 

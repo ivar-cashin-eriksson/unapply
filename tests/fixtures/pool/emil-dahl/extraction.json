@@ -1,0 +1,179 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Junior data scientist at a food producer, maintaining a production demand forecast, with an MSc thesis on deep learning for grocery demand",
+    "experiences": [
+      {
+        "title": "Junior Data Scientist",
+        "organisation": "Fjeldsted Foods A/S",
+        "start": "2024-08",
+        "end": null,
+        "summary": "Maintains the weekly production demand forecast for dairy products in Python, analyses promotion A/B tests with the senior data scientist, and writes SQL in Snowflake for forecasting features.",
+        "skills": [
+          "demand forecasting",
+          "python",
+          "a/b testing",
+          "sql",
+          "snowflake"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain the weekly demand forecast for our dairy products in Python, in production since early 2025."
+          },
+          {
+            "source": "S1",
+            "quote": "Analyse promotion A/B tests together with our senior data scientist."
+          },
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake for the forecasting features."
+          }
+        ]
+      },
+      {
+        "title": "Student Assistant, Data Team",
+        "organisation": "Fjeldsted Foods A/S",
+        "start": "2023-09",
+        "end": "2024-06",
+        "summary": "Cleaned sales data and made reports in Python.",
+        "skills": [
+          "python"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Cleaned sales data and made reports in Python."
+          }
+        ]
+      },
+      {
+        "title": "MSc Data Science",
+        "organisation": "Copenhagen Institute of Data",
+        "start": "2022",
+        "end": "2024",
+        "summary": "Thesis on probabilistic forecasting of grocery demand with deep learning (DeepAR).",
+        "skills": [
+          "deep learning",
+          "time series forecasting"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Thesis: probabilistic forecasting of grocery demand with deep learning (DeepAR)."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain the weekly demand forecast for our dairy products in Python, in production since early 2025."
+          },
+          {
+            "source": "S1",
+            "quote": "Cleaned sales data and made reports in Python."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake for the forecasting features."
+          }
+        ]
+      },
+      {
+        "name": "snowflake",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake for the forecasting features."
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain the weekly demand forecast for our dairy products in Python, in production since early 2025."
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain the weekly demand forecast for our dairy products in Python, in production since early 2025."
+          },
+          {
+            "source": "S1",
+            "quote": "Thesis: probabilistic forecasting of grocery demand with deep learning (DeepAR)."
+          }
+        ]
+      },
+      {
+        "name": "deep learning",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Thesis: probabilistic forecasting of grocery demand with deep learning (DeepAR)."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Analyse promotion A/B tests together with our senior data scientist."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

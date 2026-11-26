@@ -1,0 +1,291 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Senior data scientist with seven years in e-commerce and consulting, focused on sales prediction in production, split testing and large-scale data processing",
+    "experiences": [
+      {
+        "title": "Senior Data Scientist",
+        "organisation": "Lyngby Mode ApS",
+        "start": "2022-08",
+        "end": null,
+        "summary": "Builds nightly production time series prediction models for weekly sales of 9,000 styles at an online fashion retailer, runs split tests of checkout and pricing changes, moved feature jobs to Apache Spark, and wrote the SQL of the merchandising data mart. Presents results to buyers monthly.",
+        "skills": [
+          "time series prediction",
+          "split testing",
+          "sequential testing",
+          "apache spark",
+          "pandas",
+          "sql",
+          "communicating with stakeholders",
+          "e-commerce"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Senior Data Scientist, Lyngby Mode ApS (online fashion retailer)"
+          },
+          {
+            "source": "S1",
+            "quote": "Built time series prediction models for weekly sales of 9,000 styles that run in production every night."
+          },
+          {
+            "source": "S1",
+            "quote": "Ran split testing for checkout and pricing changes on 1.2 million monthly visitors, including sequential testing so tests can stop early."
+          },
+          {
+            "source": "S1",
+            "quote": "Moved our feature jobs from pandas to Apache Spark, cutting the nightly run from five hours to forty minutes."
+          },
+          {
+            "source": "S1",
+            "quote": "Wrote the SQL behind the merchandising data mart, about 40 tables."
+          },
+          {
+            "source": "S1",
+            "quote": "Communicating with stakeholders is a big part of the job: I present results to the buyers every month."
+          }
+        ]
+      },
+      {
+        "title": "Data Scientist",
+        "organisation": "Kvant Analytics ApS",
+        "start": "2020-01",
+        "end": "2022-07",
+        "summary": "Consultant on retail and energy projects in Python 3 and SQL, trained deep neural networks for electricity load prediction with Keras, and used applied statistics for client reports.",
+        "skills": [
+          "python 3",
+          "sql",
+          "deep neural networks",
+          "keras",
+          "applied statistics",
+          "survival analysis"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python 3 and SQL for client projects in retail and energy."
+          },
+          {
+            "source": "S1",
+            "quote": "Trained deep neural networks for electricity load prediction with Keras."
+          },
+          {
+            "source": "S1",
+            "quote": "Applied statistics for client reports: regression, survival models and bootstrapping."
+          }
+        ]
+      },
+      {
+        "title": "Graduate Analyst",
+        "organisation": "Kvant Analytics ApS",
+        "start": "2019-06",
+        "end": "2019-12",
+        "summary": "Cleaned data and built reports in Python 3.",
+        "skills": [
+          "python 3"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Cleaned data and built reports in Python 3."
+          }
+        ]
+      },
+      {
+        "title": "MSc Mathematical Modelling",
+        "organisation": "Technical University of Denmark",
+        "start": "2017",
+        "end": "2019",
+        "summary": "Master's degree in mathematical modelling.",
+        "skills": [],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "MSc Mathematical Modelling, Technical University of Denmark"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python 3",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python 3 and SQL for client projects in retail and energy."
+          },
+          {
+            "source": "S1",
+            "quote": "Cleaned data and built reports in Python 3."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Wrote the SQL behind the merchandising data mart, about 40 tables."
+          },
+          {
+            "source": "S1",
+            "quote": "Python 3 and SQL for client projects in retail and energy."
+          }
+        ]
+      },
+      {
+        "name": "time series prediction",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built time series prediction models for weekly sales of 9,000 styles that run in production every night."
+          },
+          {
+            "source": "S1",
+            "quote": "Trained deep neural networks for electricity load prediction with Keras."
+          }
+        ]
+      },
+      {
+        "name": "split testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Ran split testing for checkout and pricing changes on 1.2 million monthly visitors, including sequential testing so tests can stop early."
+          }
+        ]
+      },
+      {
+        "name": "sequential testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Ran split testing for checkout and pricing changes on 1.2 million monthly visitors, including sequential testing so tests can stop early."
+          }
+        ]
+      },
+      {
+        "name": "applied statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Applied statistics for client reports: regression, survival models and bootstrapping."
+          }
+        ]
+      },
+      {
+        "name": "survival analysis",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Applied statistics for client reports: regression, survival models and bootstrapping."
+          }
+        ]
+      },
+      {
+        "name": "apache spark",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Moved our feature jobs from pandas to Apache Spark, cutting the nightly run from five hours to forty minutes."
+          }
+        ]
+      },
+      {
+        "name": "pandas",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Moved our feature jobs from pandas to Apache Spark, cutting the nightly run from five hours to forty minutes."
+          }
+        ]
+      },
+      {
+        "name": "deep neural networks",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Trained deep neural networks for electricity load prediction with Keras."
+          }
+        ]
+      },
+      {
+        "name": "keras",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Trained deep neural networks for electricity load prediction with Keras."
+          }
+        ]
+      },
+      {
+        "name": "e-commerce",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Senior Data Scientist, Lyngby Mode ApS (online fashion retailer)"
+          }
+        ]
+      },
+      {
+        "name": "communicating with stakeholders",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Communicating with stakeholders is a big part of the job: I present results to the buyers every month."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (mother tongue)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid",
+        "onsite"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}
