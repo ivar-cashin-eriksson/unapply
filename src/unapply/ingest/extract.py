@@ -28,6 +28,7 @@ from unapply.schemas import (
     SkillLevel,
     WorkMode,
 )
+from unapply.taxonomy import canonical_skill
 
 # The Extracted* models are the schema the model answers in. Their field
 # descriptions are sent to the model, so they are written as instructions.
@@ -267,22 +268,6 @@ def build_profile(
         ),
     )
     return result
-
-
-def canonical_skill(name: str) -> str:
-    """Normalise a skill name: lowercase, with single spaces.
-
-    Parameters
-    ----------
-    name : str
-        Skill name as written, such as " Scikit-Learn ".
-
-    Returns
-    -------
-    str
-        Canonical name, such as "scikit-learn".
-    """
-    return " ".join(name.lower().split())
 
 
 def normalise_quote(text: str) -> str:

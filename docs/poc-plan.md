@@ -21,8 +21,9 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   (`unapply review export` / `apply`): own levels, removals, corrections, added skills.
 - Result on the author's own material (CV, resume-builder profile, LinkedIn, GitHub):
   48 of the 50 skills in their hand-written list extracted, no invented quotes.
-- Known gaps: dates are year precision when the source gives only years; skill names
-  need synonym matching ("radiotherapy planning" vs "radiation therapy planning").
+- Known gaps: dates are year precision when the source gives only years. Synonyms
+  ("radiotherapy planning" vs "radiation therapy planning") are now merged through
+  the skill taxonomy (below).
 
 ### M2a: Skill estimation and claim support (done)
 - `unapply estimate`: one model call estimates every skill's level, confidence and a
@@ -39,7 +40,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - John Doe's answer key is met: all three overclaims, four unverified skills and both
   self-stated skills flagged, consistent skills left alone.
 - Known limits: evidence for one skill that implies another (dbt implies SQL) isn't
-  shared; cross-source consistency (dates in CV vs LinkedIn) isn't checked yet.
+  shared in estimation (the skill taxonomy records the relation, for matching); cross-source consistency (dates in CV vs LinkedIn) isn't checked yet.
 - Open question: whether and how findings combine into one score. A mean penalty
   over rated skills (`penalty_score`, kept but not used) lets a few large overclaims
   among many honest ratings still score high (John: 0.93). Counts for now.
@@ -126,3 +127,14 @@ a URL change), FastAPI, the MCP Python SDK, the Claude API, and Streamlit for th
   and Fjord Grocery's job load back equal). Rubric versions that a match refers to
   can't change. `unapply db init` and `unapply db import <workspace>`.
 - The app still works on workspace folders; the API will use the database.
+
+### Skill taxonomy (done)
+- `config/skills.yaml`: 86 canonical skills (data science, data engineering, a few
+  domains and spoken languages) with synonyms, and two relations: implies ("dbt" →
+  "sql", "pytorch" → "deep learning") and broader ("lightgbm" → "gradient boosting").
+  Checked on load: a name belongs to one skill, relations name canonical skills, no
+  cycles.
+- Names are canonicalised at extraction, review and rubric time, so synonyms merge;
+  a review merges skills that an older profile kept apart and estimates them again.
+- `Taxonomy.implied` and `Taxonomy.supporting` follow the relations, for matching.
+  `unapply db init` copies the taxonomy into its tables.

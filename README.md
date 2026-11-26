@@ -97,10 +97,24 @@ uv run unapply db init                                 # create or migrate the t
 uv run unapply db import data/me data/jobs/acme        # copy workspace folders in
 ```
 
+`db init` also loads the skill taxonomy (below) into the database.
+
 Importing a workspace brings its settings, history, current profile or job (every
 rubric version in its history), and waiting interview questions. Uploaded material
 stays in the folder. A rubric version that a match refers to can't be changed: edit
 the rubric and it gets a new version.
+
+## The skill taxonomy
+
+`config/skills.yaml` gives every skill one canonical name, with its synonyms
+("radiation therapy planning" and "radiotherapy planning", "sklearn" and
+"scikit-learn") and how it relates to others: **implies** ("dbt" implies "sql") and
+**broader** ("lightgbm" is a kind of "gradient boosting"). Skill names are mapped to
+their canonical name when a profile is extracted, when the candidate reviews it and
+when a rubric is extracted or edited, so synonyms merge into one skill. Names it
+doesn't know are kept as written, lowercased. Relations are for matching: evidence
+for a specific skill also counts for the general one. To use another file, set
+`UNAPPLY_SKILLS` to its path.
 
 ## Common commands
 
@@ -117,7 +131,7 @@ the rubric and it gets a new version.
 | `uv run unapply job extract ad.md --out data/jobs/acme.json` | Extract a rubric from a job ad (calls the Claude API: add `--allow-api`) |
 | `uv run unapply job export data/jobs/acme.json --sheet data/jobs/acme.yaml` | Write a rubric sheet to edit and approve |
 | `uv run unapply job apply data/jobs/acme.json data/jobs/acme.yaml --out data/jobs/acme.json` | Apply the edited rubric sheet |
-| `uv run unapply db init` | Create the database's tables, or migrate them to the newest version |
+| `uv run unapply db init` | Create the database's tables, or migrate them to the newest version, and load the skill taxonomy |
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
@@ -139,8 +153,9 @@ the rubric and it gets a new version.
 | `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
+| `src/unapply/taxonomy.py` | The skill taxonomy: canonical names, synonyms, implied and broader skills |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
-| `config/` | JSON configuration, such as skill taxonomies and thresholds |
+| `config/` | Configuration, such as the skill taxonomy (`skills.yaml`) |
 | `docs/` | Plans and design notes |
 | `tests/` | Tests for the package |
 | `tests/fixtures/` | Synthetic test data, including John Doe, a made-up candidate run end to end (see its README) |

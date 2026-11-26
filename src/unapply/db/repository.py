@@ -3,7 +3,8 @@
 `Repository` stores what a `Workspace` folder stores, in the same terms: candidates
 and jobs by name, their current `Profile` or `Job`, a history of every step, and
 interview questions waiting for answers. It adds what folders can't do well: rubric
-versions that can't change once a match uses them, and matches.
+versions that can't change once a match uses them, matches, and a copy of the skill
+taxonomy.
 
 Every method runs in its own transaction, so a failed call changes nothing.
 """
@@ -34,9 +35,13 @@ from unapply.db.models import (
     JobRow,
     MatchRow,
     RubricVersionRow,
+    SkillRelationRow,
+    SkillSynonymRow,
     SourceRow,
+    TaxonomySkillRow,
 )
 from unapply.schemas import Job, Match, Profile, Rubric
+from unapply.taxonomy import Taxonomy, TaxonomySkill
 from unapply.workspace import NAME
 
 
@@ -683,6 +688,67 @@ class Repository:
             if rubric_version is not None:
                 query = query.where(RubricVersionRow.version == rubric_version)
             return [_load_match(s, m, version) for m, version in s.execute(query)]
+
+    # Skill taxonomy
+
+    def save_taxonomy(self, taxonomy: Taxonomy) -> None:
+        """Replace the skill taxonomy in the database.
+
+        Parameters
+        ----------
+        taxonomy : Taxonomy
+            The new taxonomy, usually `unapply.taxonomy.default_taxonomy()`.
+        """
+        with self.transaction() as s:
+            # Children first, so this doesn't rely on ON DELETE CASCADE.
+            for table in (SkillRelationRow, SkillSynonymRow, TaxonomySkillRow):
+                s.execute(delete(table))
+            s.add_all(
+                TaxonomySkillRow(
+                    name=skill.name,
+                    category=skill.category.value if skill.category else None,
+                )
+                for skill in taxonomy.skills
+            )
+            s.flush()
+            for skill in taxonomy.skills:
+                s.add_all(
+                    SkillSynonymRow(synonym=synonym, skill=skill.name)
+                    for synonym in skill.synonyms
+                )
+                for kind in ("implies", "broader"):
+                    s.add_all(
+                        SkillRelationRow(skill=skill.name, kind=kind, related=related)
+                        for related in getattr(skill, kind)
+                    )
+
+    def taxonomy(self) -> Taxonomy:
+        """Read the skill taxonomy.
+
+        Returns
+        -------
+        Taxonomy
+            The taxonomy last saved, or an empty one if none was.
+        """
+        with self.transaction() as s:
+            synonyms: dict[str, list[str]] = {}
+            for row in s.scalars(select(SkillSynonymRow)):
+                synonyms.setdefault(row.skill, []).append(row.synonym)
+            relations: dict[tuple[str, str], list[str]] = {}
+            for row in s.scalars(select(SkillRelationRow)):
+                relations.setdefault((row.skill, row.kind), []).append(row.related)
+            return Taxonomy(
+                skills=[
+                    TaxonomySkill(
+                        name=row.name,
+                        category=row.category,
+                        synonyms=synonyms.get(row.name, []),
+                        implies=relations.get((row.name, "implies"), []),
+                        broader=relations.get((row.name, "broader"), []),
+                    )
+                    for row in s.scalars(select(TaxonomySkillRow))
+                ]
+            )
 
 
 def _check_name(name: str) -> None:
