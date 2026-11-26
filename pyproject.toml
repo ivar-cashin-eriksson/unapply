@@ -1,0 +1,31 @@
+[project]
+name = "unapply"
+version = "0.1.0"
+description = "Evidence-backed candidate profiles over MCP: companies rank opted-in applicants and pay to reveal the top matches. No CVs until asked."
+readme = "README.md"
+authors = [{ name = "ivar-cashin-eriksson" }]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.8",
+]
+
+[project.optional-dependencies]
+# Added as each POC milestone needs them (see docs/poc-plan.md).
+api = ["fastapi>=0.115", "uvicorn>=0.30"]
+llm = ["anthropic>=0.40"]
+mcp = ["mcp>=1.2"]
+db = ["sqlalchemy>=2.0", "psycopg[binary]>=3.2", "pgvector>=0.3"]
+ingest = ["pypdf>=5.0"]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+unapply = "unapply:main"
+
+[build-system]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
