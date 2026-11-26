@@ -122,6 +122,8 @@ descriptions are useful, so reviewers check those.
 - Tests must work offline. Fake the model in unit tests. Tests that call a real model
   are opt-in.
 - Use only synthetic data.
+- CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and
+  `pytest` on every push and pull request.
 
 ## Git workflow
 
