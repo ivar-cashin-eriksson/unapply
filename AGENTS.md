@@ -26,6 +26,13 @@ This file only adds what applies to agents.
 Before you say a change is done, run checks 1 and 2 of the pull request checklist in
 CONTRIBUTING.md and make sure they pass.
 
+## Autonomous runs
+
+When working through `docs/autonomous-plan.md`, the user has given permission to
+commit, push, change branches and merge into `dev` (or `user/claude`), exactly as its
+ground rules describe. That permission covers nothing else: never `main`, never
+force-push, and still no paid API calls.
+
 ## Never, without explicit permission from the user
 
 - Commit, push, or change branches.
