@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from unapply.schemas import (
     CriterionKind,
+    CriterionScore,
     Evidence,
     Experience,
     Job,
@@ -560,3 +561,83 @@ class Assessment(BaseModel):
     profile: Profile
     summary: str | None
     not_estimated: list[str]
+
+
+class HardFilterCheck(BaseModel):
+    """One hard filter's outcome for a candidate.
+
+    Parameters
+    ----------
+    name : str
+        "location", "work_mode", "work_permit" or "min_years_experience".
+    outcome : str
+        "pass", "fail" or "unknown" (the profile doesn't say; not excluded).
+    reason : str
+        Why, in plain language.
+    """
+
+    name: str
+    outcome: str
+    reason: str
+
+
+class RankedCandidate(BaseModel):
+    """One anonymised candidate in a job's ranking.
+
+    Parameters
+    ----------
+    rank : int
+        1 for the best; equal totals share a rank.
+    total : float
+        Weighted mean of the criterion scores, from 0 to 1; 0 if a hard filter
+        failed.
+    profile_id : UUID
+        The candidate's profile. Candidates are anonymised: no name.
+    match_id : UUID
+        The stored match.
+    passed_hard_filters : bool
+        Whether no hard filter failed.
+    hard_filters : list of HardFilterCheck or None
+        Each filter's outcome, or None if the profile has changed since the match.
+    criterion_scores : list of CriterionScore
+        Per-criterion scores with reasons and cited evidence.
+    model : str
+        The scorer, such as "baseline-v1", or the model that scored.
+    scored_at : datetime
+        When the match was scored.
+    problems : list of str
+        What the scorer couldn't score or had to correct; only right after
+        matching.
+    """
+
+    rank: int
+    total: float
+    profile_id: UUID
+    match_id: UUID
+    passed_hard_filters: bool
+    hard_filters: list[HardFilterCheck] | None
+    criterion_scores: list[CriterionScore]
+    model: str
+    scored_at: datetime
+    problems: list[str] = Field(default_factory=list)
+
+
+class Ranking(BaseModel):
+    """A job's candidates, ranked against one rubric version.
+
+    Parameters
+    ----------
+    job : str
+        The job's name.
+    rubric_version : int
+        The rubric version scored against.
+    scorer : str
+        "baseline" or "llm".
+    candidates : list of RankedCandidate
+        Best first; candidates who failed a hard filter last.
+    """
+
+    job: str
+    rubric_version: int
+    scorer: str
+    candidates: list[RankedCandidate]

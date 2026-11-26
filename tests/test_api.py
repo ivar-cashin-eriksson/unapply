@@ -58,6 +58,7 @@ class FakeFactory:
             "estimate": JOHN / "estimation.json",
             "questions": JOHN / "questions.json",
             "rubric": FJORD / "extraction.json",
+            "match": FJORD / "match_john_doe.json",
         }[purpose]
         return ReplayLLM(path)
 
@@ -636,3 +637,138 @@ def test_a_matched_rubric_is_not_replaced(client, repo):
     response = client.post(f"/jobs/{name}/extract")
     assert response.status_code == 409
     assert ok(client.get(f"/jobs/{name}/rubric"))["version"] == 1
+
+
+# Matching
+
+
+def interviewed_demo(client) -> str:
+    """John's demo candidate through the interview and re-estimation."""
+    name = approved_demo(client)
+    ok(client.post(f"/candidates/{name}/questions"))
+    answers = ok(client.get(f"/candidates/{name}/demo/answers"))
+    ok(client.post(f"/candidates/{name}/answers", json=answers))
+    return name
+
+
+def approve_rubric(client, name: str, allow: bool = False) -> dict:
+    """Extract a job's rubric and approve it unchanged."""
+    query = "?allow_api=true" if allow else ""
+    job = ok(client.post(f"/jobs/{name}/extract{query}"))["job"]
+    form = {
+        "company": job["company"],
+        "title": job["title"],
+        "hard_filters": job["rubric"]["hard_filters"],
+        "criteria": [
+            {
+                "id": c["id"],
+                "kind": c["kind"],
+                "description": c["description"],
+                "skill": c["skill"],
+                "min_level": c["min_level"],
+                "weight": int(c["weight"]),
+            }
+            for c in job["rubric"]["criteria"]
+        ],
+        "approve": True,
+    }
+    return ok(client.put(f"/jobs/{name}/rubric", json=form))
+
+
+def test_match_the_demos_with_both_scorers_for_free(client, fake):
+    candidate = interviewed_demo(client)
+    job = ok(client.post("/demos/job"), 201)["name"]
+    rubric = approve_rubric(client, job)
+
+    baseline = ok(client.post(f"/jobs/{job}/match"))
+    assert (baseline["job"], baseline["rubric_version"]) == (job, 1)
+    assert baseline["scorer"] == "baseline"
+    (ranked,) = baseline["candidates"]
+    assert (ranked["rank"], ranked["model"]) == (1, "baseline-v1")
+    assert ranked["total"] == pytest.approx(0.81, abs=0.005)
+    assert ranked["passed_hard_filters"] is True
+    assert [f["outcome"] for f in ranked["hard_filters"]] == ["pass"] * 4
+    assert len(ranked["criterion_scores"]) == 9
+    assert ranked["problems"] == [
+        "Experience in retail or e-commerce: names no skill, so the baseline "
+        "doesn't score it"
+    ]
+    # Anonymised: the profile's id, never the candidate's name.
+    assert candidate not in json.dumps(baseline)
+    profile = ok(client.get(f"/candidates/{candidate}/profile"))
+    assert ranked["profile_id"] == profile["id"]
+
+    llm = ok(client.post(f"/jobs/{job}/match?scorer=llm"))
+    (scored,) = llm["candidates"]
+    assert scored["model"].startswith("replay:hand-written placeholder")
+    assert scored["total"] == pytest.approx(0.71, abs=0.005)
+    assert len(scored["criterion_scores"]) == len(rubric["criteria"]) == 10
+    assert scored["problems"] == []
+    evidence = {e["id"] for e in profile["evidence"]}
+    assert all(
+        set(s["evidence_ids"]) <= evidence and s["evidence_ids"]
+        for s in scored["criterion_scores"]
+    )
+    assert fake.calls == []
+
+    # The rankings are read back from the stored matches, without scoring again.
+    stored = ok(client.get(f"/jobs/{job}/ranking"))
+    assert stored["candidates"][0]["match_id"] == ranked["match_id"]
+    assert stored["candidates"][0]["problems"] == []
+    stored_llm = ok(client.get(f"/jobs/{job}/ranking?scorer=llm&version=1"))
+    assert stored_llm["candidates"][0]["match_id"] == scored["match_id"]
+    assert client.get(f"/jobs/{job}/ranking?version=9").status_code == 404
+    # Matching again adds a match; the ranking shows the newest.
+    again = ok(client.post(f"/jobs/{job}/match"))["candidates"][0]
+    latest = ok(client.get(f"/jobs/{job}/ranking"))["candidates"]
+    assert [c["match_id"] for c in latest] == [again["match_id"]]
+    # The matched rubric is locked.
+    assert client.post(f"/jobs/{job}/extract").status_code == 409
+
+
+def test_matching_refuses_paid_llm_calls_unless_allowed(client, fake):
+    ok(client.post("/candidates", json={"name": "jane"}), 201)
+    ok(upload_john(client), 201)
+    ok(client.post("/candidates/jane/extract?allow_api=true"))
+    review = ok(client.get("/candidates/jane/review"))
+    ok(client.put("/candidates/jane/review", json=with_john_edits(review)))
+    job = ok(client.post("/demos/job"), 201)["name"]
+    approve_rubric(client, job)
+    fake.calls.clear()
+
+    # A demo job doesn't make a real candidate's scoring free.
+    response = client.post(f"/jobs/{job}/match?scorer=llm")
+    assert response.status_code == 403
+    assert "paid API calls" in response.json()["detail"]
+    assert ok(client.get(f"/jobs/{job}/ranking?scorer=llm"))["candidates"] == []
+    assert ok(client.get(f"/jobs/{job}/ranking"))["candidates"] == []
+    assert fake.calls == []
+
+    ranked = ok(client.post(f"/jobs/{job}/match?scorer=llm&allow_api=true"))
+    assert fake.calls == [("match", True)]
+    assert len(ranked["candidates"]) == 1
+
+    # Nor does a demo candidate make a real job's scoring free.
+    interviewed_demo(client)
+    ok(client.post("/jobs", json={"name": "acme"}), 201)
+    ad = (FJORD / "ad.md").read_text(encoding="utf-8")
+    ok(client.put("/jobs/acme/ad", json={"ad": ad, "company": None, "title": None}))
+    approve_rubric(client, "acme", allow=True)
+    fake.calls.clear()
+    assert client.post("/jobs/acme/match?scorer=llm").status_code == 403
+    assert fake.calls == []
+    # The baseline never needs permission.
+    assert len(ok(client.post("/jobs/acme/match"))["candidates"]) == 2
+
+
+def test_matching_needs_an_approved_rubric(client):
+    approved_demo(client)
+    job = ok(client.post("/demos/job"), 201)["name"]
+    assert client.post(f"/jobs/{job}/match").status_code == 409
+    assert client.get(f"/jobs/{job}/ranking").status_code == 409
+    ok(client.post(f"/jobs/{job}/extract"))
+    response = client.post(f"/jobs/{job}/match")
+    assert response.status_code == 409
+    assert "isn't approved" in response.json()["detail"]
+    assert client.post("/jobs/nothing/match").status_code == 404
+    assert client.get("/jobs/nothing/ranking").status_code == 404

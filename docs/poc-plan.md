@@ -85,11 +85,29 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   extraction: Claude found the filters (Copenhagen, hybrid, EU, 4+ years), 6
   must-haves and 4 nice-to-haves, dropped nothing and ignored the injected line.
 
-### M4: Matching over MCP
-- Deterministic hard filters first (location, work permit, seniority band).
-- Agent scoring over MCP tools scoped to what the candidate consented to: `get_experiences`,
-  `get_skills`, `search_evidence(query)`, `get_preferences`.
-- Output: per-criterion score with evidence ids, then an overall rank.
+### M4: Matching (done, except over MCP)
+- `src/unapply/matching/`, `unapply match <job> [--scorer baseline|llm]` and the API's
+  `/jobs/<name>/match` and `/ranking`. Only approved profiles, only approved rubrics,
+  and matching locks the rubric version.
+- Deterministic hard filters first: work mode, location, work permit (EU and member
+  states) and minimum years of work (month precision, overlapping roles counted
+  once, education left out by a title heuristic). Missing information is "unknown",
+  not a failure. Candidates who fail a filter aren't scored.
+- Two scorers, each giving a score from 0 to 1 per criterion with a reason and
+  evidence ids: a **baseline** in plain code (level against `min_level`, blending
+  own and estimated levels by confidence, times an evidence factor; related skills
+  through the taxonomy, discounted) and an **LLM scorer** (one call per candidate,
+  on the anonymised profile; cited ids checked to be the candidate's).
+- Then `Match.total` and a ranking (equal totals share a rank).
+- John Doe against Fjord Grocery: 0.81 (baseline) and 0.71 (LLM, from a hand-written
+  stand-in answer until it is recorded). Both put forecasting, Python and A/B
+  testing high and SQL, Spark and deep learning low.
+- Known limits: the baseline can't score criteria without a skill (Fjord's "retail or
+  e-commerce"); places are matched by name, without geography ("Denmark" doesn't
+  match "Copenhagen"); hard filter outcomes aren't stored with the match.
+- Still to do: agent scoring over MCP tools scoped to what the candidate consented
+  to (`get_experiences`, `get_skills`, `search_evidence(query)`, `get_preferences`),
+  with the MCP server.
 
 ### M5: Recruiter view
 - Anonymised ranked list with explanations.
@@ -148,4 +166,4 @@ a URL change), FastAPI, the MCP Python SDK, the Claude API, and Streamlit for th
   on `/internal/...` routes, added with `unapply api --internal`.
 - Paid model calls are refused (403) unless the request adds `?allow_api=true` or the
   switch is on; a refused request changes nothing. Demos replay recordings.
-- Matching routes come with matching (M4).
+- Matching routes (M4): `POST /jobs/<name>/match`, `GET /jobs/<name>/ranking`.
