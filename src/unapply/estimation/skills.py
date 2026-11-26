@@ -57,13 +57,17 @@ class EstimationResult:
     problems: list[str] = field(default_factory=list)
 
 
-def render_estimation_prompt(profile: Profile) -> tuple[str, dict[str, UUID]]:
+def render_estimation_prompt(
+    profile: Profile, names: set[str] | None = None
+) -> tuple[str, dict[str, UUID]]:
     """Render the roles and each skill's evidence for the model.
 
     Parameters
     ----------
     profile : Profile
         The profile to estimate.
+    names : set of str or None, optional
+        Only these skills; by default all.
 
     Returns
     -------
@@ -78,6 +82,43 @@ def render_estimation_prompt(profile: Profile) -> tuple[str, dict[str, UUID]]:
     for e in profile.evidence:
         ids[e.id] = f"E{len(ids) + 1}"
 
+    lines = [render_roles(profile), "", "<skills>"]
+    for s in _targets(profile, names):
+        category = s.category.value if s.category else "unknown"
+        lines.append(f"<skill name={quoteattr(s.name)} category={quoteattr(category)}>")
+        for i in s.evidence_ids:
+            source = kinds[evidence[i].source_id]
+            label = "candidate statement" if source == SourceKind.INTERVIEW else source
+            quote = " ".join(evidence[i].quote.split())
+            # Interview answers keep their question as the locator, for context.
+            asked = (
+                f" question={quoteattr(evidence[i].locator)}"
+                if source == SourceKind.INTERVIEW and evidence[i].locator
+                else ""
+            )
+            lines.append(
+                f'  <evidence id="{ids[i]}" source="{label}"{asked}>'
+                f"{escape(quote)}</evidence>"
+            )
+        lines.append("</skill>")
+    lines.append("</skills>")
+    return "\n".join(lines), {v: k for k, v in ids.items()}
+
+
+def render_roles(profile: Profile) -> str:
+    """Render the candidate's roles, with dates and skills, as a `<roles>` element.
+
+    Parameters
+    ----------
+    profile : Profile
+        The candidate's profile.
+
+    Returns
+    -------
+    str
+        One line per experience, such as "- Data Scientist, Acme, 2019-08 to
+        present. Skills used: python."
+    """
     lines = ["<roles>"]
     for x in profile.experiences:
         start = f"{x.start:%Y-%m}" if x.start else "?"
@@ -87,31 +128,25 @@ def render_estimation_prompt(profile: Profile) -> tuple[str, dict[str, UUID]]:
             f"- {escape(x.title)}, {escape(x.organisation)}, {start} to {end}."
             f"{escape(skills)}"
         )
-    lines += ["</roles>", "", "<skills>"]
-    for s in profile.skills:
-        category = s.category.value if s.category else "unknown"
-        lines.append(f"<skill name={quoteattr(s.name)} category={quoteattr(category)}>")
-        for i in s.evidence_ids:
-            source = kinds[evidence[i].source_id]
-            label = "candidate statement" if source == SourceKind.INTERVIEW else source
-            quote = " ".join(evidence[i].quote.split())
-            lines.append(
-                f'  <evidence id="{ids[i]}" source="{label}">{escape(quote)}</evidence>'
-            )
-        lines.append("</skill>")
-    lines.append("</skills>")
-    return "\n".join(lines), {v: k for k, v in ids.items()}
+    lines.append("</roles>")
+    return "\n".join(lines)
 
 
-def estimate_skills(profile: Profile, llm: StructuredLLM) -> EstimationResult:
-    """Estimate every skill's level from its evidence.
+def estimate_skills(
+    profile: Profile, llm: StructuredLLM, names: set[str] | None = None
+) -> EstimationResult:
+    """Estimate skill levels from their evidence.
 
     Parameters
     ----------
     profile : Profile
-        The profile to estimate. Existing estimates are replaced.
+        The profile to estimate. Estimates of the chosen skills are replaced.
     llm : StructuredLLM
         The model to estimate with.
+    names : set of str or None, optional
+        Only estimate these skills and leave the others as they are; by default all.
+        Re-estimating only what changed keeps other estimates from drifting between
+        runs, and costs less.
 
     Returns
     -------
@@ -119,18 +154,38 @@ def estimate_skills(profile: Profile, llm: StructuredLLM) -> EstimationResult:
         The profile with estimates and any problems with the model's answer. Skills
         the model didn't estimate validly keep no estimate.
     """
-    prompt, by_label = render_estimation_prompt(profile)
+    prompt, by_label = render_estimation_prompt(profile, names)
     system = resources.files(__package__).joinpath("prompts/estimate_skills.md")
     answer = llm.parse(
         system=system.read_text(encoding="utf-8"),
         prompt=prompt,
         output_type=SkillEstimates,
     )
-    return apply_estimates(profile, answer, by_label, llm.model)
+    return apply_estimates(profile, answer, by_label, llm.model, names)
+
+
+def skills_without_estimate(profile: Profile) -> set[str]:
+    """Names of skills that have no estimate, such as new or newly answered ones.
+
+    Parameters
+    ----------
+    profile : Profile
+        The profile.
+
+    Returns
+    -------
+    set of str
+        Skill names.
+    """
+    return {s.name for s in profile.skills if s.estimate is None}
 
 
 def apply_estimates(
-    profile: Profile, answer: SkillEstimates, by_label: dict[str, UUID], model: str
+    profile: Profile,
+    answer: SkillEstimates,
+    by_label: dict[str, UUID],
+    model: str,
+    names: set[str] | None = None,
 ) -> EstimationResult:
     """Check the model's answer and record it on the profile's skills.
 
@@ -144,6 +199,8 @@ def apply_estimates(
         Evidence ids from the prompt, as returned by `render_estimation_prompt`.
     model : str
         Model that produced the answer, recorded on each estimate.
+    names : set of str or None, optional
+        The skills that were estimated; by default all. Others are left as they are.
 
     Returns
     -------
@@ -159,11 +216,14 @@ def apply_estimates(
             problems.append(f"{est.skill}: estimated twice; kept the first")
         else:
             by_name[est.skill] = est
-    known = {s.name for s in profile.skills}
-    problems += [f"{n}: not in the profile; ignored" for n in by_name if n not in known]
+    targets = {s.name for s in _targets(profile, names)}
+    problems += [f"{n}: not asked for; ignored" for n in by_name if n not in targets]
 
     skills = []
     for s in profile.skills:
+        if s.name not in targets:
+            skills.append(s)
+            continue
         est = by_name.get(s.name)
         if est is None:
             problems.append(f"{s.name}: not estimated")
@@ -198,3 +258,7 @@ def apply_estimates(
     return EstimationResult(
         profile=profile.model_copy(update={"skills": skills}), problems=problems
     )
+
+
+def _targets(profile: Profile, names: set[str] | None) -> list:
+    return [s for s in profile.skills if names is None or s.name in names]

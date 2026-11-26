@@ -1,0 +1,47 @@
+{
+  "model": "claude-opus-5-5",
+  "answer": {
+    "skills": [
+      {
+        "skill": "deep learning",
+        "level": 1,
+        "confidence": 0.75,
+        "rationale": "The only evidence is an online deep learning course with PyTorch, and the follow-up answer confirms it has not yet been applied in a project. Using it in a work or personal project would raise the level.",
+        "evidence": [
+          "E21",
+          "E32"
+        ]
+      },
+      {
+        "skill": "git",
+        "level": 1,
+        "confidence": 0.25,
+        "rationale": "Git appears in the CV tools list, and the follow-up answer ('I use Git every day') gives no detail on how it was used. A concrete example of branching, review or release workflows in a named role would allow a higher, more confident estimate.",
+        "evidence": [
+          "E18",
+          "E29"
+        ]
+      },
+      {
+        "skill": "kubernetes",
+        "level": 2,
+        "confidence": 0.5,
+        "rationale": "A specific statement describes writing Kubernetes deployment and service files for a Dockerised churn model at Kestrel Logistics in 2021, with the client's platform team handling the cluster and monitoring. This points to basic, supported use, and it rests only on the candidate's statements. Documented independent operation or cluster ownership would raise the level.",
+        "evidence": [
+          "E27",
+          "E31"
+        ]
+      },
+      {
+        "skill": "pandas",
+        "level": 4,
+        "confidence": 0.55,
+        "rationale": "Beyond the CV tools list, a detailed statement describes owning a nightly pandas feature pipeline of about 50 million rows at Nordlys Retail since 2022, and profiling and rewriting it to cut run time from three hours to forty minutes. Python use also goes back to 2019. Confidence is moderate because the detail comes mainly from the candidate's own statement; documented work or results would firm this up.",
+        "evidence": [
+          "E18",
+          "E30"
+        ]
+      }
+    ]
+  }
+}

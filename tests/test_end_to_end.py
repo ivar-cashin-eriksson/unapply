@@ -1,10 +1,10 @@
-"""John Doe, a synthetic candidate, from material to estimated profile.
+"""John Doe, a synthetic candidate, from material to an interviewed profile.
 
-Runs the commands a candidate runs: ingest, review export, edit, review apply, then
-estimate. By default the model's answers are replayed from tests/fixtures/john_doe/,
-so the test is free and offline. With UNAPPLY_LIVE=1 it calls Claude instead (about
-$0.30). With UNAPPLY_E2E_OUT=<folder> the files are kept there instead of a
-temporary folder.
+Runs the commands a candidate runs: ingest, review export, edit, review apply,
+estimate, interview export, answer, interview apply and estimate again. By default
+the model's answers are replayed from tests/fixtures/john_doe/, so the test is free
+and offline. With UNAPPLY_LIVE=1 it calls Claude instead (about $0.35). With
+UNAPPLY_E2E_OUT=<folder> the files are kept there instead of a temporary folder.
 """
 
 import os
@@ -30,6 +30,9 @@ def out(tmp_path):
         "review.yaml",
         "profile.reviewed.json",
         "profile.estimated.json",
+        "interview.yaml",
+        "profile.interviewed.json",
+        "profile.reestimated.json",
     ):
         (folder / name).unlink(missing_ok=True)
     return folder
@@ -155,3 +158,56 @@ def test_john_doe_from_material_to_estimated_profile(out, capsys):
     for s in profile.skills:
         assert s.estimate is not None
         assert set(s.estimate.evidence_ids) <= set(s.evidence_ids)
+
+    # 6. Follow-up questions about what his documents don't show.
+    questions = out / "interview.yaml"
+    model = (
+        ["--record", out / "questions.json"]
+        if LIVE
+        else ["--replay", FIXTURE / "questions.json"]
+    )
+    assert run("interview", "export", estimated, "--sheet", questions, *model) == 0
+    sheet = yaml.safe_load(questions.read_text(encoding="utf-8"))
+    asked = [q["skill"] for q in sheet["questions"]]
+    assert len(asked) == 8
+    # Unverified and self-stated skills come before overclaims.
+    assert set(asked[:4]) == set(key["unverified"])
+    assert set(asked[4:6]) == set(key["self_stated_only"])
+    assert set(asked[6:]) <= set(key["overclaims"])
+
+    # 7. He answers some of them, and only the answered skills are re-estimated.
+    interview = yaml.safe_load(
+        (FIXTURE / "interview_answers.yaml").read_text(encoding="utf-8")
+    )
+    for q in sheet["questions"]:
+        q["answer"] = interview["answers"].get(q["skill"], "")
+    questions.write_text(yaml.safe_dump(sheet, allow_unicode=True), encoding="utf-8")
+    answered = out / "profile.interviewed.json"
+    assert run("interview", "apply", estimated, questions, "--out", answered) == 0
+    assert "4 answers added" in capsys.readouterr().out
+
+    after = out / "profile.reestimated.json"
+    model = (
+        ["--record", out / "estimation_after_interview.json"]
+        if LIVE
+        else ["--replay", FIXTURE / "estimation_after_interview.json"]
+    )
+    assert run("estimate", answered, *model, "--out", after) == 0
+    printed = capsys.readouterr().out
+    assert "Estimating 4 skills without an estimate" in printed
+    assert "problems with the model's answer" not in printed
+    before, now = (
+        profile,
+        Profile.model_validate_json(after.read_text(encoding="utf-8")),
+    )
+    expect = interview["expect"]
+    for name in expect["raised"]:
+        assert now.skill(name).estimate.level > before.skill(name).estimate.level
+        assert name not in now.claim_support.unverified
+    for name in expect["unchanged"]:
+        assert now.skill(name).estimate.level == before.skill(name).estimate.level
+    for name in expect["confidence_capped"]:
+        assert now.skill(name).estimate.confidence <= 0.3
+    for s in now.skills:
+        if s.name not in interview["answers"]:
+            assert s.estimate == before.skill(s.name).estimate

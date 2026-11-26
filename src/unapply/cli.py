@@ -10,12 +10,23 @@ from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 
 from unapply.estimation.claims import claim_support, summary
-from unapply.estimation.skills import estimate_skills
+from unapply.estimation.skills import (
+    EstimationResult,
+    estimate_skills,
+    skills_without_estimate,
+)
 from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import cached_fetcher, fetch_github
+from unapply.interview.questions import MAX_QUESTIONS, select_topics, write_questions
+from unapply.interview.sheet import (
+    InterviewError,
+    apply_interview_sheet,
+    export_interview_sheet,
+)
 from unapply.llm import (
     DEFAULT_MODEL,
+    QUESTION_MODEL,
     AnthropicLLM,
     RecordingLLM,
     ReplayLLM,
@@ -70,7 +81,29 @@ def main(argv: list[str] | None = None) -> int:
     estimate.add_argument(
         "--out", type=Path, required=True, help="Profile JSON to write."
     )
+    estimate.add_argument(
+        "--all",
+        action="store_true",
+        help="Re-estimate every skill, not only those without an estimate.",
+    )
     _add_model_options(estimate)
+
+    interview = commands.add_parser(
+        "interview", help="Ask about skills the documents don't show enough of."
+    )
+    rounds = interview.add_subparsers(dest="step", required=True)
+    ask = rounds.add_parser("export", help="Write questions to answer.")
+    ask.add_argument("profile", type=Path, help="Estimated profile JSON.")
+    ask.add_argument("--sheet", type=Path, required=True, help="Sheet to write.")
+    ask.add_argument("--max-questions", type=int, default=MAX_QUESTIONS)
+    # Writing questions is a light task, so a cheaper model by default.
+    _add_model_options(ask, model=QUESTION_MODEL, effort="medium")
+    answer = rounds.add_parser("apply", help="Add the answers to the profile.")
+    answer.add_argument("profile", type=Path, help="Profile JSON it was exported from.")
+    answer.add_argument("sheet", type=Path, help="The answered sheet.")
+    answer.add_argument(
+        "--out", type=Path, required=True, help="Profile JSON to write."
+    )
 
     review = commands.add_parser("review", help="Review and approve a profile.")
     steps = review.add_subparsers(dest="step", required=True)
@@ -90,12 +123,64 @@ def main(argv: list[str] | None = None) -> int:
         return _review(args)
     if args.command == "estimate":
         return _estimate(args)
+    if args.command == "interview":
+        return _interview(args)
     return 1
 
 
-def _add_model_options(command: argparse.ArgumentParser) -> None:
-    command.add_argument("--model", default=DEFAULT_MODEL)
-    command.add_argument("--effort", default="high")
+def _interview(args: argparse.Namespace) -> int:
+    profile = Profile.model_validate_json(args.profile.read_text(encoding="utf-8"))
+    if args.step == "export":
+        if args.sheet.exists():
+            print(
+                f"{args.sheet} exists; not overwriting your answers.", file=sys.stderr
+            )
+            return 2
+        try:
+            topics = select_topics(profile, args.max_questions)
+        except ValueError as e:
+            print(f"Can't write questions: {e}", file=sys.stderr)
+            return 2
+        if not topics:
+            print(
+                "Nothing to ask: every rated skill is supported or already asked about."
+            )
+            return 0
+        questions = write_questions(profile, topics, _llm(args))
+        args.sheet.parent.mkdir(parents=True, exist_ok=True)
+        args.sheet.write_text(
+            export_interview_sheet(profile, questions), encoding="utf-8"
+        )
+        for q in questions:
+            print(f"[{q.reason}] {q.skill}: {q.text}")
+        print()
+        print(
+            f"Wrote {len(questions)} questions to {args.sheet}. Answer them, then run"
+        )
+        print("`unapply interview apply`, then `unapply estimate` again.")
+        return 0
+    try:
+        updated, n = apply_interview_sheet(
+            profile, args.sheet.read_text(encoding="utf-8")
+        )
+    except InterviewError as e:
+        print(f"Can't apply {args.sheet}: {e}", file=sys.stderr)
+        return 2
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(updated.model_dump_json(indent=2), encoding="utf-8")
+    print(f"{n} answers added -> {args.out}")
+    if n:
+        print("Run `unapply estimate` on it to update the estimates.")
+    return 0
+
+
+def _add_model_options(
+    command: argparse.ArgumentParser,
+    model: str = DEFAULT_MODEL,
+    effort: str = "high",
+) -> None:
+    command.add_argument("--model", default=model)
+    command.add_argument("--effort", default=effort)
     recording = command.add_mutually_exclusive_group()
     recording.add_argument(
         "--record", type=Path, help="Save the model's answer to this file."
@@ -118,7 +203,19 @@ def _estimate(args: argparse.Namespace) -> int:
     profile = Profile.model_validate_json(args.profile.read_text(encoding="utf-8"))
     if profile.approved_by_candidate_at is None:
         print("Note: this profile isn't approved by the candidate yet.")
-    result = estimate_skills(profile, _llm(args))
+    names = None if args.all else skills_without_estimate(profile)
+    if names is not None and not names:
+        print("Every skill already has an estimate; use --all to redo them.")
+    else:
+        if names is not None and len(names) < len(profile.skills):
+            print(
+                f"Estimating {len(names)} skills without an estimate: {sorted(names)}"
+            )
+    result = (
+        estimate_skills(profile, _llm(args), names)
+        if names is None or names
+        else EstimationResult(profile=profile)
+    )
     support = claim_support(result.profile)
     estimated = result.profile.model_copy(update={"claim_support": support})
     args.out.parent.mkdir(parents=True, exist_ok=True)

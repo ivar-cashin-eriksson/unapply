@@ -44,9 +44,18 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   over rated skills (`penalty_score`, kept but not used) lets a few large overclaims
   among many honest ratings still score high (John: 0.93). Counts for now.
 
-### M2b: Gap-filling interview
-- Ask about unverified and unsupported skills ("What did you actually build with
-  Kafka?"), keep the answers as the candidate's own statements, and re-estimate.
+### M2b: Gap-filling interview (done)
+- Rules choose up to 8 skills: unverified first, then those backed only by the
+  candidate's statement, then overclaims (as a chance to show more), highest
+  self-rated first, never the same skill twice.
+- Sonnet 5.5 words each question from the skill's evidence and the roles, asking for
+  one concrete example; a template stands in for any it skips.
+- `unapply interview export` / `apply`: answers become the candidate's statements,
+  with their question, and clear the answered skills' estimates; `unapply estimate`
+  then re-estimates only those, so other estimates don't drift between runs.
+- John Doe: a detailed pandas answer raised it from 1 to 4 (confidence 0.55); a vague
+  Git answer changed nothing; an honest "only the course" made the deep learning
+  estimate surer; a concrete Kubernetes statement stayed capped at confidence 0.3.
 
 ### M3: Job rubric
 - Paste a job ad, have the LLM extract a `Rubric`, and let the recruiter edit it.

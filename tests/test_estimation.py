@@ -8,6 +8,7 @@ from unapply.estimation.skills import (
     SkillEstimates,
     estimate_skills,
     render_estimation_prompt,
+    skills_without_estimate,
 )
 from unapply.schemas import (
     Evidence,
@@ -103,7 +104,7 @@ def test_estimates_are_checked_and_recorded(profile):
     assert sorted(result.problems) == sorted(
         [
             "spark: estimated twice; kept the first",
-            "rust: not in the profile; ignored",
+            "rust: not asked for; ignored",
             "sql: not estimated",
             f"spark: cited ['{label[ev['Maintain']]}'], which aren't its evidence",
         ]
@@ -186,3 +187,25 @@ def test_low_rated_statement_costs_nothing():
     p = _profile((2, None, 0.0, SourceKind.INTERVIEW))
     support = claim_support(p)
     assert penalty_score(p, support) == 1.0 and len(support.unsupported_claims) == 1
+
+
+def test_only_chosen_skills_are_estimated_and_others_kept(profile):
+    old = SkillEstimate(level=SkillLevel(3), confidence=0.6, rationale="old", model="t")
+    profile = profile.model_copy(
+        update={
+            "skills": [
+                s.model_copy(update={"estimate": None if s.name == "spark" else old})
+                for s in profile.skills
+            ]
+        }
+    )
+    assert skills_without_estimate(profile) == {"spark"}
+    llm = FakeLLM(
+        SkillEstimates(skills=[_est("spark", 1, 0.7, ["E2"]), _est("sql", 5)])
+    )
+    result = estimate_skills(profile, llm, skills_without_estimate(profile))
+    _, prompt = llm.prompts[0]
+    assert '<skill name="spark"' in prompt and '<skill name="sql"' not in prompt
+    assert result.profile.skill("spark").estimate.level == SkillLevel.AWARE
+    assert result.profile.skill("sql").estimate == old
+    assert result.problems == ["sql: not asked for; ignored"]

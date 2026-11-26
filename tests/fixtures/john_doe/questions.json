@@ -1,0 +1,39 @@
+{
+  "model": "claude-sonnet-5-5",
+  "answer": {
+    "questions": [
+      {
+        "skill": "git",
+        "question": "Your CV lists Git among your tools; could you describe one project where you used it, such as how you branched, reviewed or released changes, and which role it was in?"
+      },
+      {
+        "skill": "pandas",
+        "question": "Your CV lists pandas among your Python tools; can you give one example of a data task you did with it, roughly how large the data was, and in which role?"
+      },
+      {
+        "skill": "statistics",
+        "question": "Your CV lists statistics as a skill; could you describe one analysis where you applied a statistical method, such as the method, the question it answered and the role you were in?"
+      },
+      {
+        "skill": "aws",
+        "question": "Your CV mentions AWS (S3, SageMaker) but your listed roles don't show where it was used; can you describe one project where you used these, what you did with them and roughly when?"
+      },
+      {
+        "skill": "looker",
+        "question": "You mentioned using Looker daily for two years before Nordlys Retail moved to Tableau; can you give one example of a dashboard or analysis you built in it and which role and period that was?"
+      },
+      {
+        "skill": "kubernetes",
+        "question": "You said you deployed two model services on a client's Kubernetes cluster with their platform team's help; could you walk through one of those deployments, including what you handled yourself and when it was?"
+      },
+      {
+        "skill": "deep learning",
+        "question": "Your CV shows an online deep learning course; have you applied deep learning in a project, at work or personally? If so, could you describe one example, the problem, the model and the scale?"
+      },
+      {
+        "skill": "pytorch",
+        "question": "Your CV mentions an online course in PyTorch; is there a model you built or trained with it beyond the course, and if so what was it, what data size did you use and when did you do it?"
+      }
+    ]
+  }
+}
