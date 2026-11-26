@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 DEFAULT_MODEL = "claude-opus-5-5"
+# For light tasks such as wording interview questions.
+QUESTION_MODEL = "claude-sonnet-5-5"
 
 
 class LLMError(RuntimeError):

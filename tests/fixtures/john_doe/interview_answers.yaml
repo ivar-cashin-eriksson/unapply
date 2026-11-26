@@ -1,0 +1,27 @@
+# John's answers to his interview questions (questions.json). Skills not listed are
+# skipped. Each answer is chosen to test how re-estimation treats it.
+
+answers:
+  # Detailed: what, scale, role, when. Should raise the estimate.
+  pandas: >-
+    At Nordlys Retail since 2022 I wrote and maintain the feature pipeline for our
+    demand forecasting model in pandas: about 50 million rows of daily sales per store
+    and product, with reshaping, lag and rolling-window features and holiday
+    calendars, run every night. I profiled and rewrote it last year to cut the run
+    time from three hours to forty minutes.
+  # Vague: should not change the estimate.
+  git: I use Git every day.
+  # Honest: confirms the low level.
+  deep learning: >-
+    No, only the online course so far. I would like to use it at work.
+  # Concrete, but still only his own statement: confidence stays capped.
+  kubernetes: >-
+    In 2021 at Kestrel Logistics I packaged our churn model as a Docker image with a
+    small FastAPI service and wrote the Kubernetes deployment and service files; the
+    client's platform team set up the cluster and the monitoring.
+
+# What re-estimation should conclude.
+expect:
+  raised: [pandas]
+  unchanged: [git, deep learning, aws]
+  confidence_capped: [kubernetes]

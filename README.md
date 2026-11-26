@@ -70,7 +70,9 @@ gitignored; variables already set in your environment take precedence over it.
 | `uv run unapply ingest ... --record answer.json` / `--replay answer.json` | Save the model's answer, or reuse a saved one without calling the API |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
-| `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate each skill's level from its evidence and check claim support (calls the Claude API) |
+| `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |
+| `uv run unapply interview export data/me/profile.estimated.json --sheet data/me/interview.yaml` | Write follow-up questions about skills the documents don't show enough of (Sonnet 5.5) |
+| `uv run unapply interview apply data/me/profile.estimated.json data/me/interview.yaml --out data/me/profile.interviewed.json` | Add the answers as your own statements; then run `estimate` again |
 
 ## Layout
 
@@ -81,6 +83,7 @@ gitignored; variables already set in your environment take precedence over it.
 | `src/unapply/ingest/` | Loading material (PDF, text, LinkedIn export, GitHub) and extracting a profile |
 | `src/unapply/llm.py` | The one place that calls a language model |
 | `src/unapply/estimation/` | Skill estimation from evidence, and claim support |
+| `src/unapply/interview/` | Follow-up questions (rules choose, a model words them) and the answer sheet |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
 | `docs/` | Plans and design notes |
