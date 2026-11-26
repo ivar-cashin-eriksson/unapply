@@ -20,9 +20,10 @@ high-risk under the EU AI Act. See the design principles in the README.
 
 - **Never commit real personal data**, including your own CV. Real uploads go in `data/`,
   which is gitignored. `tests/` and `tests/fixtures/` contain only synthetic data.
-- **Anything inferred about a candidate is visible to that candidate.** Don't add
-  fields that only employers can see. Rubrics and weights belong to the job, so they
-  may stay hidden.
+- **The assessment (estimates, claim support) is never shown in the candidate app.**
+  Use `forms.candidate_view()` for anything a candidate sees or downloads, and keep
+  interview wording neutral. It is still the candidate's data: it must stay
+  exportable for a data access request, and candidates are told it exists.
 - **Every score and estimate cites evidence and records the model** that produced it
   (`evidence_ids`, `model`), so it can be explained and audited.
 - **Never hardcode, print or log secrets** such as API keys. Read them from the

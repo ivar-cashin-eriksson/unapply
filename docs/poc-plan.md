@@ -35,7 +35,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   level 2+ above a sure estimate), unverified (2+ above, evidence says little),
   underclaims, and skills backed only by the candidate's statement. Shown as counts,
   such as "3 overclaims, 4 unverified, 0 underclaims, 2 only your own statement, of
-  26 rated skills", and visible to the candidate with the reasons.
+  26 rated skills". Not shown to the candidate (see the candidate app below).
 - John Doe's answer key is met: all three overclaims, four unverified skills and both
   self-stated skills flagged, consistent skills left alone.
 - Known limits: evidence for one skill that implies another (dbt implies SQL) isn't
@@ -65,6 +65,12 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   `UNAPPLY_ALLOW_API_CALLS` switch or `--allow-api` for the CLI); every real call is
   logged with an estimated cost. A John Doe demo replays recorded answers for free.
 - Tested headlessly with Streamlit's AppTest, clicking through John's whole journey.
+- The assessment is hidden from candidates: steps are Material, Review, Questions and
+  Profile; estimation runs in the background when questions are prepared and answers
+  submitted; interview wording is neutral; the profile and its download leave
+  estimates out. Candidates are told their evidence is assessed and can ask for the
+  assessment. A developer view adds an internal Assessment page. A test checks that
+  no assessment wording appears on any candidate page.
 
 ### M3: Job rubric
 - Paste a job ad, have the LLM extract a `Rubric`, and let the recruiter edit it.
@@ -82,7 +88,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - "Reveal" button (no payment yet; logs intent) and "Request application" button.
 
 ### M6: Candidate view
-- "You're #4 of 37 for this role." Profile, estimates and claim support with reasons.
+- "You're #4 of 37 for this role." The profile, without the assessment.
 
 ## The key experiment (run alongside M1–M4)
 

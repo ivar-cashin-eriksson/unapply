@@ -90,7 +90,8 @@ class SkillCategory(StrEnum):
 class SkillEstimate(BaseModel):
     """The skill level the evidence supports.
 
-    The candidate can always see their estimates, along with the reasons.
+    Not shown in the candidate app, but part of the candidate's data: provided on a
+    data access request.
 
     Parameters
     ----------
@@ -237,8 +238,9 @@ class ClaimSupport(BaseModel):
     """How well self-reports are backed by evidence and agree across sources.
 
     This is deliberately not an "honesty" score: it measures evidence, not character,
-    and the candidate can always see it, together with the reasons. It is shown as
-    counts of each kind of finding rather than one number, which hides too much; how
+    and it is explained by the estimates behind it. Not shown in the candidate app,
+    but part of the candidate's data. It is shown (internally, and later to employers)
+    as counts of each kind of finding rather than one number, which hides too much; how
     findings should combine into a score is still open (see `penalty_score`).
 
     Parameters

@@ -56,7 +56,7 @@ def test_rows_show_evidence_and_dates():
 def test_edited_tables_make_a_valid_sheet():
     p = _profile()
     skills = _through_pandas(skill_rows(p))
-    skills[0]["level"] = 4.0  # Number columns come back as floats.
+    skills[0]["level"] = "4 · advanced"  # As chosen in the level column.
     skills[1]["keep"] = False
     experiences = _through_pandas(experience_rows(p))
     experiences[0]["end"] = "2024-06"
@@ -118,3 +118,20 @@ def test_workspace_keeps_a_numbered_history(tmp_path):
     assert ws.pending_questions()[0]["skill"] == "sql"
     ws.save_pending_questions(None)
     assert ws.pending_questions() is None
+
+
+def test_candidate_view_hides_the_assessment():
+    from unapply.app.forms import candidate_view
+    from unapply.schemas import ClaimSupport, SkillEstimate
+
+    p = _profile()
+    est = SkillEstimate(level=SkillLevel(2), confidence=0.8, rationale="r", model="m")
+    p = p.model_copy(
+        update={
+            "skills": [s.model_copy(update={"estimate": est}) for s in p.skills],
+            "claim_support": ClaimSupport(rated=1, overclaims=["kafka"]),
+        }
+    )
+    shown = candidate_view(p).model_dump_json()
+    assert "overclaims" not in shown and '"estimate":null' in shown.replace(" ", "")
+    assert p.skill("kafka").estimate is not None  # The original is untouched.
