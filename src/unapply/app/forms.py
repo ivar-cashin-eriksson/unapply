@@ -18,6 +18,50 @@ from unapply.interview.sheet import export_interview_sheet
 from unapply.schemas import Profile, SourceKind
 
 LEVEL_NAMES = {1: "aware", 2: "basic", 3: "working", 4: "advanced", 5: "expert"}
+# How levels are shown and chosen in the app, such as "4 · advanced".
+LEVEL_LABELS = [f"{n} · {name}" for n, name in LEVEL_NAMES.items()]
+# The choice for no level, so tables never show an empty cell as "None".
+NO_LEVEL = "—"
+
+
+def level_label(level: int | None) -> str | None:
+    """Write a level as shown in the app, such as "4 · advanced".
+
+    Parameters
+    ----------
+    level : int or None
+        A level from 1 to 5.
+
+    Returns
+    -------
+    str or None
+        The label, or None for no level.
+    """
+    return LEVEL_LABELS[int(level) - 1] if level else None
+
+
+def candidate_view(profile: Profile) -> Profile:
+    """Return the profile without the assessment, as the candidate sees it.
+
+    Estimates and claim support are not shown to candidates. They remain part of
+    the candidate's data and are provided on a data access request.
+
+    Parameters
+    ----------
+    profile : Profile
+        The full profile.
+
+    Returns
+    -------
+    Profile
+        A copy without estimates or claim support.
+    """
+    return profile.model_copy(
+        update={
+            "skills": [s.model_copy(update={"estimate": None}) for s in profile.skills],
+            "claim_support": None,
+        }
+    )
 
 
 def evidence_lines(profile: Profile, ids: list) -> list[str]:
@@ -65,7 +109,7 @@ def skill_rows(profile: Profile) -> list[dict[str, Any]]:
             "keep": True,
             "name": s.name,
             "category": s.category.value if s.category else None,
-            "level": int(s.self_level) if s.self_level else None,
+            "level": level_label(s.self_level) or NO_LEVEL,
             "evidence": " | ".join(evidence_lines(profile, s.evidence_ids)),
         }
         for s in profile.skills
@@ -236,6 +280,26 @@ def interview_sheet(
     return yaml.safe_dump(sheet, allow_unicode=True, sort_keys=False)
 
 
+def period(start: date | None, end: date | None) -> str:
+    """Describe when something happened, such as "2019-08 to now"; empty if unknown.
+
+    Parameters
+    ----------
+    start : date or None
+        First day.
+    end : date or None
+        Last day; None means now (when there is a start).
+
+    Returns
+    -------
+    str
+        The period, or "" when neither date is known.
+    """
+    if start is None and end is None:
+        return ""
+    return f"{month(start) or '?'} to {month(end) or 'now'}"
+
+
 def month(value: date | None) -> str:
     """Write a date as YYYY, or YYYY-MM when it isn't January; empty for None."""
     if value is None:
@@ -257,6 +321,9 @@ def _blank(value: Any) -> str | None:  # noqa: ANN401
 
 
 def _level(value: Any) -> int | None:  # noqa: ANN401
-    if _missing(value) or value == "":
+    """Read a level from a number or a label such as "4 · advanced"."""
+    if _missing(value) or str(value).strip() in ("", NO_LEVEL):
         return None
+    if isinstance(value, str):
+        return int(value.strip().split()[0])
     return int(value)

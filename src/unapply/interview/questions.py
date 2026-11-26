@@ -35,10 +35,12 @@ class Reason(StrEnum):
     OVERCLAIM = "overclaim"  # Rated higher than the documents show
 
 
+# Shown to the candidate. Deliberately neutral: the assessment behind the choice of
+# question (an unverified level, an overclaim) is not shown to candidates.
 WHY = {
-    Reason.UNVERIFIED: "Your documents mention this skill but don't show your level.",
-    Reason.STATEMENT_ONLY: "Only your own statement backs this skill so far.",
-    Reason.OVERCLAIM: "You rate yourself higher than your documents show.",
+    Reason.UNVERIFIED: "Your documents say little about how you've used this.",
+    Reason.STATEMENT_ONLY: "Nothing in your documents shows this yet.",
+    Reason.OVERCLAIM: "Your documents say little about how you've used this.",
 }
 
 TEMPLATES = {

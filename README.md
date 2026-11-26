@@ -27,8 +27,11 @@ candidates for real application material.
 Ranking candidates for jobs is a **high-risk** use under the EU AI Act (Annex III), and profiles
 are personal data under GDPR. These principles are product features, not afterthoughts:
 
-1. **Candidates can see everything inferred about them**, including estimated skill levels and
-   claim support. What stays hidden is the job's rubric and weights, not the candidate's data.
+1. **The assessment isn't shown to candidates, but it is theirs.** Estimated skill levels and
+   claim support stay out of the candidate app, so candidates can't tune their profile to
+   them. Candidates are told that their evidence is assessed, and the assessment is part of
+   their data: it is provided on a data access request (GDPR art. 15). The job's rubric and
+   weights are hidden as well.
 2. **Every score is explainable** through cited evidence. "No evidence found" is a valid answer.
 3. **A human decides.** The system produces a ranking; a recruiter reveals and contacts people.
 4. **Consent is per job.** A candidate opts in to each job and controls which profile sections it can see.
