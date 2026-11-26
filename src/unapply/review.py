@@ -17,7 +17,6 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from unapply.ingest.extract import canonical_skill
 from unapply.schemas import (
     Evidence,
     Preferences,
@@ -28,6 +27,7 @@ from unapply.schemas import (
     Source,
     SourceKind,
 )
+from unapply.taxonomy import canonical_skill, normalise_skill_name
 
 LEVELS = "1 aware, 2 basic, 3 working, 4 advanced, 5 expert"
 CATEGORIES = ", ".join(c.value for c in SkillCategory)
@@ -169,7 +169,9 @@ def apply_review_sheet(profile: Profile, sheet_text: str) -> Profile:
         A new profile with the candidate's levels, removals, corrections and added
         skills. It is approved, with the current time, if the sheet says
         `approve: true`; otherwise any earlier approval is cleared. Evidence no
-        longer referenced is dropped; every source is kept.
+        longer referenced is dropped; every source is kept. Skill names are
+        canonical (see `unapply.taxonomy`): skills that turn out to be synonyms are
+        merged, and an added skill that is a synonym of a kept one is refused.
 
     Raises
     ------
@@ -191,20 +193,24 @@ def apply_review_sheet(profile: Profile, sheet_text: str) -> Profile:
     for row in sheet.experiences:
         if not row.keep:
             continue
+        x = experiences[row.id]
         new_experiences.append(
-            experiences[row.id].model_copy(
+            x.model_copy(
                 update={
                     "title": row.title,
                     "organisation": row.organisation,
                     "start": _parse_date(row.start, f"start of {row.title}"),
                     "end": _parse_date(row.end, f"end of {row.title}"),
                     "summary": row.summary,
+                    "skills": sorted({canonical_skill(s) for s in x.skills}),
                 }
             )
         )
 
-    skills = {s.name: s for s in profile.skills}
-    names = [canonical_skill(r.name) for r in sheet.skills]
+    # Rows are matched to the profile's skills by the names the sheet was written
+    # with; the taxonomy's canonical names are applied after that, below.
+    skills = {normalise_skill_name(s.name): s for s in profile.skills}
+    names = [normalise_skill_name(r.name) for r in sheet.skills]
     duplicates = sorted({n for n in names if names.count(n) > 1})
     if duplicates:
         raise ReviewError(f"skills listed more than once: {duplicates}")
@@ -216,17 +222,18 @@ def apply_review_sheet(profile: Profile, sheet_text: str) -> Profile:
             f"unknown skills: {unknown}. Skill names can't be changed; "
             "remove the skill and add it under add_skills instead."
         )
-    new_skills = []
-    for name, row in rows.items():
-        if row.keep:
-            new_skills.append(
-                skills[name].model_copy(
-                    update={
-                        "category": row.category,
-                        "self_level": SkillLevel(row.level) if row.level else None,
-                    }
-                )
+    new_skills = _merged(
+        [
+            skills[name].model_copy(
+                update={
+                    "category": row.category,
+                    "self_level": SkillLevel(row.level) if row.level else None,
+                }
             )
+            for name, row in rows.items()
+            if row.keep
+        ]
+    )
 
     sources = list(profile.sources)
     evidence = list(profile.evidence)
@@ -263,6 +270,34 @@ def apply_review_sheet(profile: Profile, sheet_text: str) -> Profile:
             }
         )
     )
+
+
+def _merged(skills: list[Skill]) -> list[Skill]:
+    """Rename skills to their canonical names, merging those that become one.
+
+    Two skills merge only in a profile extracted before the taxonomy knew they are
+    the same, such as "sklearn" and "scikit-learn". The merged skill keeps all their
+    evidence and the higher of the candidate's levels, and loses its estimate, so the
+    skill is estimated again from the combined evidence.
+    """
+    merged: dict[str, Skill] = {}
+    for s in skills:
+        name = canonical_skill(s.name)
+        first = merged.get(name)
+        if first is None:
+            merged[name] = s.model_copy(update={"name": name})
+            continue
+        levels = [x for x in (first.self_level, s.self_level) if x is not None]
+        merged[name] = first.model_copy(
+            update={
+                "category": first.category or s.category,
+                "self_level": max(levels) if levels else None,
+                "evidence_ids": first.evidence_ids
+                + [i for i in s.evidence_ids if i not in first.evidence_ids],
+                "estimate": None,
+            }
+        )
+    return list(merged.values())
 
 
 def _parse(sheet_text: str) -> _Sheet:

@@ -130,7 +130,9 @@ def main(argv: list[str] | None = None) -> int:
     db = commands.add_parser("db", help="Create the database and import workspaces.")
     db_steps = db.add_subparsers(dest="step", required=True)
     db_init = db_steps.add_parser(
-        "init", help="Create the tables, or migrate them to the newest version."
+        "init",
+        help="Create the tables, or migrate them to the newest version, and load "
+        "the skill taxonomy.",
     )
     db_import = db_steps.add_parser(
         "import", help="Import candidate or job workspace folders."
@@ -282,10 +284,18 @@ def _db(args: argparse.Namespace) -> int:
     from unapply.db.repository import Repository
 
     url = init_db(args.url)
-    if args.step == "init":
-        print(f"Database ready: {url}")
-        return 0
     repo = Repository.from_url(args.url)
+    if args.step == "init":
+        from unapply.taxonomy import default_taxonomy, taxonomy_path
+
+        taxonomy = default_taxonomy()
+        repo.save_taxonomy(taxonomy)
+        repo.engine.dispose()
+        print(f"Database ready: {url}")
+        print(
+            f"Skill taxonomy loaded: {len(taxonomy.skills)} skills from {taxonomy_path()}"
+        )
+        return 0
     failed = 0
     for path in args.workspaces:
         try:

@@ -16,7 +16,6 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from unapply.ingest.extract import canonical_skill
 from unapply.jobs.extract import MAX_WEIGHT, MIN_WEIGHT
 from unapply.schemas import (
     Criterion,
@@ -26,6 +25,7 @@ from unapply.schemas import (
     SkillLevel,
     WorkMode,
 )
+from unapply.taxonomy import canonical_skill
 
 
 class RubricError(ValueError):

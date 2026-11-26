@@ -331,3 +331,47 @@ class CriterionScoreRow(Base):
     score: Mapped[float] = mapped_column(Float)
     rationale: Mapped[str] = mapped_column(Text)
     evidence_ids: Mapped[list[str]] = mapped_column(default=list)
+
+
+class TaxonomySkillRow(Base):
+    """One canonical skill in the skill taxonomy (`unapply.taxonomy.TaxonomySkill`).
+
+    The taxonomy is configuration (`config/skills.yaml`); `unapply db init` copies it
+    here, replacing what was there, so queries can join on it.
+    """
+
+    __tablename__ = "taxonomy_skills"
+
+    name: Mapped[str] = mapped_column(String(200), primary_key=True)
+    category: Mapped[str | None] = mapped_column(String(32))
+
+
+class SkillSynonymRow(Base):
+    """Another name for a canonical skill, such as "sklearn" for "scikit-learn"."""
+
+    __tablename__ = "skill_synonyms"
+
+    synonym: Mapped[str] = mapped_column(String(200), primary_key=True)
+    skill: Mapped[str] = mapped_column(
+        ForeignKey("taxonomy_skills.name", ondelete=CASCADE), index=True
+    )
+
+
+class SkillRelationRow(Base):
+    """One skill implying, or being a kind of, another.
+
+    `kind` is "implies" ("dbt" implies "sql") or "broader" ("lightgbm" is a kind of
+    "gradient boosting"); both point from the specific skill to the general one.
+    """
+
+    __tablename__ = "skill_relations"
+
+    skill: Mapped[str] = mapped_column(
+        ForeignKey("taxonomy_skills.name", ondelete=CASCADE), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(16), primary_key=True)
+    related: Mapped[str] = mapped_column(
+        ForeignKey("taxonomy_skills.name", ondelete=CASCADE),
+        primary_key=True,
+        index=True,
+    )

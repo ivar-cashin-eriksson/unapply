@@ -1,0 +1,301 @@
+# The skill taxonomy: one canonical name per skill, its synonyms, and how skills
+# relate. Read by unapply.taxonomy; `unapply db init` loads it into the database.
+#
+# Each entry under `skills` is a canonical name (lowercase), with optional:
+#   category  technology, method, domain, soft_skill, language or certification
+#   synonyms  other names for the same skill; they are merged into the canonical name
+#             at extraction, review and rubric time. "-" and "_" already count as
+#             spaces, so "time-series forecasting" needs no synonym.
+#   implies   skills that using this one means using ("dbt" implies "sql")
+#   broader   skills this one is a kind of ("lightgbm" is a kind of "gradient
+#             boosting")
+# Relations point from the specific skill to the general one, and must name
+# canonical skills in this file. Only add a synonym when the two names mean the same
+# skill; a related but different skill is a relation, not a synonym.
+
+skills:
+  # Programming languages and query languages
+  python:
+    category: technology
+    synonyms: [python 3, python3]
+  r:
+    category: technology
+    synonyms: [r language, r programming]
+  sql:
+    category: technology
+    synonyms: [structured query language]
+  scala:
+    category: technology
+  java:
+    category: technology
+  javascript:
+    category: technology
+    synonyms: [js]
+  typescript:
+    category: technology
+    synonyms: [ts]
+    implies: [javascript]
+  c++:
+    category: technology
+    synonyms: [cpp]
+  julia:
+    category: technology
+  matlab:
+    category: technology
+
+  # Python libraries and frameworks
+  pandas:
+    category: technology
+    implies: [python]
+  numpy:
+    category: technology
+    implies: [python]
+  polars:
+    category: technology
+    implies: [python]
+  scikit-learn:
+    category: technology
+    synonyms: [scikit learn, sklearn]
+    implies: [python, machine learning]
+  pytorch:
+    category: technology
+    synonyms: [torch]
+    implies: [python, deep learning]
+  tensorflow:
+    category: technology
+    synonyms: [tensor flow]
+    implies: [deep learning]
+  keras:
+    category: technology
+    implies: [deep learning]
+  lightgbm:
+    category: technology
+    synonyms: [light gbm, lgbm]
+    broader: [gradient boosting]
+  xgboost:
+    category: technology
+    synonyms: [xg boost]
+    broader: [gradient boosting]
+  catboost:
+    category: technology
+    broader: [gradient boosting]
+  streamlit:
+    category: technology
+    implies: [python]
+  fastapi:
+    category: technology
+    implies: [python]
+  flask:
+    category: technology
+    implies: [python]
+  django:
+    category: technology
+    implies: [python]
+  pyspark:
+    category: technology
+    implies: [python, spark]
+
+  # Data platforms and tools
+  spark:
+    category: technology
+    synonyms: [apache spark]
+  databricks:
+    category: technology
+    implies: [spark]
+  kafka:
+    category: technology
+    synonyms: [apache kafka]
+  airflow:
+    category: technology
+    synonyms: [apache airflow]
+  dbt:
+    category: technology
+    synonyms: [data build tool, dbt core]
+    implies: [sql]
+  snowflake:
+    category: technology
+    implies: [sql]
+  bigquery:
+    category: technology
+    synonyms: [google bigquery]
+    implies: [sql]
+  postgresql:
+    category: technology
+    synonyms: [postgres]
+    implies: [sql]
+  mysql:
+    category: technology
+    implies: [sql]
+  sql server:
+    category: technology
+    synonyms: [microsoft sql server, mssql]
+    implies: [sql]
+  excel:
+    category: technology
+    synonyms: [microsoft excel, ms excel]
+  tableau:
+    category: technology
+    implies: [data visualisation]
+  power bi:
+    category: technology
+    synonyms: [powerbi, microsoft power bi]
+    implies: [data visualisation]
+  looker:
+    category: technology
+    implies: [data visualisation]
+
+  # Infrastructure and cloud
+  git:
+    category: technology
+  docker:
+    category: technology
+  kubernetes:
+    category: technology
+    synonyms: [k8s]
+  terraform:
+    category: technology
+  linux:
+    category: technology
+  aws:
+    category: technology
+    synonyms: [amazon web services]
+  aws s3:
+    category: technology
+    synonyms: [amazon s3, s3]
+    implies: [aws]
+  amazon sagemaker:
+    category: technology
+    synonyms: [sagemaker, aws sagemaker]
+    implies: [aws]
+  azure:
+    category: technology
+    synonyms: [microsoft azure]
+  google cloud:
+    category: technology
+    synonyms: [gcp, google cloud platform]
+
+  # Methods
+  machine learning:
+    category: method
+    synonyms: [ml]
+  deep learning:
+    category: method
+    synonyms: [deep neural networks]
+    broader: [machine learning]
+  gradient boosting:
+    category: method
+    synonyms: [gradient boosted trees, gradient boosting machines, gbm]
+    broader: [machine learning]
+  random forests:
+    category: method
+    synonyms: [random forest]
+    broader: [machine learning]
+  logistic regression:
+    category: method
+    broader: [machine learning]
+  natural language processing:
+    category: method
+    synonyms: [nlp]
+    broader: [machine learning]
+  large language models:
+    category: method
+    synonyms: [llms, llm]
+    broader: [natural language processing]
+    implies: [deep learning]
+  computer vision:
+    category: method
+    broader: [machine learning]
+  gaussian processes:
+    category: method
+    synonyms: [gaussian process regression]
+    broader: [machine learning]
+  sparse gaussian processes:
+    category: method
+    broader: [gaussian processes]
+  churn prediction:
+    category: method
+    synonyms: [churn modelling, churn modeling]
+    broader: [machine learning]
+  model deployment:
+    category: method
+    synonyms: [ml model deployment, deploying models]
+  mlops:
+    category: method
+    synonyms: [machine learning operations]
+  statistics:
+    category: method
+    synonyms: [statistical analysis, applied statistics]
+  bayesian statistics:
+    category: method
+    synonyms: [bayesian inference, bayesian modelling, bayesian modeling]
+    broader: [statistics]
+  causal inference:
+    category: method
+    broader: [statistics]
+  a/b testing:
+    category: method
+    synonyms: [ab testing, a b testing, a/b tests, split testing]
+    implies: [statistics]
+  power analysis:
+    category: method
+    implies: [statistics]
+  time series forecasting:
+    category: method
+    synonyms: [time series prediction]
+  demand forecasting:
+    category: method
+    broader: [time series forecasting]
+  data modelling:
+    category: method
+    synonyms: [data modeling]
+  data visualisation:
+    category: method
+    synonyms: [data visualization, data viz]
+  dashboarding:
+    category: method
+    synonyms: [dashboards, dashboard development]
+    broader: [data visualisation]
+
+  # Domains
+  retail analytics:
+    category: domain
+  medical physics:
+    category: domain
+  radiotherapy planning:
+    category: domain
+    synonyms: [radiation therapy planning, radiotherapy treatment planning]
+    broader: [medical physics]
+  pharmaceuticals:
+    category: domain
+    synonyms: [pharma, pharmaceutical industry]
+
+  # Soft skills
+  mentoring:
+    category: soft_skill
+    synonyms: [mentorship]
+  stakeholder communication:
+    category: soft_skill
+    synonyms: [communicating with stakeholders]
+  code review:
+    category: method
+    synonyms: [code reviews]
+
+  # Spoken languages
+  english:
+    category: language
+  danish:
+    category: language
+    synonyms: [dansk]
+  swedish:
+    category: language
+    synonyms: [svenska]
+  norwegian:
+    category: language
+    synonyms: [norsk]
+  german:
+    category: language
+    synonyms: [deutsch]
+  french:
+    category: language
+  spanish:
+    category: language

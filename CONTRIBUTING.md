@@ -12,11 +12,12 @@ Conventions for working on this project. Setup is in the [README](README.md).
 - **Database tables go in `src/unapply/db/models.py`**, and only
   `src/unapply/db/repository.py` turns rows into schemas and back. Every change to the
   tables comes with an Alembic migration in `src/unapply/db/migrations/versions/`:
-  `uv run alembic revision --autogenerate --rev-id 0002 -m "Add skill taxonomy"`,
+  `uv run alembic revision --autogenerate --rev-id 0003 -m "Add the audit log"`,
   then read and fix what it wrote. Use only types that work on both SQLite and
   Postgres; `tests/test_db.py` checks the migrations match the models and render for
   Postgres.
-- **Configuration goes in `config/`** as JSON: skill taxonomies, thresholds, model names.
+- **Configuration goes in `config/`** as JSON, or YAML where people edit it by hand
+  (the skill taxonomy, `config/skills.yaml`): thresholds, model names.
 - **Exploration goes in `scratch/`**, which is gitignored. Move anything worth keeping
   into `src/`.
 

@@ -95,7 +95,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
   (John Doe and Fjord Grocery fixtures); migrations build the schema from empty; the
   CLI commands work; README documents it.
 
-### 3. [ ] Skill taxonomy
+### 3. [x] Skill taxonomy
 
 - `config/skills.yaml`: canonical skills with synonyms ("radiation therapy planning"
   → "radiotherapy planning", "scikit learn" → "scikit-learn") and relations: implies

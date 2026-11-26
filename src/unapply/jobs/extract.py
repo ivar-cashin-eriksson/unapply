@@ -13,7 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from unapply.ingest.extract import canonical_skill, normalise_quote
+from unapply.ingest.extract import normalise_quote
 from unapply.llm import StructuredLLM
 from unapply.schemas import (
     Criterion,
@@ -24,6 +24,7 @@ from unapply.schemas import (
     SkillLevel,
     WorkMode,
 )
+from unapply.taxonomy import canonical_skill
 
 # Weights the app and review sheet use: 1 (minor) to 5 (essential).
 MIN_WEIGHT, MAX_WEIGHT = 1, 5
