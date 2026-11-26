@@ -85,12 +85,29 @@ copy after every step. Paid API calls stay off until you turn on the toggle in t
 sidebar, and the **Demo** buttons (John Doe, Fjord Grocery) run everything for free
 with recorded answers.
 
+## The database
+
+Candidates, jobs, rubric versions and matches can also be kept in a database, which
+the API (coming next) works on. It is a SQLite file, `data/unapply.db`, unless
+`UNAPPLY_DATABASE_URL` in `.env` points elsewhere; the same tables work on Postgres
+(`uv sync --extra db` and a `postgresql+psycopg://` URL).
+
+```bash
+uv run unapply db init                                 # create or migrate the tables
+uv run unapply db import data/me data/jobs/acme        # copy workspace folders in
+```
+
+Importing a workspace brings its settings, history, current profile or job (every
+rubric version in its history), and waiting interview questions. Uploaded material
+stays in the folder. A rubric version that a match refers to can't be changed: edit
+the rubric and it gets a new version.
+
 ## Common commands
 
 | Command | What it does |
 |---|---|
 | `uv sync` | Create or update `.venv/` from `uv.lock` |
-| `uv sync --all-extras` | Also install the optional extras (API, LLM, MCP, database, ingestion) |
+| `uv sync --all-extras` | Also install the optional extras (API, MCP, Postgres drivers) |
 | `uv run pytest` | Run the tests |
 | `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
 | `uv run ruff format .` | Format |
@@ -100,6 +117,8 @@ with recorded answers.
 | `uv run unapply job extract ad.md --out data/jobs/acme.json` | Extract a rubric from a job ad (calls the Claude API: add `--allow-api`) |
 | `uv run unapply job export data/jobs/acme.json --sheet data/jobs/acme.yaml` | Write a rubric sheet to edit and approve |
 | `uv run unapply job apply data/jobs/acme.json data/jobs/acme.yaml --out data/jobs/acme.json` | Apply the edited rubric sheet |
+| `uv run unapply db init` | Create the database's tables, or migrate them to the newest version |
+| `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 | `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |
@@ -119,6 +138,7 @@ with recorded answers.
 | `src/unapply/app/` | The app (Streamlit): `candidate.py`, `employer.py`, shared helpers and the demos |
 | `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
+| `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
 | `docs/` | Plans and design notes |

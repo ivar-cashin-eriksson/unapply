@@ -16,7 +16,8 @@ This file only adds what applies to agents.
 - Make the smallest change that solves the task. Don't refactor, rename or reformat
   unrelated code.
 - Don't change the schemas in `src/unapply/schemas/` without saying so. Everything
-  else depends on them.
+  else depends on them. The same goes for the database tables in
+  `src/unapply/db/models.py`, which always change together with a new migration.
 - Never read, copy or commit real personal data from `data/`. Use only synthetic data
   in `tests/`.
 - Never hardcode, print or log secrets.
