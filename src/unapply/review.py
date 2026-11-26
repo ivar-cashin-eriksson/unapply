@@ -276,10 +276,23 @@ def _parse(sheet_text: str) -> _Sheet:
         return _Sheet.model_validate(data)
     except ValidationError as e:
         problems = "; ".join(
-            f"{'.'.join(str(p) for p in err['loc'])}: {err['msg']}"
-            for err in e.errors()
+            f"{_where(data, err['loc'])}: {err['msg']}" for err in e.errors()
         )
         raise ReviewError(f"invalid values: {problems}") from e
+
+
+def _where(data: dict, loc: tuple) -> str:
+    """Name the item an error is in, e.g. 'skills "python" level', not 'skills.120'."""
+    parts = [str(p) for p in loc]
+    if len(loc) >= 2 and isinstance(loc[1], int):
+        items = data.get(loc[0]) or []
+        item = items[loc[1]] if loc[1] < len(items) else None
+        label = (
+            (item.get("name") or item.get("title")) if isinstance(item, dict) else None
+        )
+        if label:
+            parts[1] = json.dumps(label, ensure_ascii=False)
+    return " ".join(parts)
 
 
 def _pruned(profile: Profile) -> Profile:
