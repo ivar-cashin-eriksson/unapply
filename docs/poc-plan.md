@@ -99,12 +99,17 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   through the taxonomy, discounted) and an **LLM scorer** (one call per candidate,
   on the anonymised profile; cited ids checked to be the candidate's).
 - Then `Match.total` and a ranking (equal totals share a rank).
+- An append-only audit log (`audit_log`, `unapply.matching.audit`): every match
+  (rubric version and hash, profile hash, scorer, model, scores, hard filter
+  outcomes, time) and every ranking (the rubric and the ranked matches in full), so
+  a ranking can be reproduced from the log alone. `unapply audit <job>` checks it.
 - John Doe against Fjord Grocery: 0.81 (baseline) and 0.71 (LLM, from a hand-written
   stand-in answer until it is recorded). Both put forecasting, Python and A/B
   testing high and SQL, Spark and deep learning low.
 - Known limits: the baseline can't score criteria without a skill (Fjord's "retail or
   e-commerce"); places are matched by name, without geography ("Denmark" doesn't
-  match "Copenhagen"); hard filter outcomes aren't stored with the match.
+  match "Copenhagen"); hard filter outcomes are kept in the audit log, not with the
+  match.
 - Still to do: agent scoring over MCP tools scoped to what the candidate consented
   to (`get_experiences`, `get_skills`, `search_evidence(query)`, `get_preferences`),
   with the MCP server.

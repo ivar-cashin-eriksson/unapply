@@ -4,6 +4,7 @@
 - `baseline`: a deterministic scorer from skill levels, the taxonomy and evidence.
 - `llm_scorer`: a model scores each criterion from the anonymised profile.
 - `scoring`: `match_candidate`, `rank` and the `Scorer` protocol.
+- `audit`: the append-only log of matches and rankings, and reproducing a ranking.
 """
 
 from unapply.matching.baseline import BASELINE_MODEL, BaselineScorer

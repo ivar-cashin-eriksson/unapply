@@ -12,10 +12,13 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import update
+from sqlalchemy.orm import Session
 
 from unapply.app import demo, forms
 from unapply.cli import main
 from unapply.db.engine import database_url, init_db
+from unapply.db.models import AuditEntryRow
 from unapply.db.repository import Repository, RubricLocked
 from unapply.estimation.claims import claim_support
 from unapply.estimation.skills import estimate_skills, skills_without_estimate
@@ -36,6 +39,13 @@ from unapply.matching import (
     rank,
 )
 from unapply.matching.anonymise import REDACTED, redact
+from unapply.matching.audit import (
+    AuditKind,
+    check_ranking,
+    content_hash,
+    match_entry,
+    reproduce_ranking,
+)
 from unapply.matching.baseline import RELATED_FACTOR, level
 from unapply.matching.filters import (
     Outcome,
@@ -50,6 +60,7 @@ from unapply.matching.llm_scorer import (
     apply_scores,
     render_match_prompt,
 )
+from unapply.matching.run import match_job
 from unapply.schemas import (
     Criterion,
     CriterionKind,
@@ -772,3 +783,174 @@ def test_the_stand_in_is_marked_and_listed():
 def test_today_defaults_to_now(john, fjord):
     soon = date.today() + timedelta(days=1)
     assert years_of_experience(john) <= years_of_experience(john, soon)
+
+
+# The audit log
+
+
+@pytest.fixture
+def pool(db, john):
+    """`db` with two more approved candidates: one weaker, one failing a filter."""
+    weaker = john.model_copy(update={"id": uuid4(), "skills": john.skills[:3]})
+    abroad = john.model_copy(
+        update={
+            "id": uuid4(),
+            "preferences": john.preferences.model_copy(update={"work_permits": ["US"]}),
+        }
+    )
+    for name, profile in (("weaker", weaker), ("abroad", abroad)):
+        db.create_candidate(name)
+        db.save_profile(name, profile, "assessed")
+    return db
+
+
+def _baseline(name, settings):
+    return BaselineScorer()
+
+
+def test_hashes_survive_the_database_and_see_changes(db, john, fjord):
+    assert content_hash(db.profile("john")) == content_hash(john)
+    assert content_hash(db.job("fjord").rubric) == content_hash(fjord.rubric)
+    assert content_hash(john).startswith("sha256:")
+    changed = john.model_copy(update={"headline": john.headline + "!"})
+    assert content_hash(changed) != content_hash(john)
+
+
+def test_matching_records_every_match_and_the_ranking(pool, fjord):
+    matching = match_job(pool, "fjord", _baseline, today=TODAY)
+    log = pool.audit_log(fjord.id)
+    assert [e.kind for e in log] == [AuditKind.MATCH] * 3 + [AuditKind.RANKING]
+    assert log[-1] == matching.audit
+    for entry in log[:-1]:
+        name = next(
+            n for n, r in matching.results.items() if r.match.id == entry.match_id
+        )
+        profile = pool.profile(name)
+        assert (entry.profile_id, entry.profile_hash) == (
+            profile.id,
+            content_hash(profile),
+        )
+        assert (entry.rubric_version, entry.rubric_hash) == (
+            1,
+            content_hash(fjord.rubric),
+        )
+        assert (entry.scorer, entry.model) == ("baseline", BASELINE_MODEL)
+        assert Match.model_validate(entry.payload["match"]) == (
+            matching.results[name].match
+        )
+        assert isinstance(entry.recorded_at, datetime)
+    abroad = next(e for e in log if e.profile_id == pool.profile("abroad").id)
+    outcomes = {f["name"]: f["outcome"] for f in abroad.payload["hard_filters"]}
+    assert outcomes["work_permit"] == "fail"
+    john_entry = next(e for e in log if e.profile_id == pool.profile("john").id)
+    assert "names no skill" in john_entry.payload["problems"][0]
+    ranked = log[-1].payload["ranking"]
+    assert [r["match"]["id"] for r in ranked] == [
+        str(r.match.id) for r in matching.ranking
+    ]
+    assert [r["rank"] for r in ranked] == [1, 2, 3]
+    assert ranked[0]["total"] > ranked[1]["total"] > ranked[2]["total"] == 0.0
+    assert log[-1].profile_id is log[-1].profile_hash is None
+
+
+def test_a_ranking_is_reproduced_from_the_log(pool, john, fjord):
+    matching = match_job(pool, "fjord", _baseline, today=TODAY)
+    # Later changes elsewhere in the database don't matter: the log is enough.
+    pool.save_profile("john", john.model_copy(update={"id": uuid4()}), "assessed")
+    (stored,) = pool.audit_log(fjord.id, AuditKind.RANKING)
+    again = reproduce_ranking(stored)
+    assert [(r.rank, r.total, r.match) for r in again] == [
+        (r.rank, r.total, r.match) for r in matching.ranking
+    ]
+    assert check_ranking(stored, pool.audit_log(fjord.id)) == []
+    # Scoring the logged profile versions again gives the logged scores: the
+    # baseline is deterministic, and the hash finds the profile that was scored.
+    by_hash = {
+        content_hash(p): p
+        for p in (john, pool.profile("weaker"), pool.profile("abroad"))
+    }
+    for entry in pool.audit_log(fjord.id, AuditKind.MATCH):
+        profile = by_hash[entry.profile_hash]
+        rescored = match_candidate(profile, fjord, BaselineScorer(), TODAY).match
+        logged = Match.model_validate(entry.payload["match"])
+        assert rescored.criterion_scores == logged.criterion_scores
+        assert rescored.passed_hard_filters == logged.passed_hard_filters
+
+
+def test_a_changed_ranking_doesnt_reproduce(pool, fjord):
+    entry = match_job(pool, "fjord", _baseline, today=TODAY).audit
+    log = pool.audit_log(fjord.id)
+    swapped = entry.model_copy(deep=True)
+    ranking = swapped.payload["ranking"]
+    ranking[0]["match"], ranking[1]["match"] = ranking[1]["match"], ranking[0]["match"]
+    problems = check_ranking(swapped, log)
+    assert problems and problems[0].startswith("ranking again gives")
+    lowered = entry.model_copy(deep=True)
+    lowered.payload["ranking"][0]["match"]["criterion_scores"][0]["score"] = 0.0
+    assert any("differs from its match entry" in p for p in check_ranking(lowered, log))
+    reweighted = entry.model_copy(deep=True)
+    reweighted.payload["rubric"]["criteria"][0]["weight"] = 0.5
+    assert "the recorded rubric doesn't match its version or hash" in (
+        check_ranking(reweighted, log)
+    )
+    with pytest.raises(ValueError, match="not a ranking"):
+        reproduce_ranking(log[0])
+
+
+def test_the_audit_log_is_append_only(pool, fjord):
+    match_job(pool, "fjord", _baseline, today=TODAY)
+    first = pool.audit_log(fjord.id)[0]
+    with pytest.raises(ValueError, match="already stored"):
+        pool.append_audit(first)
+    with Session(pool.engine) as s:
+        s.get(AuditEntryRow, first.id).model = "changed"
+        with pytest.raises(ValueError, match="can't be changed or deleted"):
+            s.flush()
+        s.rollback()
+        s.delete(s.get(AuditEntryRow, first.id))
+        with pytest.raises(ValueError, match="can't be changed or deleted"):
+            s.flush()
+        s.rollback()
+    assert pool.audit_log(fjord.id)[0] == first
+    assert len(pool.audit_log()) == 4
+
+
+def test_a_match_and_its_entry_are_saved_together(pool, john, fjord):
+    result = match_candidate(john, fjord, BaselineScorer(), TODAY)
+    other = match_candidate(john, fjord, BaselineScorer(), TODAY)
+    with pytest.raises(ValueError, match="isn't for match"):
+        pool.save_match(
+            result.match, audit=match_entry(other, john, fjord.rubric, "baseline")
+        )
+    with pytest.raises(ValueError, match="isn't the one"):
+        match_entry(result, pool.profile("weaker"), fjord.rubric, "baseline")
+    assert pool.matches(fjord.id) == pool.audit_log() == []
+
+
+def test_a_refused_match_records_nothing(pool):
+    assert main(["match", "fjord", "--scorer", "llm"]) == 3
+    assert pool.audit_log() == []
+
+
+def test_audit_command_lists_and_checks_rankings(pool, capsys):
+    assert main(["match", "fjord", "--today", "2026-11-26"]) == 0
+    assert main(["match", "fjord", "--scorer", "llm", "--replay", str(STAND_IN)]) == 0
+    capsys.readouterr()
+    assert main(["audit", "fjord"]) == 0
+    out = capsys.readouterr().out
+    assert "2 rankings and 6 matches in the audit log" in out
+    assert "rubric version 1  baseline (baseline-v1)  3 candidates  reproduced" in out
+    assert "llm (replay:hand-written placeholder" in out
+    assert "NOT REPRODUCED" not in out
+    # Changed behind the repository's back, the log no longer checks out.
+    with pool.engine.begin() as connection:
+        entry = pool.audit_log(kind=AuditKind.RANKING)[0]
+        entry.payload["ranking"][0]["total"] = 1.0
+        connection.execute(
+            update(AuditEntryRow)
+            .where(AuditEntryRow.id == entry.id)
+            .values(payload=entry.payload)
+        )
+    assert main(["audit", "fjord"]) == 1
+    assert "NOT REPRODUCED" in capsys.readouterr().out
+    assert main(["audit", "nothing"]) == 2

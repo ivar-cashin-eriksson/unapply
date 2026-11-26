@@ -53,6 +53,7 @@ class BaselineScorer:
         `default_taxonomy()`.
     """
 
+    name = "baseline"
     model = BASELINE_MODEL
 
     def __init__(self, taxonomy: Taxonomy | None = None) -> None:

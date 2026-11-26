@@ -61,6 +61,8 @@ class LLMScorer:
         GitHub username, if known.
     """
 
+    name = "llm"
+
     def __init__(self, llm: StructuredLLM, names: list[str] | None = None) -> None:
         self.llm = llm
         self.model = llm.model

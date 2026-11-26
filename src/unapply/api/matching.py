@@ -25,7 +25,7 @@ from unapply.matching import (
     latest,
     rank,
 )
-from unapply.matching.run import MatchingError, match_job
+from unapply.matching.run import MatchingError, match_job, record_ranking
 from unapply.schemas import Job
 
 router = APIRouter(prefix="/jobs", tags=["matching"])
@@ -86,7 +86,8 @@ def ranking(
     """Read the job's ranking from stored matches: each candidate's latest match.
 
     No model is called. Hard filter outcomes are worked out again for candidates
-    whose profile hasn't changed since.
+    whose profile hasn't changed since. The ranking shown is recorded in the audit
+    log, like every ranking.
     """
     job = ctx.repo.job(name)
     if job is None:
@@ -103,7 +104,9 @@ def ranking(
         ]
     )
     scored = job.model_copy(update={"rubric": rubric})
-    return _ranking(ctx, name, scored, scorer, rank(matches, rubric), {})
+    ranked = rank(matches, rubric)
+    record_ranking(ctx.repo, scored, ranked, scorer)
+    return _ranking(ctx, name, scored, scorer, ranked, {})
 
 
 def _ranking(
