@@ -1509,7 +1509,9 @@ name = "unapply"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "anthropic" },
     { name = "pydantic" },
+    { name = "pypdf" },
 ]
 
 [package.optional-dependencies]
@@ -1521,12 +1523,6 @@ db = [
     { name = "pgvector" },
     { name = "psycopg", extra = ["binary"] },
     { name = "sqlalchemy" },
-]
-ingest = [
-    { name = "pypdf" },
-]
-llm = [
-    { name = "anthropic" },
 ]
 mcp = [
     { name = "mcp" },
@@ -1541,17 +1537,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", marker = "extra == 'llm'", specifier = ">=0.40" },
+    { name = "anthropic", specifier = ">=2.14.0" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.2" },
     { name = "pgvector", marker = "extra == 'db'", specifier = ">=0.3" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'db'", specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.8" },
-    { name = "pypdf", marker = "extra == 'ingest'", specifier = ">=5.0" },
+    { name = "pypdf", specifier = ">=7.1.1" },
     { name = "sqlalchemy", marker = "extra == 'db'", specifier = ">=2.0" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.30" },
 ]
-provides-extras = ["api", "llm", "mcp", "db", "ingest"]
+provides-extras = ["api", "mcp", "db"]
 
 [package.metadata.requires-dev]
 dev = [

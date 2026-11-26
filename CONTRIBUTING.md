@@ -34,6 +34,11 @@ high-risk under the EU AI Act. See the design principles in the README.
   in one place.
 - Validate model output against the Pydantic schemas. Don't pass raw model text on.
 - Keep prompts in files next to the code that uses them, not inline in long strings.
+- The model answers in its own schemas (such as `Extracted*` in `ingest/extract.py`),
+  not the domain schemas: it can't invent ids, and its output is checked before it
+  becomes domain data. Their `Field(description=...)` texts are sent to the model, so
+  write them as instructions; a one-line class docstring is enough.
+- Every quote the model cites must be found in its source text, or it is discarded.
 
 ## Naming
 

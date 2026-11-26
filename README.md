@@ -63,6 +63,7 @@ uv run pytest
 | `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
 | `uv run ruff format .` | Format |
 | `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
+| `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` or `ant auth login`) |
 
 ## Layout
 
@@ -70,6 +71,8 @@ uv run pytest
 |---|---|
 | `src/unapply/` | The Python package |
 | `src/unapply/schemas/` | Pydantic schemas: profiles, evidence, skills, jobs, rubrics, matches |
+| `src/unapply/ingest/` | Loading material (PDF, text, LinkedIn export, GitHub) and extracting a profile |
+| `src/unapply/llm.py` | The one place that calls a language model |
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
 | `docs/` | Plans and design notes |
 | `tests/` | Tests for the package |
