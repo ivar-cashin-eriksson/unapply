@@ -118,7 +118,7 @@ def test_deleting_a_row_removes_the_item(profile):
             lambda d: d.update(profile="00000000-0000-0000-0000-000000000000"),
             "is for profile",
         ),
-        (lambda d: d["skills"][0].update(level=7), "level"),
+        (lambda d: d["skills"][0].update(level=7), 'skills "danish" level'),
         (lambda d: d["skills"][0].update(name="rust"), "unknown skills"),
         (lambda d: d["skills"].append(dict(d["skills"][0])), "more than once"),
         (lambda d: d["experiences"][0].update(start="March 2021"), "isn't YYYY"),
