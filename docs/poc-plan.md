@@ -72,8 +72,16 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   assessment. A developer view adds an internal Assessment page. A test checks that
   no assessment wording appears on any candidate page.
 
-### M3: Job rubric
-- Paste a job ad, have the LLM extract a `Rubric`, and let the recruiter edit it.
+### M3: Job rubric (done)
+- `unapply job extract`: a job ad becomes a draft rubric: hard filters (locations,
+  work modes, work permits, minimum years) and must-have / nice-to-have criteria with
+  skill, minimum level and weight 1 to 5. Every criterion quotes the ad; criteria
+  whose quote isn't in it, or that repeat another, are dropped. Instructions in the
+  ad are ignored (the fixture ad contains one).
+- `unapply job export` / `apply`, and the app's Employer side: the recruiter edits
+  filters and criteria and approves; any change raises the rubric's version.
+- Demo: the fictional Fjord Grocery ad, which fits John Doe partly. Its recorded
+  extraction is still a hand-written stand-in until it is recorded with Claude.
 
 ### M4: Matching over MCP
 - Deterministic hard filters first (location, work permit, seniority band).

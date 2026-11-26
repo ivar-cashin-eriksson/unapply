@@ -135,3 +135,76 @@ def test_candidate_view_hides_the_assessment():
     shown = candidate_view(p).model_dump_json()
     assert "overclaims" not in shown and '"estimate":null' in shown.replace(" ", "")
     assert p.skill("kafka").estimate is not None  # The original is untouched.
+
+
+def test_edited_rubric_table_makes_a_valid_sheet():
+    from unapply.app.forms import criterion_rows, rubric_sheet
+    from unapply.jobs.sheet import apply_rubric_sheet
+    from unapply.schemas import Criterion, CriterionKind, Job, Rubric
+
+    job = Job(
+        company="Acme",
+        title="Engineer",
+        ad_text="Strong Python. Rust is a plus.",
+        rubric=Rubric(
+            criteria=[
+                Criterion(
+                    kind=CriterionKind.MUST_HAVE,
+                    description="Strong Python",
+                    skill="python",
+                    weight=5,
+                    source_quote="Strong Python.",
+                ),
+                Criterion(
+                    kind=CriterionKind.NICE_TO_HAVE,
+                    description="Rust",
+                    skill="rust",
+                    weight=1,
+                    source_quote="Rust is a plus.",
+                ),
+            ]
+        ),
+    )
+    rows = _through_pandas(criterion_rows(job))
+    assert rows[0]["kind"] == "Must have" and rows[0]["level"] == "—"
+    rows[0]["level"] = "4 · advanced"
+    rows = rows[:1] + [  # Rust deleted, one criterion added, one empty row
+        {
+            "id": None,
+            "kind": "Nice to have",
+            "description": "Kubernetes",
+            "skill": "Kubernetes",
+            "level": "—",
+            "weight": math.nan,
+            "quote": None,
+        },
+        {
+            "id": None,
+            "kind": None,
+            "description": None,
+            "skill": None,
+            "level": None,
+            "weight": math.nan,
+            "quote": None,
+        },
+    ]
+    sheet = rubric_sheet(
+        job,
+        company="Acme",
+        title="Engineer",
+        filters={
+            "locations": ["Aarhus"],
+            "work_modes": ["onsite"],
+            "required_work_permits": [],
+            "min_years_experience": None,
+        },
+        rows=rows,
+        approve=True,
+    )
+    updated = apply_rubric_sheet(job, sheet)
+    r = updated.rubric
+    assert [c.description for c in r.criteria] == ["Strong Python", "Kubernetes"]
+    assert r.criteria[0].min_level == SkillLevel.ADVANCED
+    assert r.criteria[0].source_quote == "Strong Python."
+    assert (r.criteria[1].skill, r.criteria[1].weight) == ("kubernetes", 3.0)
+    assert r.version == 2 and r.approved_at is not None

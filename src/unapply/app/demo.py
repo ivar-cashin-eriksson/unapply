@@ -16,9 +16,11 @@ import yaml
 from unapply.llm import ReplayLLM
 from unapply.review import export_review_sheet
 from unapply.schemas import Profile, SourceKind
-from unapply.workspace import Workspace
+from unapply.workspace import Workspace, jobs_dir
 
-FIXTURE = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "john_doe"
+FIXTURES = Path(__file__).resolve().parents[3] / "tests" / "fixtures"
+FIXTURE = FIXTURES / "john_doe"
+JOB_FIXTURE = FIXTURES / "jobs" / "fjord_grocery"
 
 
 def available() -> bool:
@@ -57,13 +59,36 @@ def create_demo(base: Path | None = None) -> Workspace:
     return ws
 
 
+def create_demo_job(base: Path | None = None) -> Workspace:
+    """Create a new demo job workspace with the Fjord Grocery ad.
+
+    Parameters
+    ----------
+    base : Path or None, optional
+        Folder of job workspaces, by default `jobs_dir()`.
+
+    Returns
+    -------
+    Workspace
+        A workspace named "fjord-grocery-demo", or with a number if taken.
+    """
+    base = base or jobs_dir()
+    taken = set(Workspace.names(base))
+    name, n = "fjord-grocery-demo", 2
+    while name in taken:
+        name, n = f"fjord-grocery-demo-{n}", n + 1
+    ws = Workspace.create(name, base, demo=True)
+    shutil.copy(JOB_FIXTURE / "ad.md", ws.root / "ad.md")
+    return ws
+
+
 def demo_llm(purpose: str, profile: Profile | None = None) -> ReplayLLM:
     """Pick the recorded model for a step of John's journey.
 
     Parameters
     ----------
     purpose : str
-        "extract", "estimate" or "questions".
+        "extract", "estimate", "questions" or "rubric".
     profile : Profile or None, optional
         For "estimate": after an interview, the re-estimate is replayed.
 
@@ -72,6 +97,8 @@ def demo_llm(purpose: str, profile: Profile | None = None) -> ReplayLLM:
     ReplayLLM
         Replays the recorded answer.
     """
+    if purpose == "rubric":
+        return ReplayLLM(JOB_FIXTURE / "extraction.json")
     if purpose == "extract":
         return ReplayLLM(FIXTURE / "extraction.json")
     if purpose == "questions":

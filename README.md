@@ -72,11 +72,18 @@ without calling the API.
 uv run unapply app
 ```
 
-Opens the app in your browser: create a candidate, upload material, review the
-extracted profile, estimate levels, answer follow-up questions and see the result.
-Each candidate's files are kept in `data/<name>/`, with a copy of the profile after
-every step. Paid API calls stay off until you turn on the toggle in the sidebar, and
-**Load the John Doe demo** runs the whole journey for free with recorded answers.
+Opens the app in your browser, with two sides switched in the sidebar:
+
+- **Candidate:** upload material, review the extracted profile, answer follow-up
+  questions and see the result. The assessment runs in the background and is never
+  shown to candidates; **Developer view** adds an internal Assessment page.
+- **Employer:** paste a job ad, extract a rubric (hard filters and weighted criteria,
+  each quoting the ad), edit and approve it. Candidates never see rubrics.
+
+Candidates are kept in `data/<name>/` and jobs in `data/jobs/<name>/`, each with a
+copy after every step. Paid API calls stay off until you turn on the toggle in the
+sidebar, and the **Demo** buttons (John Doe, Fjord Grocery) run everything for free
+with recorded answers.
 
 ## Common commands
 
@@ -90,6 +97,9 @@ every step. Paid API calls stay off until you turn on the toggle in the sidebar,
 | `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
 | `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` in `.env`) |
 | `uv run unapply ingest ... --record answer.json` / `--replay answer.json` | Save the model's answer, or reuse a saved one without calling the API |
+| `uv run unapply job extract ad.md --out data/jobs/acme.json` | Extract a rubric from a job ad (calls the Claude API: add `--allow-api`) |
+| `uv run unapply job export data/jobs/acme.json --sheet data/jobs/acme.yaml` | Write a rubric sheet to edit and approve |
+| `uv run unapply job apply data/jobs/acme.json data/jobs/acme.yaml --out data/jobs/acme.json` | Apply the edited rubric sheet |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 | `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |
@@ -106,7 +116,8 @@ every step. Paid API calls stay off until you turn on the toggle in the sidebar,
 | `src/unapply/llm.py` | The one place that calls a language model |
 | `src/unapply/estimation/` | Skill estimation from evidence, and claim support |
 | `src/unapply/interview/` | Follow-up questions (rules choose, a model words them) and the answer sheet |
-| `src/unapply/app/` | The candidate app (Streamlit) and the free John Doe demo |
+| `src/unapply/app/` | The app (Streamlit): `candidate.py`, `employer.py`, shared helpers and the demos |
+| `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
