@@ -73,7 +73,7 @@ blocked.
 
 Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 
-### 1. [ ] CI on GitHub
+### 1. [x] CI on GitHub
 
 - `.github/workflows/ci.yml`: on push and pull request, set up uv and Python 3.12, run
   `ruff check`, `ruff format --check` and `pytest`. Later tasks add the frontend checks.
