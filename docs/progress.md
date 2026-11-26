@@ -115,6 +115,36 @@ branch, what was done, what was tested, anything to know.
   real candidate name isn't stored anywhere, so only contact patterns and the
   GitHub username are redacted. Scoring over MCP is left for task 11. The API
   server from task 4 still runs on port 8765, so this used `uv run --no-sync`.
+- 2026-11-26 · Task 6, Ranking audit log · `feat/audit-log` · Added
+  `src/unapply/matching/audit.py` (`AuditEntry`, `content_hash`, `match_entry`,
+  `ranking_entry`, `reproduce_ranking`, `check_ranking`) and an append-only
+  `audit_log` table (migration `0003`, a schema change to the database; the Pydantic
+  schemas in `schemas/` are unchanged). A match entry keeps the rubric version and
+  its hash, the profile id and a SHA-256 hash of the profile scored (its version),
+  scorer ("baseline" or "llm") and model, the full `Match` with scores, the hard
+  filter outcomes, the scorer's problems and the time; it is saved in the same
+  transaction as the match (`Repository.save_match(match, audit=...)`). A ranking
+  entry keeps the rubric and every ranked match in full with rank and total, so it
+  reproduces from the log alone. `match_job` records both; the API's
+  `GET /jobs/<name>/ranking` records the ranking it shows too. New
+  `Repository.append_audit` / `audit_log`, and `unapply audit <job>` lists a job's
+  rankings and checks each (exit 1 if one doesn't reproduce). Append-only: the ORM
+  refuses updates and deletes of entries, and the repository has no method for
+  them. Scorers gained a `name` attribute ("baseline"/"llm") in the `Scorer`
+  protocol. Tested (9 new tests, 227 in all): hashes survive the database and see
+  changes; matching logs every match (profile hash, rubric hash, scorer, model,
+  scores, filter outcomes) and the ranking; a ranking is reproduced from the log
+  after the profile is replaced, and re-scoring the logged profile version gives
+  the logged scores; a swapped order, a changed score or a reweighted rubric is
+  detected; ORM updates and deletes are refused; a mismatched entry saves nothing;
+  a refused paid call logs nothing; the CLI command, including a log changed with
+  raw SQL; the API records both its rankings. To know: raw SQL can still change the
+  table (no database triggers, to stay portable), but `check_ranking` then reports
+  it; profiles and rubrics are hashed as their JSON with sorted keys, so a schema
+  change later changes the hashes of the same content; ranking entries repeat the
+  matches, which is redundant but makes each entry self-contained; matches stored
+  before this task have no match entry (nothing was lost, `check_ranking` skips
+  them). The API server from task 4 still runs on port 8765 (`uv run --no-sync`).
 
 ## Questions for Ivar
 

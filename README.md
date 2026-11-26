@@ -171,6 +171,14 @@ uv run unapply match fjord-grocery-demo --scorer llm --allow-api   # one paid ca
      but never the hard filters. Cited evidence must be the candidate's.
 3. **Ranking** by `Match.total`, the weighted mean of the criterion scores.
 
+4. **Audit log**: every match and every ranking is recorded in the append-only
+   `audit_log` table, with the rubric version and a hash of it, the scorer and
+   model, the scores, the hard filter outcomes, a hash of each profile scored (its
+   version) and the time. A ranking entry keeps the rubric and every ranked match in
+   full, so it can be ranked again from the log alone. Rankings read back through
+   the API's `/ranking` route are recorded too. `unapply audit <job>` lists a job's
+   rankings and checks that each one reproduces and agrees with its match entries.
+
 `--replay` and `--record` take a folder with one `<candidate>.json` each, or a file
 for one candidate. John Doe against Fjord Grocery: 0.81 with the baseline, 0.71 with
 the LLM scorer's stand-in answer (not yet a real recording; see
@@ -195,6 +203,7 @@ the LLM scorer's stand-in answer (not yet a real recording; see
 | `uv run unapply db init` | Create the database's tables, or migrate them to the newest version, and load the skill taxonomy |
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
 | `uv run unapply match acme` | Match the database's candidates to a job and rank them (`--scorer llm` calls the Claude API: add `--allow-api`) |
+| `uv run unapply audit acme` | List a job's rankings from the audit log and check that each reproduces |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 | `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |

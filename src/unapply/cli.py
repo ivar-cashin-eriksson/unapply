@@ -176,6 +176,15 @@ def main(argv: list[str] | None = None) -> int:
         "<candidate>.json per candidate, or a file for a single candidate."
     )
 
+    audit = commands.add_parser(
+        "audit",
+        help="List a job's rankings from the audit log and check each reproduces.",
+    )
+    audit.add_argument("job", help="The job's name in the database.")
+    audit.add_argument(
+        "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
+    )
+
     app = commands.add_parser("app", help="Open the app in a browser.")
     app.add_argument("--port", type=int, default=8501)
 
@@ -220,6 +229,8 @@ def _run(args: argparse.Namespace) -> int:
         return _db(args)
     if args.command == "match":
         return _match(args)
+    if args.command == "audit":
+        return _audit(args)
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -430,6 +441,48 @@ def _match(args: argparse.Namespace) -> int:
     if not matching.results:
         print("No candidate has an approved profile yet.")
     return 0
+
+
+def _audit(args: argparse.Namespace) -> int:
+    from unapply.db.engine import init_db
+    from unapply.db.repository import NotFound, Repository
+    from unapply.matching.audit import AuditKind, check_ranking
+
+    init_db(args.url)
+    repo = Repository.from_url(args.url)
+    try:
+        try:
+            job = repo.job(args.job)
+        except NotFound as e:
+            print(f"Can't audit: {e}", file=sys.stderr)
+            return 2
+        if job is None:
+            print(
+                f"No job {args.job!r} with a rubric in the database.", file=sys.stderr
+            )
+            return 2
+        log = repo.audit_log(job.id)
+    finally:
+        repo.engine.dispose()
+    rankings = [e for e in log if e.kind is AuditKind.RANKING]
+    matches = len(log) - len(rankings)
+    print(
+        f"{job.title} at {job.company}: {len(rankings)} rankings and {matches} "
+        "matches in the audit log"
+    )
+    failed = 0
+    for entry in rankings:
+        problems = check_ranking(entry, log)
+        failed += bool(problems)
+        print(
+            f"#{entry.id}  {entry.recorded_at:%Y-%m-%d %H:%M:%S}  rubric version "
+            f"{entry.rubric_version}  {entry.scorer} ({entry.model})  "
+            f"{len(entry.payload['ranking'])} candidates  "
+            f"{'NOT REPRODUCED' if problems else 'reproduced'}"
+        )
+        for p in problems:
+            print(f"    {p}")
+    return 1 if failed else 0
 
 
 def _write(path: Path, text: str) -> None:

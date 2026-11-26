@@ -132,7 +132,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Done when: John Doe against Fjord Grocery is scored by both scorers with sensible
   results, hard filters are tested at their edges, and everything runs offline.
 
-### 6. [ ] Ranking audit log
+### 6. [x] Ranking audit log
 
 - Every match and ranking records rubric version, profile version (hash), scorer and
   model, scores and time, in an append-only audit table.

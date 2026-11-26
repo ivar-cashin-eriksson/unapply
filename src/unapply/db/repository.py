@@ -3,8 +3,8 @@
 `Repository` stores what a `Workspace` folder stores, in the same terms: candidates
 and jobs by name, their current `Profile` or `Job`, a history of every step, and
 interview questions waiting for answers. It adds what folders can't do well: rubric
-versions that can't change once a match uses them, matches, and a copy of the skill
-taxonomy.
+versions that can't change once a match uses them, matches, an append-only audit log
+of matches and rankings, and a copy of the skill taxonomy.
 
 Every method runs in its own transaction, so a failed call changes nothing.
 """
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from unapply.db.engine import make_engine
 from unapply.db.models import (
+    AuditEntryRow,
     CandidateHistoryRow,
     CandidateRow,
     CandidateSkillRow,
@@ -40,6 +41,7 @@ from unapply.db.models import (
     SourceRow,
     TaxonomySkillRow,
 )
+from unapply.matching.audit import AuditEntry, AuditKind
 from unapply.schemas import Job, Match, Profile, Rubric
 from unapply.taxonomy import Taxonomy, TaxonomySkill
 from unapply.workspace import NAME
@@ -601,7 +603,7 @@ class Repository:
 
     # Matches
 
-    def save_match(self, match: Match) -> None:
+    def save_match(self, match: Match, audit: AuditEntry | None = None) -> None:
         """Store a match. Matches are never changed afterwards.
 
         Parameters
@@ -609,15 +611,23 @@ class Repository:
         match : Match
             The match. Its job and rubric version must be stored, and every
             criterion score must be for a criterion in that version.
+        audit : AuditEntry or None, optional
+            The match's audit entry (`unapply.matching.audit.match_entry`), stored
+            in the same transaction, so there is no match without its entry.
 
         Raises
         ------
         NotFound
             If the job or rubric version isn't stored.
         ValueError
-            If a match with the same id exists, or a score is for an unknown
-            criterion.
+            If a match with the same id exists, a score is for an unknown
+            criterion, or `audit` isn't this match's entry.
         """
+        if audit is not None and (audit.kind, audit.match_id) != (
+            AuditKind.MATCH,
+            match.id,
+        ):
+            raise ValueError(f"the audit entry isn't for match {match.id}")
         with self.transaction() as s:
             version_row = _rubric_row(s, match.job_id, match.rubric_version)
             if version_row is None:
@@ -662,6 +672,8 @@ class Repository:
                         evidence_ids=[str(e) for e in c.evidence_ids],
                     )
                 )
+            if audit is not None:
+                _store_audit(s, audit)
 
     def matches(self, job_id: UUID, rubric_version: int | None = None) -> list[Match]:
         """Read a job's matches, oldest first.
@@ -688,6 +700,55 @@ class Repository:
             if rubric_version is not None:
                 query = query.where(RubricVersionRow.version == rubric_version)
             return [_load_match(s, m, version) for m, version in s.execute(query)]
+
+    # Audit log
+
+    def append_audit(self, entry: AuditEntry) -> AuditEntry:
+        """Add an entry to the audit log. Entries can't be changed or removed.
+
+        Parameters
+        ----------
+        entry : AuditEntry
+            The entry, such as `unapply.matching.audit.ranking_entry(...)`. Its
+            `id` must be None.
+
+        Returns
+        -------
+        AuditEntry
+            The entry as stored, with its `id`.
+
+        Raises
+        ------
+        ValueError
+            If the entry has an id already.
+        """
+        with self.transaction() as s:
+            return _store_audit(s, entry)
+
+    def audit_log(
+        self, job_id: UUID | None = None, kind: AuditKind | None = None
+    ) -> list[AuditEntry]:
+        """Read the audit log, oldest first.
+
+        Parameters
+        ----------
+        job_id : UUID or None, optional
+            Only entries for this `Job.id`. By default every job's.
+        kind : AuditKind or None, optional
+            Only matches or only rankings. By default both.
+
+        Returns
+        -------
+        list of AuditEntry
+            The entries, in the order they were recorded.
+        """
+        with self.transaction() as s:
+            query = select(AuditEntryRow).order_by(AuditEntryRow.id)
+            if job_id is not None:
+                query = query.where(AuditEntryRow.job_id == job_id)
+            if kind is not None:
+                query = query.where(AuditEntryRow.kind == kind.value)
+            return [_load_audit(row) for row in s.scalars(query)]
 
     # Skill taxonomy
 
@@ -1129,4 +1190,35 @@ def _load_match(s: Session, m: MatchRow, rubric_version: int) -> Match:
             "model": m.model,
             "scored_at": m.scored_at,
         }
+    )
+
+
+_AUDIT_FIELDS = (
+    "kind",
+    "job_id",
+    "rubric_version",
+    "rubric_hash",
+    "scorer",
+    "model",
+    "match_id",
+    "profile_id",
+    "profile_hash",
+    "payload",
+    "recorded_at",
+)
+
+
+def _store_audit(s: Session, entry: AuditEntry) -> AuditEntry:
+    if entry.id is not None:
+        raise ValueError(f"audit entry {entry.id} is already stored")
+    values = {f: getattr(entry, f) for f in _AUDIT_FIELDS}
+    row = AuditEntryRow(**{**values, "kind": entry.kind.value})
+    s.add(row)
+    s.flush()
+    return entry.model_copy(update={"id": row.id})
+
+
+def _load_audit(row: AuditEntryRow) -> AuditEntry:
+    return AuditEntry.model_validate(
+        {"id": row.id, **{f: getattr(row, f) for f in _AUDIT_FIELDS}}
     )

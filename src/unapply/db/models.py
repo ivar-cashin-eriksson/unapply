@@ -1,4 +1,4 @@
-"""SQLAlchemy tables for candidates, profiles, jobs, rubrics and matches.
+"""SQLAlchemy tables for candidates, profiles, jobs, rubrics, matches and the audit log.
 
 The tables mirror the Pydantic schemas in `unapply.schemas`; `unapply.db.repository`
 converts between the two, so nothing else needs to know about the tables.
@@ -35,8 +35,9 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    event,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, Mapper, mapped_column
 
 # Stable constraint names, so migrations can refer to them on every database.
 NAMING_CONVENTION = {
@@ -375,3 +376,47 @@ class SkillRelationRow(Base):
         primary_key=True,
         index=True,
     )
+
+
+class AuditEntryRow(Base):
+    """One entry in the append-only audit log (`unapply.matching.audit.AuditEntry`).
+
+    An entry records a match (one candidate scored) or a ranking (a job's matches
+    put in order), with what is needed to check and reproduce it later. Like
+    matches, `job_id`, `match_id` and `profile_id` are plain ids rather than foreign
+    keys, so the log outlives profiles and jobs that are replaced. Entries are never
+    changed or deleted: the ORM refuses to (see `_refuse_changes`), and the
+    repository has no method that would.
+    """
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    job_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    rubric_version: Mapped[int] = mapped_column(Integer)
+    rubric_hash: Mapped[str] = mapped_column(String(80))
+    scorer: Mapped[str] = mapped_column(Text)
+    model: Mapped[str] = mapped_column(Text)
+    match_id: Mapped[UUID | None] = mapped_column(Uuid, index=True)
+    profile_id: Mapped[UUID | None] = mapped_column(Uuid)
+    profile_hash: Mapped[str | None] = mapped_column(String(80))
+    payload: Mapped[dict[str, Any]] = mapped_column()
+    recorded_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+@event.listens_for(AuditEntryRow, "before_update")
+@event.listens_for(AuditEntryRow, "before_delete")
+def _refuse_changes(
+    mapper: Mapper[AuditEntryRow],
+    connection: object,
+    target: AuditEntryRow,
+) -> None:
+    """Refuse to change or delete an audit entry through the ORM.
+
+    Raises
+    ------
+    ValueError
+        Always: the audit log is append-only.
+    """
+    raise ValueError(f"audit log entry {target.id} can't be changed or deleted")

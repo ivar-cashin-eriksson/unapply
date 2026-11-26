@@ -2,7 +2,8 @@
 
 Used by `unapply match` and the API. Only candidates who approved their profile are
 matched, and only against an approved rubric: matching locks the rubric version, so
-a draft would be frozen before the recruiter is done with it.
+a draft would be frozen before the recruiter is done with it. Every match and the
+ranking are recorded in the audit log (`unapply.matching.audit`).
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from datetime import date
 from typing import Any
 
 from unapply.db.repository import NotFound, Repository
+from unapply.matching.audit import AuditEntry, match_entry, ranking_entry
 from unapply.matching.scoring import MatchResult, Ranked, Scorer, match_candidate, rank
 from unapply.schemas import Job, Profile
 
@@ -37,11 +39,14 @@ class JobMatching:
         Each candidate's match, by candidate name.
     ranking : list of Ranked
         The matches, best first.
+    audit : AuditEntry
+        The ranking's entry in the audit log, as stored.
     """
 
     job: Job
     results: dict[str, MatchResult]
     ranking: list[Ranked]
+    audit: AuditEntry
 
     def name_of(self, ranked: Ranked) -> str:
         """Return the candidate name of a ranked match.
@@ -157,7 +162,8 @@ def match_job(
     Returns
     -------
     JobMatching
-        Each candidate's match and the ranking.
+        Each candidate's match and the ranking. Each match is stored with its
+        audit entry, then the ranking's entry is added.
 
     Raises
     ------
@@ -173,7 +179,38 @@ def match_job(
         name: match_candidate(profile, job, scorers[name], today)
         for name, profile in profiles.items()
     }
-    for result in results.values():
-        repo.save_match(result.match)
+    for name, result in results.items():
+        entry = match_entry(result, profiles[name], job.rubric, scorers[name].name)
+        repo.save_match(result.match, audit=entry)
     ranking = rank([r.match for r in results.values()], job.rubric)
-    return JobMatching(job=job, results=results, ranking=ranking)
+    audit = repo.append_audit(
+        ranking_entry(job, ranking, [s.name for s in scorers.values()])
+    )
+    return JobMatching(job=job, results=results, ranking=ranking, audit=audit)
+
+
+def record_ranking(
+    repo: Repository, job: Job, ranking: list[Ranked], scorer: str
+) -> AuditEntry:
+    """Record a ranking read back from stored matches in the audit log.
+
+    For rankings shown again without scoring, such as the API's ranking route;
+    `match_job` records its own.
+
+    Parameters
+    ----------
+    repo : Repository
+        The database.
+    job : Job
+        The job, with the rubric version the matches were ranked against.
+    ranking : list of Ranked
+        The ranking, best first, as shown.
+    scorer : str
+        The scorer whose matches were ranked, "baseline" or "llm".
+
+    Returns
+    -------
+    AuditEntry
+        The entry, as stored.
+    """
+    return repo.append_audit(ranking_entry(job, ranking, [scorer]))

@@ -36,10 +36,13 @@ class Scorer(Protocol):
 
     Attributes
     ----------
+    name : str
+        The kind of scorer, recorded in the audit log: "baseline" or "llm".
     model : str
         Model or method, recorded on the match, such as "baseline-v1".
     """
 
+    name: str
     model: str
 
     def score(self, profile: Profile, rubric: Rubric) -> ScoringResult:

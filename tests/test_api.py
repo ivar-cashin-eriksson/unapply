@@ -20,6 +20,7 @@ from unapply.cli import main
 from unapply.db.engine import database_url, init_db
 from unapply.db.repository import Repository
 from unapply.llm import API_SWITCH, ReplayLLM
+from unapply.matching.audit import AuditKind, check_ranking
 from unapply.schemas import Match
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -724,6 +725,25 @@ def test_match_the_demos_with_both_scorers_for_free(client, fake):
     assert [c["match_id"] for c in latest] == [again["match_id"]]
     # The matched rubric is locked.
     assert client.post(f"/jobs/{job}/extract").status_code == 409
+
+
+def test_every_ranking_shown_is_in_the_audit_log(client, repo):
+    interviewed_demo(client)
+    job = ok(client.post("/demos/job"), 201)["name"]
+    approve_rubric(client, job)
+    matched = ok(client.post(f"/jobs/{job}/match"))["candidates"][0]
+    ok(client.get(f"/jobs/{job}/ranking"))
+    log = repo.audit_log()
+    assert [e.kind for e in log] == [
+        AuditKind.MATCH,
+        AuditKind.RANKING,
+        AuditKind.RANKING,
+    ]
+    assert str(log[0].match_id) == matched["match_id"]
+    for entry in log[1:]:
+        assert entry.scorer == "baseline"
+        assert entry.payload["ranking"][0]["match"]["id"] == matched["match_id"]
+        assert check_ranking(entry, log) == []
 
 
 def test_matching_refuses_paid_llm_calls_unless_allowed(client, fake):
