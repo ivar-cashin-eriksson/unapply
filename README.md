@@ -63,6 +63,18 @@ off, except the opt-in live test. Every real call is logged with its estimated c
 in `data/api_calls.jsonl`. Use `--record` once and `--replay` after that to work
 without calling the API.
 
+## The candidate app
+
+```bash
+uv run unapply app
+```
+
+Opens the app in your browser: create a candidate, upload material, review the
+extracted profile, estimate levels, answer follow-up questions and see the result.
+Each candidate's files are kept in `data/<name>/`, with a copy of the profile after
+every step. Paid API calls stay off until you turn on the toggle in the sidebar, and
+**Load the John Doe demo** runs the whole journey for free with recorded answers.
+
 ## Common commands
 
 | Command | What it does |
@@ -91,6 +103,8 @@ without calling the API.
 | `src/unapply/llm.py` | The one place that calls a language model |
 | `src/unapply/estimation/` | Skill estimation from evidence, and claim support |
 | `src/unapply/interview/` | Follow-up questions (rules choose, a model words them) and the answer sheet |
+| `src/unapply/app/` | The candidate app (Streamlit) and the free John Doe demo |
+| `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
 | `docs/` | Plans and design notes |

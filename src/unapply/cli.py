@@ -107,6 +107,9 @@ def main(argv: list[str] | None = None) -> int:
         "--out", type=Path, required=True, help="Profile JSON to write."
     )
 
+    app = commands.add_parser("app", help="Open the candidate app in a browser.")
+    app.add_argument("--port", type=int, default=8501)
+
     review = commands.add_parser("review", help="Review and approve a profile.")
     steps = review.add_subparsers(dest="step", required=True)
     export = steps.add_parser("export", help="Write a review sheet to edit.")
@@ -127,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
+    if args.command == "app":
+        return _app(args)
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -182,6 +187,15 @@ def _interview(args: argparse.Namespace) -> int:
     if n:
         print("Run `unapply estimate` on it to update the estimates.")
     return 0
+
+
+def _app(args: argparse.Namespace) -> int:
+    import subprocess
+
+    script = Path(__file__).parent / "app" / "main.py"
+    command = [sys.executable, "-m", "streamlit", "run", str(script)]
+    command += ["--server.port", str(args.port), "--browser.gatherUsageStats", "false"]
+    return subprocess.call(command)
 
 
 def _add_model_options(
