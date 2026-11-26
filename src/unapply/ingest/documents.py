@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 import zipfile
 from collections import Counter
 from dataclasses import dataclass
@@ -77,8 +78,9 @@ def load_path(path: Path, kind: SourceKind | None = None) -> list[SourceDocument
     path : Path
         A file or a folder. Folders are searched recursively.
     kind : SourceKind or None, optional
-        Kind to give the documents. By default it is guessed: PDFs are CVs,
-        LinkedIn exports are LinkedIn, and other text files are free text.
+        Kind to give the documents. By default it is guessed: PDFs and text
+        files named like `cv.md` or `jane_resume.txt` are CVs, LinkedIn exports
+        are LinkedIn, and other text files are free text.
 
     Returns
     -------
@@ -104,7 +106,8 @@ def load_path(path: Path, kind: SourceKind | None = None) -> list[SourceDocument
         return [_document(kind or SourceKind.CV, path, _pdf_text(path))]
     if suffix in TEXT_SUFFIXES:
         text = path.read_text(encoding="utf-8")
-        return [_document(kind or SourceKind.FREE_TEXT, path, text)]
+        guessed = SourceKind.CV if _looks_like_cv(path) else SourceKind.FREE_TEXT
+        return [_document(kind or guessed, path, text)]
     return []
 
 
@@ -206,4 +209,11 @@ def _pdf_text(path: Path) -> str:
 def _document(kind: SourceKind, path: Path, text: str) -> SourceDocument:
     return SourceDocument(
         source=Source(kind=kind, uri=path.as_posix()), name=path.name, text=text
+    )
+
+
+def _looks_like_cv(path: Path) -> bool:
+    """Whether a text file's name says it is a CV, such as cv.md or john_resume.txt."""
+    return bool(
+        re.search(r"(^|[_\-. ])(cv|resume|résumé)([_\-. ]|$)", path.stem.lower())
     )

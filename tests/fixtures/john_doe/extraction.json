@@ -1,0 +1,733 @@
+{
+  "model": "claude-opus-5-5",
+  "answer": {
+    "headline": "Data scientist with six years of experience in retail and logistics analytics, focused on forecasting, pricing models and A/B testing",
+    "experiences": [
+      {
+        "title": "Senior Data Scientist",
+        "organisation": "Nordlys Retail A/S",
+        "start": "2022-03",
+        "end": null,
+        "summary": "Built a LightGBM demand forecasting model for 4,000 products across 120 stores, cutting forecast error by 18% against a moving-average baseline. Designed and analysed A/B tests of pricing and promotion changes, maintains 60 dbt models in Snowflake feeding commercial dashboards, and mentors two junior data scientists.",
+        "skills": [
+          "lightgbm",
+          "demand forecasting",
+          "a/b testing",
+          "power analysis",
+          "dbt",
+          "snowflake",
+          "mentoring",
+          "code review",
+          "retail analytics",
+          "pricing"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built a demand forecasting model with LightGBM for 4,000 products across 120 stores,"
+          },
+          {
+            "source": "S1",
+            "quote": "reducing forecast error by 18% compared with the previous moving-average baseline."
+          },
+          {
+            "source": "S1",
+            "quote": "Designed and analysed A/B tests of pricing and promotion changes, from power analysis to"
+          },
+          {
+            "source": "S1",
+            "quote": "Maintain 60 dbt models in Snowflake that feed the commercial dashboards."
+          },
+          {
+            "source": "S1",
+            "quote": "Mentor two junior data scientists and run the team's monthly code review session."
+          }
+        ]
+      },
+      {
+        "title": "Data Scientist",
+        "organisation": "Kestrel Logistics ApS",
+        "start": "2019-08",
+        "end": "2022-02",
+        "summary": "Developed a churn model for business customers using logistic regression and random forests in scikit-learn and presented results to sales leadership. Automated weekly reporting with Airflow and Python, and built Tableau dashboards on delivery performance used by 40 regional managers.",
+        "skills": [
+          "scikit-learn",
+          "logistic regression",
+          "random forests",
+          "churn prediction",
+          "airflow",
+          "python",
+          "tableau",
+          "stakeholder communication",
+          "logistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Developed a churn model for business customers with scikit-learn (logistic regression and"
+          },
+          {
+            "source": "S1",
+            "quote": "random forests) and presented the results to the sales leadership."
+          },
+          {
+            "source": "S1",
+            "quote": "Automated weekly reporting with Airflow and Python, saving about a day of analyst time"
+          },
+          {
+            "source": "S1",
+            "quote": "Built Tableau dashboards on delivery performance used by 40 regional managers."
+          }
+        ]
+      },
+      {
+        "title": "Data Analyst (student job)",
+        "organisation": "Kestrel Logistics ApS",
+        "start": "2018-01",
+        "end": "2019-07",
+        "summary": "Wrote SQL queries and Excel reports for the operations team.",
+        "skills": [
+          "sql",
+          "excel",
+          "logistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Wrote SQL queries and Excel reports for the operations team."
+          }
+        ]
+      },
+      {
+        "title": "MSc in Business Analytics",
+        "organisation": "Jutland School of Economics",
+        "start": "2017",
+        "end": "2019",
+        "summary": "Master's degree in business analytics with a thesis on forecasting parcel volumes with gradient boosting.",
+        "skills": [
+          "gradient boosting",
+          "time series forecasting",
+          "logistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "MSc in Business Analytics, Jutland School of Economics, 2017 to 2019"
+          },
+          {
+            "source": "S1",
+            "quote": "parcel volumes with gradient boosting"
+          }
+        ]
+      },
+      {
+        "title": "BSc in Economics",
+        "organisation": "Jutland School of Economics",
+        "start": "2014",
+        "end": "2017",
+        "summary": "Bachelor's degree in economics.",
+        "skills": [
+          "economics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "BSc in Economics, Jutland School of Economics, 2014 to 2017."
+          }
+        ]
+      },
+      {
+        "title": "Bike-share availability prediction app (personal project)",
+        "organisation": "Personal project",
+        "start": null,
+        "end": null,
+        "summary": "Built a Streamlit app that predicts bike-share availability in Copenhagen from open data and deployed it with Docker on a cloud server.",
+        "skills": [
+          "streamlit",
+          "docker",
+          "open data",
+          "predictive modelling"
+        ],
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "In my spare time I built a small Streamlit app that predicts bike-share availability in"
+          },
+          {
+            "source": "S2",
+            "quote": "Copenhagen from open data. I deployed it with Docker on a small cloud server."
+          }
+        ]
+      },
+      {
+        "title": "Open-source contributor",
+        "organisation": "Open-source time series forecasting library",
+        "start": null,
+        "end": null,
+        "summary": "Contributed documentation fixes to an open-source time series forecasting library.",
+        "skills": [
+          "open-source contribution",
+          "technical documentation",
+          "time series forecasting"
+        ],
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "I have contributed documentation fixes to an open-source time series forecasting library."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "forecasting and pricing models in Python and SQL, run A/B tests, and work closely with"
+          },
+          {
+            "source": "S1",
+            "quote": "Automated weekly reporting with Airflow and Python, saving about a day of analyst time"
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "forecasting and pricing models in Python and SQL, run A/B tests, and work closely with"
+          },
+          {
+            "source": "S1",
+            "quote": "Wrote SQL queries and Excel reports for the operations team."
+          }
+        ]
+      },
+      {
+        "name": "pandas",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python (pandas, scikit-learn, LightGBM), SQL, dbt, Snowflake, Airflow, Docker, Git, Tableau,"
+          }
+        ]
+      },
+      {
+        "name": "lightgbm",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built a demand forecasting model with LightGBM for 4,000 products across 120 stores,"
+          }
+        ]
+      },
+      {
+        "name": "scikit-learn",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Developed a churn model for business customers with scikit-learn (logistic regression and"
+          }
+        ]
+      },
+      {
+        "name": "dbt",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain 60 dbt models in Snowflake that feed the commercial dashboards."
+          }
+        ]
+      },
+      {
+        "name": "snowflake",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain 60 dbt models in Snowflake that feed the commercial dashboards."
+          }
+        ]
+      },
+      {
+        "name": "airflow",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Automated weekly reporting with Airflow and Python, saving about a day of analyst time"
+          }
+        ]
+      },
+      {
+        "name": "tableau",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built Tableau dashboards on delivery performance used by 40 regional managers."
+          }
+        ]
+      },
+      {
+        "name": "excel",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Wrote SQL queries and Excel reports for the operations team."
+          }
+        ]
+      },
+      {
+        "name": "docker",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "Copenhagen from open data. I deployed it with Docker on a small cloud server."
+          },
+          {
+            "source": "S1",
+            "quote": "Python (pandas, scikit-learn, LightGBM), SQL, dbt, Snowflake, Airflow, Docker, Git, Tableau,"
+          }
+        ]
+      },
+      {
+        "name": "git",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python (pandas, scikit-learn, LightGBM), SQL, dbt, Snowflake, Airflow, Docker, Git, Tableau,"
+          }
+        ]
+      },
+      {
+        "name": "aws",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "AWS (S3, SageMaker), statistics, A/B testing, forecasting."
+          }
+        ]
+      },
+      {
+        "name": "aws s3",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "AWS (S3, SageMaker)"
+          }
+        ]
+      },
+      {
+        "name": "amazon sagemaker",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "AWS (S3, SageMaker)"
+          }
+        ]
+      },
+      {
+        "name": "spark",
+        "category": "technology",
+        "self_level": 2,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Familiar with Spark."
+          }
+        ]
+      },
+      {
+        "name": "pytorch",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "online course in deep learning with PyTorch."
+          }
+        ]
+      },
+      {
+        "name": "streamlit",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "In my spare time I built a small Streamlit app that predicts bike-share availability in"
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built a demand forecasting model with LightGBM for 4,000 products across 120 stores,"
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built a demand forecasting model with LightGBM for 4,000 products across 120 stores,"
+          },
+          {
+            "source": "S1",
+            "quote": "parcel volumes with gradient boosting"
+          },
+          {
+            "source": "S2",
+            "quote": "I have contributed documentation fixes to an open-source time series forecasting library."
+          }
+        ]
+      },
+      {
+        "name": "gradient boosting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "parcel volumes with gradient boosting"
+          },
+          {
+            "source": "S1",
+            "quote": "Built a demand forecasting model with LightGBM for 4,000 products across 120 stores,"
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Designed and analysed A/B tests of pricing and promotion changes, from power analysis to"
+          },
+          {
+            "source": "S1",
+            "quote": "forecasting and pricing models in Python and SQL, run A/B tests, and work closely with"
+          }
+        ]
+      },
+      {
+        "name": "power analysis",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Designed and analysed A/B tests of pricing and promotion changes, from power analysis to"
+          }
+        ]
+      },
+      {
+        "name": "pricing models",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "forecasting and pricing models in Python and SQL, run A/B tests, and work closely with"
+          }
+        ]
+      },
+      {
+        "name": "churn prediction",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Developed a churn model for business customers with scikit-learn (logistic regression and"
+          }
+        ]
+      },
+      {
+        "name": "logistic regression",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Developed a churn model for business customers with scikit-learn (logistic regression and"
+          }
+        ]
+      },
+      {
+        "name": "random forests",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "random forests) and presented the results to the sales leadership."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "AWS (S3, SageMaker), statistics, A/B testing, forecasting."
+          }
+        ]
+      },
+      {
+        "name": "deep learning",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "online course in deep learning with PyTorch."
+          }
+        ]
+      },
+      {
+        "name": "reporting automation",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Automated weekly reporting with Airflow and Python, saving about a day of analyst time"
+          }
+        ]
+      },
+      {
+        "name": "dashboarding",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built Tableau dashboards on delivery performance used by 40 regional managers."
+          },
+          {
+            "source": "S1",
+            "quote": "Maintain 60 dbt models in Snowflake that feed the commercial dashboards."
+          }
+        ]
+      },
+      {
+        "name": "data modelling",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Maintain 60 dbt models in Snowflake that feed the commercial dashboards."
+          }
+        ]
+      },
+      {
+        "name": "model deployment",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "Copenhagen from open data. I deployed it with Docker on a small cloud server."
+          }
+        ]
+      },
+      {
+        "name": "retail analytics",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data scientist with six years of experience in retail and logistics analytics. I build"
+          },
+          {
+            "source": "S1",
+            "quote": "Built a demand forecasting model with LightGBM for 4,000 products across 120 stores,"
+          }
+        ]
+      },
+      {
+        "name": "logistics analytics",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Data scientist with six years of experience in retail and logistics analytics. I build"
+          },
+          {
+            "source": "S1",
+            "quote": "Built Tableau dashboards on delivery performance used by 40 regional managers."
+          }
+        ]
+      },
+      {
+        "name": "pricing and promotions",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Designed and analysed A/B tests of pricing and promotion changes, from power analysis to"
+          }
+        ]
+      },
+      {
+        "name": "customer churn",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Developed a churn model for business customers with scikit-learn (logistic regression and"
+          }
+        ]
+      },
+      {
+        "name": "urban mobility",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "In my spare time I built a small Streamlit app that predicts bike-share availability in"
+          }
+        ]
+      },
+      {
+        "name": "mentoring",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Mentor two junior data scientists and run the team's monthly code review session."
+          }
+        ]
+      },
+      {
+        "name": "code review",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Mentor two junior data scientists and run the team's monthly code review session."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "random forests) and presented the results to the sales leadership."
+          },
+          {
+            "source": "S1",
+            "quote": "commercial teams so that models are actually used."
+          }
+        ]
+      },
+      {
+        "name": "open-source contribution",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S2",
+            "quote": "I have contributed documentation fixes to an open-source time series forecasting library."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      },
+      {
+        "name": "english",
+        "category": "language",
+        "self_level": 4,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "English (fluent)"
+          }
+        ]
+      },
+      {
+        "name": "german",
+        "category": "language",
+        "self_level": 2,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "German (basic)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [],
+      "dealbreakers": []
+    }
+  }
+}
