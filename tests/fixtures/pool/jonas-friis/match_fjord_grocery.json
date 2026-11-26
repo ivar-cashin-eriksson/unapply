@@ -1,0 +1,91 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.25,
+        "rationale": "Claims expert Python, but the only described use is one personal Kaggle notebook; the work roles are Power BI and SQL views.",
+        "evidence": [
+          "E5",
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.55,
+        "rationale": "Maintains the SQL views behind the operations dashboards: working SQL; nothing backs the expert claim.",
+        "evidence": [
+          "E2",
+          "E7"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.15,
+        "rationale": "Claims expert forecasting, but the evidence is one personal Prophet notebook on Kaggle data; nothing in production.",
+        "evidence": [
+          "E4",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.05,
+        "rationale": "Claims expert statistics with no described use, course or degree.",
+        "evidence": [
+          "E12"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.05,
+        "rationale": "Claims expert A/B testing with no described test.",
+        "evidence": [
+          "E13"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.5,
+        "rationale": "Builds dashboards for the operations team, which implies working with non-technical users; no direct evidence of presenting or explaining.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.05,
+        "rationale": "Claims expert Spark with no described use.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.1,
+        "rationale": "An online deep learning course in 2022; no model built.",
+        "evidence": [
+          "E10",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 0.0,
+        "rationale": "Logistics reporting; no retail or e-commerce experience. The Kaggle store sales data is a personal project.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 0.9,
+        "rationale": "Danish is listed as a language, without a level; Danish work suggests it is fluent.",
+        "evidence": [
+          "E14"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 1,
+        "confidence": 0.3,
+        "rationale": "A/B testing is claimed at expert level with no described test. Little evidence either way.",
+        "evidence": [
+          "E13"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 4,
+        "confidence": 0.5,
+        "rationale": "Danish is listed without a level; with Danish work it is likely fluent or native.",
+        "evidence": [
+          "E14"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 1,
+        "confidence": 0.4,
+        "rationale": "The only evidence is an online deep learning course in 2022; no model is described. Aware level.",
+        "evidence": [
+          "E9",
+          "E6",
+          "E10"
+        ]
+      },
+      {
+        "skill": "excel",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Updated weekly Excel reports for two years. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "power bi",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Builds the operations team's Power BI dashboards. Working use.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "prophet",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "Used once, in a personal Kaggle notebook. Basic level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "Python is claimed at expert level, but the only described use is one personal forecasting notebook. Work using Python would show more.",
+        "evidence": [
+          "E5",
+          "E6",
+          "E4"
+        ]
+      },
+      {
+        "skill": "spark",
+        "level": 1,
+        "confidence": 0.35,
+        "rationale": "Spark is claimed at expert level, but no use is described anywhere. Little evidence either way.",
+        "evidence": [
+          "E8",
+          "E6"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Maintains the SQL views behind the operations dashboards. Working use; the expert claim isn't backed by anything more complex.",
+        "evidence": [
+          "E7",
+          "E6",
+          "E2"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 1,
+        "confidence": 0.3,
+        "rationale": "Statistics is claimed at expert level with no described use, course or degree. Little evidence either way.",
+        "evidence": [
+          "E12"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "One personal project forecasting Kaggle store sales with Prophet in a notebook. Basic level; nothing in production.",
+        "evidence": [
+          "E11",
+          "E6",
+          "E4"
+        ]
+      }
+    ]
+  }
+}

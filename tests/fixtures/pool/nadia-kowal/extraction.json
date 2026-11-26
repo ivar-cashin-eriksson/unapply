@@ -1,0 +1,281 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Machine learning engineer with eight years in software and mobility, focused on deep learning demand forecasting in production and large data pipelines",
+    "experiences": [
+      {
+        "title": "Machine Learning Engineer",
+        "organisation": "Rute Mobility ApS",
+        "start": "2021-01",
+        "end": null,
+        "summary": "Built a production ride demand forecasting service with an LSTM in PyTorch for three cities, runs PySpark feature pipelines on Databricks over 4 TB, and wrote the model serving and retraining monitoring in Python with FastAPI.",
+        "skills": [
+          "time series forecasting",
+          "demand forecasting",
+          "pytorch",
+          "deep learning",
+          "pyspark",
+          "databricks",
+          "python",
+          "fastapi",
+          "model monitoring",
+          "sql"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the ride demand forecasting service: an LSTM model in PyTorch that predicts trips per zone every 15 minutes, in production in three cities."
+          },
+          {
+            "source": "S1",
+            "quote": "Run our feature pipelines in PySpark on Databricks over 4 TB of trip data."
+          },
+          {
+            "source": "S1",
+            "quote": "Wrote the model serving code in Python with FastAPI, and the monitoring that retrains models when accuracy drops."
+          },
+          {
+            "source": "S1",
+            "quote": "Query the trip warehouse in SQL for analyses and model features."
+          }
+        ]
+      },
+      {
+        "title": "Software Engineer",
+        "organisation": "Datakrone Sp. z o.o.",
+        "start": "2018-06",
+        "end": "2020-12",
+        "summary": "Backend services in Python and Java for a payments company; helped the analytics team with checkout experiments.",
+        "skills": [
+          "python",
+          "java",
+          "a/b testing"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Backend services in Python and Java for a payments company."
+          },
+          {
+            "source": "S1",
+            "quote": "Helped the analytics team run a few experiments on the checkout page."
+          }
+        ]
+      },
+      {
+        "title": "MSc Computer Science",
+        "organisation": "Vistula Technical University",
+        "start": "2016",
+        "end": "2018",
+        "summary": "Master's degree in computer science.",
+        "skills": [],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "MSc Computer Science, Vistula Technical University"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Wrote the model serving code in Python with FastAPI, and the monitoring that retrains models when accuracy drops."
+          },
+          {
+            "source": "S1",
+            "quote": "Backend services in Python and Java for a payments company."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Query the trip warehouse in SQL for analyses and model features."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "pyspark",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Run our feature pipelines in PySpark on Databricks over 4 TB of trip data."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "databricks",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Run our feature pipelines in PySpark on Databricks over 4 TB of trip data."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "pytorch",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the ride demand forecasting service: an LSTM model in PyTorch that predicts trips per zone every 15 minutes, in production in three cities."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "deep learning",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the ride demand forecasting service: an LSTM model in PyTorch that predicts trips per zone every 15 minutes, in production in three cities."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the ride demand forecasting service: an LSTM model in PyTorch that predicts trips per zone every 15 minutes, in production in three cities."
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the ride demand forecasting service: an LSTM model in PyTorch that predicts trips per zone every 15 minutes, in production in three cities."
+          }
+        ]
+      },
+      {
+        "name": "fastapi",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Wrote the model serving code in Python with FastAPI, and the monitoring that retrains models when accuracy drops."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "docker",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python, PySpark, Databricks, PyTorch, deep learning, SQL, FastAPI, Docker"
+          }
+        ]
+      },
+      {
+        "name": "java",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Backend services in Python and Java for a payments company."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Helped the analytics team run a few experiments on the checkout page."
+          }
+        ]
+      },
+      {
+        "name": "polish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Polish (native)"
+          }
+        ]
+      },
+      {
+        "name": "english",
+        "category": "language",
+        "self_level": 4,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "English (fluent)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "EU"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

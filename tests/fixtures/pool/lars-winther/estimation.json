@@ -1,0 +1,137 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 2,
+        "confidence": 0.6,
+        "rationale": "Analysed one A/B test of shelf price labels together with a colleague. Basic level.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E11"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Built a store-level forecasting model for bread and fresh produce that runs in 60 stores and cut waste by 12%. Working level, with a measured result in production.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "excel",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Weekly reporting for 2,000 products in Excel and SQL. Working use.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "grocery retail",
+        "level": 5,
+        "confidence": 0.85,
+        "rationale": "Fourteen years at a supermarket chain as buyer, category analyst and data scientist. Deep domain knowledge.",
+        "evidence": [
+          "E1",
+          "E8"
+        ]
+      },
+      {
+        "skill": "machine learning",
+        "level": 2,
+        "confidence": 0.45,
+        "rationale": "Machine learning was part of a bootcamp; the forecasting model suggests some use. Basic to working.",
+        "evidence": [
+          "E9"
+        ]
+      },
+      {
+        "skill": "pandas",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Used daily in the data scientist role. Working use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "promotion analysis",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Analyses promotion results for the buying team every week. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Uses Python with pandas and scikit-learn every day, with help on deployment, after a bootcamp in 2021. Working level.",
+        "evidence": [
+          "E4",
+          "E9"
+        ]
+      },
+      {
+        "skill": "scikit-learn",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Used daily in the data scientist role. Working use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Years of sales and margin reporting in SQL, and complex SQL for the margin model all buyers use. Advanced analytical SQL.",
+        "evidence": [
+          "E6",
+          "E7"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Presents promotion results at the weekly trading meeting, to the buyers he worked among. Regular, practised communication with non-technical colleagues.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 2,
+        "confidence": 0.4,
+        "rationale": "A bootcamp and an open university course in statistics, without described use. Basic level; little evidence either way.",
+        "evidence": [
+          "E9",
+          "E10"
+        ]
+      },
+      {
+        "skill": "supplier negotiation",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Negotiated with 40 suppliers as a buyer for six years. Working to advanced.",
+        "evidence": [
+          "E8"
+        ]
+      }
+    ]
+  }
+}

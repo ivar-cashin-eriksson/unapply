@@ -1,0 +1,136 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Ran split tests of checkout and pricing changes on 1.2 million monthly visitors, with sequential testing to stop early. Advanced experimentation practice.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as the mother tongue.",
+        "evidence": [
+          "E12"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Trained deep neural networks with Keras for electricity load prediction. Working use on one kind of problem.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "skill": "e-commerce",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Over four years at an online fashion retailer on sales prediction, checkout and pricing tests. Advanced domain knowledge.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "keras",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Used to train the load prediction networks. Working use.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "skill": "pandas",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "The feature jobs were written in pandas before moving to Spark. Working use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Python 3 is used across seven years: client projects, reporting, and the pandas feature jobs and models of the current role. Advanced professional use; nothing shows library design.",
+        "evidence": [
+          "E7",
+          "E10"
+        ]
+      },
+      {
+        "skill": "sequential testing",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Sequential testing is used so split tests can stop early. Working use, described in one line.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "spark",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Moved feature jobs from pandas to Apache Spark, cutting the nightly run from five hours to forty minutes. A clear, working-level migration with a measured result.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Wrote the SQL of a 40-table merchandising data mart and used SQL on client projects. Designing a data mart is advanced work.",
+        "evidence": [
+          "E5",
+          "E7"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Presents results to the buyers every month and calls it a big part of the job. Working level; how it is received isn't shown.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Applied statistics for client reports: regression, survival models and bootstrapping. Working to advanced; one line of evidence.",
+        "evidence": [
+          "E9"
+        ]
+      },
+      {
+        "skill": "survival analysis",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "Survival models are named among the client work. Working use, few details.",
+        "evidence": [
+          "E9"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 4,
+        "confidence": 0.8,
+        "rationale": "Built time series prediction models for weekly sales of 9,000 styles that run in production nightly, and electricity load prediction before that. Advanced, production use.",
+        "evidence": [
+          "E2",
+          "E8"
+        ]
+      }
+    ]
+  }
+}

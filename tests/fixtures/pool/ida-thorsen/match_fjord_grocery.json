@@ -1,0 +1,82 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.3,
+        "rationale": "Started using Python for simulation studies in 2024; the analysis work is in R and SAS. Far from the strong Python asked for.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.4,
+        "rationale": "Used SQL with R on registry data in an earlier role: basic to working SQL, below the strong level asked for.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.1,
+        "rationale": "No forecasting; the work is clinical trials and registry studies.",
+        "evidence": []
+      },
+      {
+        "criterion": "C4",
+        "score": 1.0,
+        "rationale": "A PhD in biostatistics and lead statistician on four randomised clinical trials, with mixed models, survival analysis and multiple testing corrections: expert statistics.",
+        "evidence": [
+          "E6",
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.65,
+        "rationale": "Designs and analyses randomised clinical trials, including sample size calculations: the statistics of A/B testing in depth, though not on product, price or promotion experiments.",
+        "evidence": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.9,
+        "rationale": "Explains results to clinicians and regulators and teaches statistics to non-statisticians: clearly communicates with non-technical people.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.0,
+        "rationale": "No Spark or other large-data tool.",
+        "evidence": []
+      },
+      {
+        "criterion": "C8",
+        "score": 0.0,
+        "rationale": "No deep learning.",
+        "evidence": []
+      },
+      {
+        "criterion": "C9",
+        "score": 0.0,
+        "rationale": "Pharma and health research; no retail or e-commerce experience.",
+        "evidence": []
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E7"
+        ]
+      }
+    ]
+  }
+}

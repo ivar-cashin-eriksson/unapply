@@ -1,0 +1,98 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.9,
+        "rationale": "Python carries a production forecasting pipeline over 2 billion order lines and credit risk models before that: strong Python, clearly at the advanced level asked for.",
+        "evidence": [
+          "E3",
+          "E8",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.85,
+        "rationale": "Writes and reviews the team's SQL models and tuned warehouse queries from hours to minutes, which shows strong SQL beyond writing queries.",
+        "evidence": [
+          "E6",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 1.0,
+        "rationale": "Owns a demand forecasting system for 15,000 products, in production and retrained daily, that cut forecast error by 22%: exactly the hands-on production forecasting asked for, at this job's scale.",
+        "evidence": [
+          "E2",
+          "E3",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.9,
+        "rationale": "An MSc in Statistics, credit models validated with bootstrapped confidence intervals, and power analysis for every experiment show a solid understanding of statistics.",
+        "evidence": [
+          "E8",
+          "E10",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.9,
+        "rationale": "Designs price experiments with the commercial team from power analysis and sample size to the readout: the same kind of experiments this job runs.",
+        "evidence": [
+          "E5",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.8,
+        "rationale": "Gives experiment readouts to category managers and presented models to a risk committee, with documentation for non-technical readers. No direct evidence of how well it lands.",
+        "evidence": [
+          "E5",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.85,
+        "rationale": "Runs the forecasting pipeline in PySpark on Databricks over 2 billion order lines, which is large-data experience well beyond the nice-to-have.",
+        "evidence": [
+          "E3",
+          "E11"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.8,
+        "rationale": "Built a temporal fusion transformer in PyTorch for promotion weeks that beat gradient boosting on fresh produce: deep learning for forecasting in production.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 1.0,
+        "rationale": "Five years at an online grocer on demand forecasting and pricing: directly relevant retail and e-commerce experience.",
+        "evidence": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E12"
+        ]
+      }
+    ]
+  }
+}

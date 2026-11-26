@@ -1,0 +1,17 @@
+# What Lars sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  python: 3
+  pandas: 3
+  scikit-learn: 3
+  sql: 5
+  excel: 5
+  demand forecasting: 4
+  a/b testing: 2
+  statistics: 3
+  machine learning: 3
+  promotion analysis: 4
+  grocery retail: 5
+  supplier negotiation: 4
+  stakeholder communication: 4

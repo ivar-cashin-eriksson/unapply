@@ -1,0 +1,92 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.85,
+        "rationale": "Python 3 across seven years, from client projects to the pandas feature jobs and nightly production models of the current role: strong Python.",
+        "evidence": [
+          "E7",
+          "E10"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.8,
+        "rationale": "Wrote the SQL behind a 40-table merchandising data mart and used SQL on client projects: strong SQL, though query performance work isn't described.",
+        "evidence": [
+          "E5",
+          "E7"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.95,
+        "rationale": "Time series prediction models for weekly sales of 9,000 styles run in production every night, and load prediction before that: hands-on production forecasting at retail scale.",
+        "evidence": [
+          "E2",
+          "E8"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.75,
+        "rationale": "Applied statistics for client reports (regression, survival models, bootstrapping) and sequential testing in experiments show a solid working understanding; no formal statistics degree.",
+        "evidence": [
+          "E9",
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.9,
+        "rationale": "Ran split tests of checkout and pricing changes on 1.2 million monthly visitors with sequential testing: solid, hands-on A/B testing, including pricing.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.75,
+        "rationale": "Presents results to the buyers every month and calls communicating with stakeholders a big part of the job. No evidence of how well it lands.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.8,
+        "rationale": "Moved the nightly feature jobs from pandas to Apache Spark and cut the run from five hours to forty minutes: practical large-data experience.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.65,
+        "rationale": "Trained deep neural networks for electricity load prediction with Keras: deep learning for forecasting, though not in the current role.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 1.0,
+        "rationale": "Over four years at an online fashion retailer, and retail clients before that: direct e-commerce experience.",
+        "evidence": [
+          "E1",
+          "E7"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as the mother tongue.",
+        "evidence": [
+          "E12"
+        ]
+      }
+    ]
+  }
+}

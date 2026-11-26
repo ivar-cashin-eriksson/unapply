@@ -1,0 +1,102 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "accessibility",
+        "level": 2,
+        "confidence": 0.3,
+        "rationale": "Accessibility appears only in the skills list. Little evidence either way.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "css",
+        "level": 4,
+        "confidence": 0.6,
+        "rationale": "Client websites and a design system. Advanced use.",
+        "evidence": [
+          "E4",
+          "E5"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "design systems",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Leads the design system work with designers and product managers. Working to advanced.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "html",
+        "level": 4,
+        "confidence": 0.6,
+        "rationale": "Client websites for over three years and a large web shop. Advanced use.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "javascript",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "Ten years of client websites and a large web shop. Advanced use.",
+        "evidence": [
+          "E4",
+          "E5"
+        ]
+      },
+      {
+        "skill": "node.js",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "Wrote one small Node.js export service. Basic level.",
+        "evidence": [
+          "E3",
+          "E5"
+        ]
+      },
+      {
+        "skill": "react",
+        "level": 4,
+        "confidence": 0.8,
+        "rationale": "Builds a ticket shop in React used by 2 million customers a year and leads its design system. Advanced use.",
+        "evidence": [
+          "E1",
+          "E5"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "Works with designers and product managers on the design system. Working level, with product people rather than business users.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "typescript",
+        "level": 4,
+        "confidence": 0.75,
+        "rationale": "The ticket shop is built in TypeScript. Advanced professional use.",
+        "evidence": [
+          "E1",
+          "E5"
+        ]
+      }
+    ]
+  }
+}

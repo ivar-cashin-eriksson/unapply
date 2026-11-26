@@ -1,0 +1,81 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "Analyses promotion A/B tests with a senior colleague. Basic level.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 2,
+        "confidence": 0.55,
+        "rationale": "A thesis using DeepAR for grocery demand. Basic to working, from academic work.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Maintains a weekly production demand forecast for dairy products. Working level.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Maintains a production forecast in Python and used it as a student assistant. Working level.",
+        "evidence": [
+          "E1",
+          "E4"
+        ]
+      },
+      {
+        "skill": "snowflake",
+        "level": 2,
+        "confidence": 0.5,
+        "rationale": "The warehouse the feature SQL runs in. Basic to working.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "Writes SQL in Snowflake for forecasting features. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "A production forecast and a thesis on probabilistic forecasting. Working level.",
+        "evidence": [
+          "E1",
+          "E5"
+        ]
+      }
+    ]
+  }
+}

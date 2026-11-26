@@ -1,0 +1,320 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Senior data scientist with nine years in energy and weather analytics, focused on production demand forecasting, statistics and experiments",
+    "experiences": [
+      {
+        "title": "Senior Data Scientist",
+        "organisation": "Lysholt Energi A/S",
+        "start": "2020-03",
+        "end": null,
+        "summary": "Owns hourly electricity demand forecasts for 400,000 customers in production, cutting day-ahead error from 7.9% to 5.1% MAPE. Designed A/B tests of tariff messages, writes the team's analytical SQL and presents forecast uncertainty to traders and management.",
+        "skills": [
+          "time series forecasting",
+          "demand forecasting",
+          "gradient boosting",
+          "sarima",
+          "python",
+          "a/b testing",
+          "cuped",
+          "sql",
+          "postgresql",
+          "bigquery",
+          "stakeholder communication"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the hourly electricity demand forecasts for 400,000 customers, in production since 2021, using gradient boosting and SARIMA models in Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Cut the day-ahead forecast error from 7.9% to 5.1% MAPE."
+          },
+          {
+            "source": "S1",
+            "quote": "Designed A/B tests of tariff messages to customers, with pre-registered metrics and CUPED variance reduction."
+          },
+          {
+            "source": "S1",
+            "quote": "Write most of our analytical SQL in PostgreSQL and BigQuery, including window functions over three years of meter readings."
+          },
+          {
+            "source": "S1",
+            "quote": "Explain forecast uncertainty to the trading desk and to management in a monthly forecast review."
+          }
+        ]
+      },
+      {
+        "title": "Analyst",
+        "organisation": "Nordvind Weather ApS",
+        "start": "2017-09",
+        "end": "2020-02",
+        "summary": "Statistical analysis of weather station data in R and Python, and a Bayesian model of wind power output in Stan.",
+        "skills": [
+          "statistics",
+          "r",
+          "python",
+          "bayesian modelling",
+          "stan"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis of weather station data in R and Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Built a Bayesian model of wind power output in Stan."
+          }
+        ]
+      },
+      {
+        "title": "MSc Statistics",
+        "organisation": "Aarhus University",
+        "start": "2015",
+        "end": "2017",
+        "summary": "Master's degree in statistics.",
+        "skills": [
+          "statistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "MSc Statistics, Aarhus University"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the hourly electricity demand forecasts for 400,000 customers, in production since 2021, using gradient boosting and SARIMA models in Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Statistical analysis of weather station data in R and Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "r",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis of weather station data in R and Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write most of our analytical SQL in PostgreSQL and BigQuery, including window functions over three years of meter readings."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "postgresql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write most of our analytical SQL in PostgreSQL and BigQuery, including window functions over three years of meter readings."
+          }
+        ]
+      },
+      {
+        "name": "bigquery",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write most of our analytical SQL in PostgreSQL and BigQuery, including window functions over three years of meter readings."
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the hourly electricity demand forecasts for 400,000 customers, in production since 2021, using gradient boosting and SARIMA models in Python."
+          },
+          {
+            "source": "S1",
+            "quote": "Cut the day-ahead forecast error from 7.9% to 5.1% MAPE."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the hourly electricity demand forecasts for 400,000 customers, in production since 2021, using gradient boosting and SARIMA models in Python."
+          }
+        ]
+      },
+      {
+        "name": "gradient boosting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the hourly electricity demand forecasts for 400,000 customers, in production since 2021, using gradient boosting and SARIMA models in Python."
+          }
+        ]
+      },
+      {
+        "name": "sarima",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the hourly electricity demand forecasts for 400,000 customers, in production since 2021, using gradient boosting and SARIMA models in Python."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis of weather station data in R and Python."
+          },
+          {
+            "source": "S1",
+            "quote": "MSc Statistics, Aarhus University"
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "bayesian modelling",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built a Bayesian model of wind power output in Stan."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "stan",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built a Bayesian model of wind power output in Stan."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Designed A/B tests of tariff messages to customers, with pre-registered metrics and CUPED variance reduction."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, R, SQL, time series forecasting, statistics, Bayesian modelling, A/B testing"
+          }
+        ]
+      },
+      {
+        "name": "cuped",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Designed A/B tests of tariff messages to customers, with pre-registered metrics and CUPED variance reduction."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Explain forecast uncertainty to the trading desk and to management in a monthly forecast review."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

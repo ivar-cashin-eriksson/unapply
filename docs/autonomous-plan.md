@@ -138,7 +138,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
   model, scores and time, in an append-only audit table.
 - Done when: a ranking can be reproduced from the log, and a test checks it.
 
-### 7. [ ] Synthetic candidate pool and evaluation script
+### 7. [x] Synthetic candidate pool and evaluation script
 
 - 12 fictional candidates for Fjord Grocery, from a clear fit to unsuitable, each with
   a short CV, an approved profile (with hand-written stand-in extraction and

@@ -1,0 +1,339 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Lead data scientist with eight years in online grocery and credit risk, focused on demand forecasting at scale, price experiments and statistics",
+    "experiences": [
+      {
+        "title": "Lead Data Scientist",
+        "organisation": "Kurv.dk A/S",
+        "start": "2021-05",
+        "end": null,
+        "summary": "Owns a daily-retrained demand forecasting system for 15,000 products at an online grocer, built on Python and PySpark on Databricks, including a deep learning model for promotion weeks. Designs price experiments with the commercial team, maintains the team's SQL models and mentors three data scientists.",
+        "skills": [
+          "demand forecasting",
+          "python",
+          "pyspark",
+          "databricks",
+          "deep learning",
+          "pytorch",
+          "a/b testing",
+          "power analysis",
+          "sql",
+          "mentoring",
+          "grocery retail"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead Data Scientist, Kurv.dk A/S (online grocery)"
+          },
+          {
+            "source": "S1",
+            "quote": "Own the demand forecasting system for 15,000 products, retrained daily and in production since 2022; it cut forecast error by 22%."
+          },
+          {
+            "source": "S1",
+            "quote": "Built the forecasting pipeline in Python and PySpark on Databricks, processing 2 billion order lines."
+          },
+          {
+            "source": "S1",
+            "quote": "Added a deep learning model (a temporal fusion transformer in PyTorch) for promotion weeks, which beat our gradient boosting model on fresh produce."
+          },
+          {
+            "source": "S1",
+            "quote": "Design price experiments with the commercial team, from power analysis and sample size to the readout for category managers."
+          },
+          {
+            "source": "S1",
+            "quote": "Write and review the team's SQL models, and tuned the slowest warehouse queries from hours to minutes."
+          },
+          {
+            "source": "S1",
+            "quote": "Mentor three data scientists."
+          }
+        ]
+      },
+      {
+        "title": "Data Scientist",
+        "organisation": "Nordhavn Credit A/S",
+        "start": "2018-02",
+        "end": "2021-04",
+        "summary": "Built and validated credit risk models with scikit-learn and statsmodels, and presented them to the risk committee with documentation for non-technical readers.",
+        "skills": [
+          "python",
+          "scikit-learn",
+          "statsmodels",
+          "statistics",
+          "credit risk modelling",
+          "stakeholder communication"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built credit risk models in Python with scikit-learn and statsmodels, validated with bootstrapped confidence intervals."
+          },
+          {
+            "source": "S1",
+            "quote": "Presented model results to the risk committee and wrote model documentation for non-technical readers."
+          }
+        ]
+      },
+      {
+        "title": "MSc Statistics",
+        "organisation": "University of Copenhagen",
+        "start": "2016",
+        "end": "2018",
+        "summary": "Master's degree in statistics.",
+        "skills": [
+          "statistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "MSc Statistics, University of Copenhagen"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the forecasting pipeline in Python and PySpark on Databricks, processing 2 billion order lines."
+          },
+          {
+            "source": "S1",
+            "quote": "Built credit risk models in Python with scikit-learn and statsmodels, validated with bootstrapped confidence intervals."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, SQL, Spark (PySpark, Databricks), PyTorch, statistics, A/B testing, time series forecasting"
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write and review the team's SQL models, and tuned the slowest warehouse queries from hours to minutes."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, SQL, Spark (PySpark, Databricks), PyTorch, statistics, A/B testing, time series forecasting"
+          }
+        ]
+      },
+      {
+        "name": "spark",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python, SQL, Spark (PySpark, Databricks), PyTorch, statistics, A/B testing, time series forecasting"
+          }
+        ]
+      },
+      {
+        "name": "pyspark",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the forecasting pipeline in Python and PySpark on Databricks, processing 2 billion order lines."
+          }
+        ]
+      },
+      {
+        "name": "databricks",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the forecasting pipeline in Python and PySpark on Databricks, processing 2 billion order lines."
+          }
+        ]
+      },
+      {
+        "name": "pytorch",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Added a deep learning model (a temporal fusion transformer in PyTorch) for promotion weeks, which beat our gradient boosting model on fresh produce."
+          }
+        ]
+      },
+      {
+        "name": "deep learning",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Added a deep learning model (a temporal fusion transformer in PyTorch) for promotion weeks, which beat our gradient boosting model on fresh produce."
+          }
+        ]
+      },
+      {
+        "name": "scikit-learn",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built credit risk models in Python with scikit-learn and statsmodels, validated with bootstrapped confidence intervals."
+          }
+        ]
+      },
+      {
+        "name": "statsmodels",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built credit risk models in Python with scikit-learn and statsmodels, validated with bootstrapped confidence intervals."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built credit risk models in Python with scikit-learn and statsmodels, validated with bootstrapped confidence intervals."
+          },
+          {
+            "source": "S1",
+            "quote": "MSc Statistics, University of Copenhagen"
+          },
+          {
+            "source": "S1",
+            "quote": "Python, SQL, Spark (PySpark, Databricks), PyTorch, statistics, A/B testing, time series forecasting"
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Design price experiments with the commercial team, from power analysis and sample size to the readout for category managers."
+          },
+          {
+            "source": "S1",
+            "quote": "Python, SQL, Spark (PySpark, Databricks), PyTorch, statistics, A/B testing, time series forecasting"
+          }
+        ]
+      },
+      {
+        "name": "power analysis",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Design price experiments with the commercial team, from power analysis and sample size to the readout for category managers."
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python, SQL, Spark (PySpark, Databricks), PyTorch, statistics, A/B testing, time series forecasting"
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Own the demand forecasting system for 15,000 products, retrained daily and in production since 2022; it cut forecast error by 22%."
+          }
+        ]
+      },
+      {
+        "name": "grocery retail",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead Data Scientist, Kurv.dk A/S (online grocery)"
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Design price experiments with the commercial team, from power analysis and sample size to the readout for category managers."
+          },
+          {
+            "source": "S1",
+            "quote": "Presented model results to the risk committee and wrote model documentation for non-technical readers."
+          }
+        ]
+      },
+      {
+        "name": "mentoring",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Mentor three data scientists."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

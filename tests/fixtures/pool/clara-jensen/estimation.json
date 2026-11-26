@@ -1,0 +1,79 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 3,
+        "confidence": 0.65,
+        "rationale": "Designs and analyses A/B tests of delivery options at checkout. Working to advanced.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "dbt",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "Writes dbt models. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.65,
+        "rationale": "Built production forecasting models in Python. Advanced use; few details.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "snowflake",
+        "level": 3,
+        "confidence": 0.55,
+        "rationale": "The warehouse the SQL and dbt models run in. Working use.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Writes SQL in Snowflake and dbt. Working to advanced.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 3,
+        "confidence": 0.6,
+        "rationale": "Statistical analysis of public service data for over two years. Working level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Delivery volume forecasting models in production since 2020. Advanced use.",
+        "evidence": [
+          "E1"
+        ]
+      }
+    ]
+  }
+}

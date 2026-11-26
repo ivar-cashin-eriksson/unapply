@@ -1,0 +1,158 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Senior data scientist with ten years in e-commerce logistics and public sector analytics, focused on volume forecasting and checkout experiments",
+    "experiences": [
+      {
+        "title": "Senior Data Scientist",
+        "organisation": "Fjernlager ApS",
+        "start": "2019-02",
+        "end": null,
+        "summary": "Built production delivery volume forecasting models in Python, designs and analyses A/B tests of delivery options at checkout, and writes SQL in Snowflake and dbt. Fully remote.",
+        "skills": [
+          "time series forecasting",
+          "python",
+          "a/b testing",
+          "sql",
+          "snowflake",
+          "dbt",
+          "e-commerce"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the delivery volume forecasting models in Python, in production since 2020."
+          },
+          {
+            "source": "S1",
+            "quote": "Design and analyse A/B tests of delivery options at checkout."
+          },
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake and dbt."
+          }
+        ]
+      },
+      {
+        "title": "Data Analyst",
+        "organisation": "Odense Kommune",
+        "start": "2016-08",
+        "end": "2019-01",
+        "summary": "Statistical analysis of service data for the city council.",
+        "skills": [
+          "statistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis of service data for the city council."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the delivery volume forecasting models in Python, in production since 2020."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake and dbt."
+          }
+        ]
+      },
+      {
+        "name": "snowflake",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake and dbt."
+          }
+        ]
+      },
+      {
+        "name": "dbt",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Write SQL in Snowflake and dbt."
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Built the delivery volume forecasting models in Python, in production since 2020."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Design and analyse A/B tests of delivery options at checkout."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical analysis of service data for the city council."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Odense"
+      ],
+      "work_modes": [
+        "remote"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": [
+        "Commuting from Odense"
+      ]
+    }
+  }
+}

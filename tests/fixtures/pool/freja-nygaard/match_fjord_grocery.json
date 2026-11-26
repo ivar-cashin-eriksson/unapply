@@ -1,0 +1,87 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.3,
+        "rationale": "Uses a t-test template in Python and rates Python as basic: well below the strong Python asked for.",
+        "evidence": [
+          "E2",
+          "E9"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.6,
+        "rationale": "Writes SQL in BigQuery for the weekly sales dashboards: working SQL, not the strong level asked for.",
+        "evidence": [
+          "E3",
+          "E8"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.1,
+        "rationale": "Only a simple Excel sales forecast for one season; no forecasting in production.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.35,
+        "rationale": "A BSc in Economics and t-tests from a template suggest basic statistics; nothing shows more.",
+        "evidence": [
+          "E7",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.45,
+        "rationale": "Analyses A/B tests of newsletters and product pages, though with a template and without designing them: some hands-on A/B testing.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.7,
+        "rationale": "Presents the monthly e-commerce report to the management team: regular communication with non-technical people.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.0,
+        "rationale": "No Spark or other large-data tool.",
+        "evidence": []
+      },
+      {
+        "criterion": "C8",
+        "score": 0.0,
+        "rationale": "No deep learning.",
+        "evidence": []
+      },
+      {
+        "criterion": "C9",
+        "score": 1.0,
+        "rationale": "Over five years at an online furniture shop and retail reporting before that: direct retail and e-commerce experience.",
+        "evidence": [
+          "E1",
+          "E6"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 0.9,
+        "rationale": "Danish is listed as a language, without a level; Danish degree and work suggest it is fluent.",
+        "evidence": [
+          "E10"
+        ]
+      }
+    ]
+  }
+}

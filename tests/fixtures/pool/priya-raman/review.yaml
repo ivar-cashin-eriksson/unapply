@@ -1,0 +1,18 @@
+# What Priya sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  python: 5
+  sql: 4
+  spark: 4
+  aws: 3
+  lightgbm: 5
+  pytorch: 4
+  deep learning: 4
+  demand forecasting: 5
+  time series forecasting: 5
+  a/b testing: 5
+  statistics: 5
+  causal inference: 4
+  retail analytics: 5
+  stakeholder communication: 4

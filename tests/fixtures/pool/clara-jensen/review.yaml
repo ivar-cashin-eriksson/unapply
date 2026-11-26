@@ -1,0 +1,11 @@
+# What Clara sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  python: 4
+  sql: 4
+  snowflake: 3
+  dbt: 3
+  time series forecasting: 4
+  a/b testing: 4
+  statistics: 4

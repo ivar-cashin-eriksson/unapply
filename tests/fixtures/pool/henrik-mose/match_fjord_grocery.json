@@ -1,0 +1,75 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.0,
+        "rationale": "No Python; the work is in JavaScript and TypeScript.",
+        "evidence": []
+      },
+      {
+        "criterion": "C2",
+        "score": 0.0,
+        "rationale": "No SQL; a small Node.js export of sales figures is the closest.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.0,
+        "rationale": "No forecasting.",
+        "evidence": []
+      },
+      {
+        "criterion": "C4",
+        "score": 0.0,
+        "rationale": "No statistics.",
+        "evidence": []
+      },
+      {
+        "criterion": "C5",
+        "score": 0.0,
+        "rationale": "No A/B testing.",
+        "evidence": []
+      },
+      {
+        "criterion": "C6",
+        "score": 0.45,
+        "rationale": "Leads design system work with designers and product managers: works across roles, but not with business stakeholders on data.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.0,
+        "rationale": "No Spark or other large-data tool.",
+        "evidence": []
+      },
+      {
+        "criterion": "C8",
+        "score": 0.0,
+        "rationale": "No deep learning.",
+        "evidence": []
+      },
+      {
+        "criterion": "C9",
+        "score": 0.2,
+        "rationale": "Builds a ticket shop used by 2 million customers a year: e-commerce as a developer, not analysing it.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E6"
+        ]
+      }
+    ]
+  }
+}

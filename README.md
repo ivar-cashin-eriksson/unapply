@@ -184,6 +184,26 @@ for one candidate. John Doe against Fjord Grocery: 0.81 with the baseline, 0.71 
 the LLM scorer's stand-in answer (not yet a real recording; see
 [docs/to-record.md](docs/to-record.md)).
 
+## Evaluation
+
+`unapply evaluate` ranks a pool of synthetic candidates with each scorer and compares
+the ranking with a reference ranking: the share of the reference's top k the ranking
+also puts in its top k, and Kendall's tau-b over every pair (1 the same order, 0
+unrelated, -1 reversed; shared ranks allowed). The default pool,
+[`tests/fixtures/pool/`](tests/fixtures/pool/README.md), has 12 fictional candidates
+for Fjord Grocery with an intended ranking, from a clear fit to unsuitable. It runs
+offline on hand-written stand-in answers and stores nothing.
+
+```bash
+uv run unapply evaluate                            # both scorers, top-3 and top-5
+uv run unapply evaluate --reference shortlist.yaml # a human shortlist instead
+```
+
+On the pool, the baseline gets top-3 overlap 1.00, top-5 0.80 and tau 0.84: it
+trusts a candidate's own levels where the estimates are unsure, so the overclaimer
+comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ranking
+(tau 1.00), which only shows they are consistent until they are recorded.
+
 ## Common commands
 
 | Command | What it does |
@@ -204,6 +224,7 @@ the LLM scorer's stand-in answer (not yet a real recording; see
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
 | `uv run unapply match acme` | Match the database's candidates to a job and rank them (`--scorer llm` calls the Claude API: add `--allow-api`) |
 | `uv run unapply audit acme` | List a job's rankings from the audit log and check that each reproduces |
+| `uv run unapply evaluate` | Rank the synthetic pool with both scorers and compare with its intended ranking (`--reference FILE` for another) |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 | `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |
@@ -226,12 +247,13 @@ the LLM scorer's stand-in answer (not yet a real recording; see
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
 | `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, matching, demo and internal routes |
 | `src/unapply/matching/` | Matching: hard filters, the baseline and LLM scorers, anonymisation and ranking |
+| `src/unapply/evaluation/` | Evaluation: top-k overlap, Kendall's tau, and the synthetic candidate pool |
 | `src/unapply/taxonomy.py` | The skill taxonomy: canonical names, synonyms, implied and broader skills |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | Configuration, such as the skill taxonomy (`skills.yaml`) |
 | `docs/` | Plans and design notes |
 | `tests/` | Tests for the package |
-| `tests/fixtures/` | Synthetic test data, including John Doe, a made-up candidate run end to end (see its README) |
+| `tests/fixtures/` | Synthetic test data, including John Doe, a made-up candidate run end to end, and a pool of 12 candidates for evaluation (see their READMEs) |
 | `data/` | Local uploads and real personal data, gitignored |
 | `scratch/` | Personal exploration, gitignored |
 | `pyproject.toml` | Python project, dependencies, and Ruff and pytest settings |

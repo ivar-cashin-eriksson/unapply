@@ -1,0 +1,272 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Senior data scientist with ten years in retail, leading demand forecasting for 30,000 products and a pricing experimentation platform",
+    "experiences": [
+      {
+        "title": "Senior Data Scientist",
+        "organisation": "Bazaarline Retail Pvt Ltd",
+        "start": "2019-07",
+        "end": null,
+        "summary": "Leads production demand forecasting for 30,000 products across 300 stores with LightGBM and a PyTorch deep learning model, designed the pricing experimentation platform running 50 A/B tests a quarter, and presents results to category heads. Python, SQL and Spark on AWS EMR daily.",
+        "skills": [
+          "demand forecasting",
+          "time series forecasting",
+          "lightgbm",
+          "pytorch",
+          "deep learning",
+          "a/b testing",
+          "python",
+          "sql",
+          "spark",
+          "aws",
+          "stakeholder communication",
+          "retail analytics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          },
+          {
+            "source": "S1",
+            "quote": "Designed the pricing experimentation platform; we run 50 A/B tests a quarter."
+          },
+          {
+            "source": "S1",
+            "quote": "Python and SQL every day; Spark on AWS EMR for the feature pipelines."
+          },
+          {
+            "source": "S1",
+            "quote": "Present forecast accuracy and experiment results to category heads."
+          }
+        ]
+      },
+      {
+        "title": "Data Scientist",
+        "organisation": "Tarang Analytics Pvt Ltd",
+        "start": "2016-06",
+        "end": "2019-06",
+        "summary": "Statistical modelling for retail clients: regression, time series and causal inference.",
+        "skills": [
+          "statistics",
+          "regression",
+          "causal inference"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical modelling for retail clients: regression, time series and causal inference."
+          }
+        ]
+      },
+      {
+        "title": "MSc Statistics",
+        "organisation": "Pune Institute of Statistics",
+        "start": "2016",
+        "end": "2016",
+        "summary": "Master's degree in statistics.",
+        "skills": [
+          "statistics"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "MSc Statistics, Pune Institute of Statistics, 2016"
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "python",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python and SQL every day; Spark on AWS EMR for the feature pipelines."
+          }
+        ]
+      },
+      {
+        "name": "sql",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python and SQL every day; Spark on AWS EMR for the feature pipelines."
+          }
+        ]
+      },
+      {
+        "name": "spark",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python and SQL every day; Spark on AWS EMR for the feature pipelines."
+          }
+        ]
+      },
+      {
+        "name": "aws",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Python and SQL every day; Spark on AWS EMR for the feature pipelines."
+          }
+        ]
+      },
+      {
+        "name": "lightgbm",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          }
+        ]
+      },
+      {
+        "name": "pytorch",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          }
+        ]
+      },
+      {
+        "name": "deep learning",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          }
+        ]
+      },
+      {
+        "name": "demand forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          }
+        ]
+      },
+      {
+        "name": "time series forecasting",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          },
+          {
+            "source": "S1",
+            "quote": "Statistical modelling for retail clients: regression, time series and causal inference."
+          }
+        ]
+      },
+      {
+        "name": "a/b testing",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Designed the pricing experimentation platform; we run 50 A/B tests a quarter."
+          }
+        ]
+      },
+      {
+        "name": "statistics",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical modelling for retail clients: regression, time series and causal inference."
+          },
+          {
+            "source": "S1",
+            "quote": "MSc Statistics, Pune Institute of Statistics, 2016"
+          }
+        ]
+      },
+      {
+        "name": "causal inference",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Statistical modelling for retail clients: regression, time series and causal inference."
+          }
+        ]
+      },
+      {
+        "name": "retail analytics",
+        "category": "domain",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead demand forecasting for 30,000 products across 300 stores, in production, with LightGBM and a deep learning model in PyTorch."
+          },
+          {
+            "source": "S1",
+            "quote": "Statistical modelling for retail clients: regression, time series and causal inference."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Present forecast accuracy and experiment results to category heads."
+          }
+        ]
+      },
+      {
+        "name": "english",
+        "category": "language",
+        "self_level": 4,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "English (fluent)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "IN"
+      ],
+      "dealbreakers": []
+    }
+  }
+}

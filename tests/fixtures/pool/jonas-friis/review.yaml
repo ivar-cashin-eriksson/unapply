@@ -1,0 +1,8 @@
+# What Jonas sets in the review sheet: their own levels (1 aware, 2 basic,
+# 3 working, 4 advanced, 5 expert). The pool loader fills in the rest of
+# the edits (none) and approves the profile.
+levels:
+  prophet: 5
+  power bi: 5
+  excel: 5
+  danish: 5

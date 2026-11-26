@@ -1,0 +1,84 @@
+# The synthetic candidate pool for Fjord Grocery's senior data scientist job.
+# Read by unapply.evaluation.pool and `unapply evaluate`; see README.md here.
+#
+# job         the job folder (its ad and recorded rubric extraction), from here
+# today       the date current roles run to, so years of experience stay fixed
+# match_file  each candidate's recorded LLM scorer answer for the job
+# intended    the ranking the pool was written to have, with the reasons: the
+#             reference both scorers are compared with. Candidates who fail a
+#             hard filter share the last rank.
+job: ../jobs/fjord_grocery
+today: '2026-11-26'
+match_file: match_fjord_grocery.json
+intended:
+- candidate: astrid-holm
+  rank: 1
+  reason: 'The clearest fit: owns demand forecasting in production at an online grocer (15,000
+    products, 22% lower error), designs price experiments end to end, strong Python and SQL,
+    PySpark at scale, a deep learning forecaster, an MSc in Statistics and native Danish.
+    Meets every must-have and nice-to-have.'
+- candidate: mikkel-lund
+  rank: 2
+  reason: 'A great fit written in other words: "time series prediction" in production for
+    9,000 styles, "split testing" of pricing on 1.2 million visitors, "Apache Spark", "deep
+    neural networks" and "applied statistics" are the skills the ad asks for. Strong Python
+    and SQL, e-commerce, native Danish. Slightly behind the first: less statistics depth and
+    deep learning outside the current role.'
+- candidate: sofie-krag
+  rank: 3
+  reason: 'A strong forecaster and statistician: owns production demand forecasts for 400,000
+    customers with a measured gain, an MSc in Statistics, careful A/B tests, strong Python
+    and SQL, clear communication and native Danish. Behind the first two only on the nice-to-haves:
+    energy rather than retail, no Spark, no deep learning.'
+- candidate: lars-winther
+  rank: 4
+  reason: 'A career changer with what the job''s users care about: fourteen years in grocery
+    retail, a forecasting model in production in 60 stores, strong SQL, and practised communication
+    with buyers. But Python is working level, statistics and A/B testing are basic, and nothing
+    covers Spark or deep learning.'
+- candidate: nadia-kowal
+  rank: 5
+  reason: 'An excellent engineer for forecasting in production: strong Python, a deep learning
+    forecaster serving three cities, PySpark on 4 TB. But this job is half statistics and
+    experimentation, where there is almost no evidence, SQL is only working level, nothing
+    shows communication with non-technical people, and there is no retail or Danish. Below
+    the career changer, who covers more of the must-haves.'
+- candidate: ida-thorsen
+  rank: 6
+  reason: An expert statistician with rigorous experiment design (four randomised trials)
+    and excellent communication, and native Danish. But Python is basic, SQL is basic, and
+    there is no forecasting at all, which are three of the six must-haves; no retail, Spark
+    or deep learning.
+- candidate: freja-nygaard
+  rank: 7
+  reason: 'An honest analyst: real A/B test analysis, working SQL, e-commerce and retail experience,
+    Danish, and clear reporting to management. But Python is basic, statistics shallow and
+    there is no forecasting beyond one Excel sheet: an analyst, not a senior data scientist
+    yet.'
+- candidate: jonas-friis
+  rank: 8
+  reason: 'The overclaimer: rates himself expert in Python, SQL, Spark, deep learning, forecasting,
+    statistics and A/B testing, but the evidence is BI dashboards, SQL views, one Kaggle notebook
+    and an online course. On evidence he is a BI analyst, below an honest analyst with real
+    A/B testing and e-commerce work.'
+- candidate: henrik-mose
+  rank: 9
+  reason: 'Unsuitable: an experienced frontend developer with no Python, SQL, forecasting,
+    statistics or experiments. He passes the hard filters, so he is ranked, but last of those
+    who pass.'
+- candidate: clara-jensen
+  rank: 10
+  reason: 'A good data scientist for this job on skills, but she only wants fully remote work
+    from Odense and the job is hybrid in Copenhagen: fails the work mode and location filters.
+    Not ranked among the others who fail.'
+- candidate: emil-dahl
+  rank: 10
+  reason: 'Promising and relevant (a production demand forecast, a deep learning thesis on
+    grocery demand, native Danish), but about three years of work, under the four the job
+    requires: fails a hard filter. Not ranked among the others who fail.'
+- candidate: priya-raman
+  rank: 10
+  reason: 'Strong, and on the evidence a top-two fit: leads demand forecasting for 30,000
+    products and a pricing experimentation platform. But she is outside the EU and needs a
+    work permit, and the job requires being able to work in the EU, so she fails a hard filter.
+    Not ranked among the others who fail.'

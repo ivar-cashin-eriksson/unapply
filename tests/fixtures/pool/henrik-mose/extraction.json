@@ -1,0 +1,198 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "headline": "Senior frontend developer with ten years building web shops and websites in React, TypeScript and JavaScript",
+    "experiences": [
+      {
+        "title": "Senior Frontend Developer",
+        "organisation": "Billetluk ApS",
+        "start": "2020-02",
+        "end": null,
+        "summary": "Builds a ticket shop in React and TypeScript used by 2 million customers a year, leads design system work with designers and product managers, and wrote a small Node.js export of sales figures for finance.",
+        "skills": [
+          "react",
+          "typescript",
+          "design systems",
+          "node.js",
+          "stakeholder communication"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Build the ticket shop in React and TypeScript, used by 2 million customers a year."
+          },
+          {
+            "source": "S1",
+            "quote": "Lead the design system work with our designers and product managers."
+          },
+          {
+            "source": "S1",
+            "quote": "Wrote a small Node.js service that exports sales figures as CSV for the finance team."
+          }
+        ]
+      },
+      {
+        "title": "Web Developer",
+        "organisation": "Pixelhuset ApS",
+        "start": "2016-08",
+        "end": "2020-01",
+        "summary": "Built client websites in JavaScript, HTML and CSS.",
+        "skills": [
+          "javascript",
+          "html",
+          "css"
+        ],
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Websites for clients in JavaScript, HTML and CSS."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "react",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Build the ticket shop in React and TypeScript, used by 2 million customers a year."
+          },
+          {
+            "source": "S1",
+            "quote": "React, TypeScript, JavaScript, Node.js, CSS, accessibility"
+          }
+        ]
+      },
+      {
+        "name": "typescript",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Build the ticket shop in React and TypeScript, used by 2 million customers a year."
+          },
+          {
+            "source": "S1",
+            "quote": "React, TypeScript, JavaScript, Node.js, CSS, accessibility"
+          }
+        ]
+      },
+      {
+        "name": "javascript",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Websites for clients in JavaScript, HTML and CSS."
+          },
+          {
+            "source": "S1",
+            "quote": "React, TypeScript, JavaScript, Node.js, CSS, accessibility"
+          }
+        ]
+      },
+      {
+        "name": "node.js",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Wrote a small Node.js service that exports sales figures as CSV for the finance team."
+          },
+          {
+            "source": "S1",
+            "quote": "React, TypeScript, JavaScript, Node.js, CSS, accessibility"
+          }
+        ]
+      },
+      {
+        "name": "html",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Websites for clients in JavaScript, HTML and CSS."
+          }
+        ]
+      },
+      {
+        "name": "css",
+        "category": "technology",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Websites for clients in JavaScript, HTML and CSS."
+          },
+          {
+            "source": "S1",
+            "quote": "React, TypeScript, JavaScript, Node.js, CSS, accessibility"
+          }
+        ]
+      },
+      {
+        "name": "accessibility",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "React, TypeScript, JavaScript, Node.js, CSS, accessibility"
+          }
+        ]
+      },
+      {
+        "name": "design systems",
+        "category": "method",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead the design system work with our designers and product managers."
+          }
+        ]
+      },
+      {
+        "name": "stakeholder communication",
+        "category": "soft_skill",
+        "self_level": null,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Lead the design system work with our designers and product managers."
+          }
+        ]
+      },
+      {
+        "name": "danish",
+        "category": "language",
+        "self_level": 5,
+        "evidence": [
+          {
+            "source": "S1",
+            "quote": "Danish (native)"
+          }
+        ]
+      }
+    ],
+    "preferences": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "work_permits": [
+        "DK"
+      ],
+      "dealbreakers": []
+    }
+  }
+}
