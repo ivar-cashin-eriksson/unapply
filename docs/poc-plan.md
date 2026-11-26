@@ -31,15 +31,18 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   capped at confidence 0.3.
 - Confidence means how sure the estimate is close to the real level: "familiar with"
   or a course is evidence of a low level, a bare skills-list entry is no information.
-- Claim support (deterministic): overclaims (own level 2+ above a sure estimate) lower
-  the score; unverified gaps (2+ above, evidence says little), underclaims and
-  low-rated own statements don't. Visible to the candidate with the reasons.
+- Claim support (deterministic) sorts rated skills into findings: overclaims (own
+  level 2+ above a sure estimate), unverified (2+ above, evidence says little),
+  underclaims, and skills backed only by the candidate's statement. Shown as counts,
+  such as "3 overclaims, 4 unverified, 0 underclaims, 2 only your own statement, of
+  26 rated skills", and visible to the candidate with the reasons.
 - John Doe's answer key is met: all three overclaims, four unverified skills and both
   self-stated skills flagged, consistent skills left alone.
 - Known limits: evidence for one skill that implies another (dbt implies SQL) isn't
   shared; cross-source consistency (dates in CV vs LinkedIn) isn't checked yet.
-- Open question: the score is a mean over all rated skills, so a few large
-  overclaims among many honest ratings still score high (John: 0.93).
+- Open question: whether and how findings combine into one score. A mean penalty
+  over rated skills (`penalty_score`, kept but not used) lets a few large overclaims
+  among many honest ratings still score high (John: 0.93). Counts for now.
 
 ### M2b: Gap-filling interview
 - Ask about unverified and unsupported skills ("What did you actually build with
