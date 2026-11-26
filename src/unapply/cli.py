@@ -9,6 +9,8 @@ from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 
+from unapply.estimation.claims import claim_support
+from unapply.estimation.skills import estimate_skills
 from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import cached_fetcher, fetch_github
@@ -56,20 +58,19 @@ def main(argv: list[str] | None = None) -> int:
     ingest.add_argument(
         "--out", type=Path, required=True, help="Profile JSON to write."
     )
-    ingest.add_argument("--model", default=DEFAULT_MODEL)
-    ingest.add_argument("--effort", default="high")
     ingest.add_argument(
         "--dump-sources", type=Path, help="Also write the text sent to the model."
     )
-    recording = ingest.add_mutually_exclusive_group()
-    recording.add_argument(
-        "--record", type=Path, help="Save the model's answer to this file."
+    _add_model_options(ingest)
+
+    estimate = commands.add_parser(
+        "estimate", help="Estimate skill levels from evidence and check claim support."
     )
-    recording.add_argument(
-        "--replay",
-        type=Path,
-        help="Use an answer saved with --record instead of calling the model.",
+    estimate.add_argument("profile", type=Path, help="Profile JSON.")
+    estimate.add_argument(
+        "--out", type=Path, required=True, help="Profile JSON to write."
     )
+    _add_model_options(estimate)
 
     review = commands.add_parser("review", help="Review and approve a profile.")
     steps = review.add_subparsers(dest="step", required=True)
@@ -87,7 +88,73 @@ def main(argv: list[str] | None = None) -> int:
         return _ingest(args)
     if args.command == "review":
         return _review(args)
+    if args.command == "estimate":
+        return _estimate(args)
     return 1
+
+
+def _add_model_options(command: argparse.ArgumentParser) -> None:
+    command.add_argument("--model", default=DEFAULT_MODEL)
+    command.add_argument("--effort", default="high")
+    recording = command.add_mutually_exclusive_group()
+    recording.add_argument(
+        "--record", type=Path, help="Save the model's answer to this file."
+    )
+    recording.add_argument(
+        "--replay",
+        type=Path,
+        help="Use an answer saved with --record instead of calling the model.",
+    )
+
+
+def _llm(args: argparse.Namespace) -> StructuredLLM:
+    if args.replay:
+        return ReplayLLM(args.replay)
+    llm = AnthropicLLM(args.model, args.effort)
+    return RecordingLLM(llm, args.record) if args.record else llm
+
+
+def _estimate(args: argparse.Namespace) -> int:
+    profile = Profile.model_validate_json(args.profile.read_text(encoding="utf-8"))
+    if profile.approved_by_candidate_at is None:
+        print("Note: this profile isn't approved by the candidate yet.")
+    result = estimate_skills(profile, _llm(args))
+    support = claim_support(result.profile)
+    estimated = result.profile.model_copy(update={"claim_support": support})
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(estimated.model_dump_json(indent=2), encoding="utf-8")
+
+    flags = {
+        **{n: "OVERCLAIM" for n in support.overclaims},
+        **{n: "underclaim" for n in support.underclaims},
+        **{n: "unverified" for n in support.unverified},
+        **{n: "unsupported" for n in support.unsupported_claims},
+    }
+    print(f"\n{'skill':<30} {'own':>3} {'est':>3} {'conf':>4}  reason")
+    for s in estimated.skills:
+        own = str(int(s.self_level)) if s.self_level else "-"
+        if s.estimate is None:
+            print(f"{s.name[:30]:<30} {own:>3}   -    -  (not estimated)")
+            continue
+        flag = f"[{flags[s.name]}] " if s.name in flags else ""
+        print(
+            f"{s.name[:30]:<30} {own:>3} {int(s.estimate.level):>3} "
+            f"{s.estimate.confidence:>4.2f}  {flag}{s.estimate.rationale}"
+        )
+    print(f"\nclaim support: {support.score:.2f}")
+    for label, names in [
+        ("overclaims", support.overclaims),
+        ("underclaims", support.underclaims),
+        ("unverified (worth adding evidence)", support.unverified),
+        ("only your own statement", support.unsupported_claims),
+    ]:
+        print(f"  {label}: {', '.join(names) or 'none'}")
+    if result.problems:
+        print(f"problems with the model's answer ({len(result.problems)}):")
+        for p in result.problems:
+            print(f"  {p}")
+    print(f"-> {args.out}")
+    return 0
 
 
 def _review(args: argparse.Namespace) -> int:
@@ -132,14 +199,7 @@ def _ingest(args: argparse.Namespace) -> int:
 
         args.dump_sources.write_text(render_sources(documents), encoding="utf-8")
 
-    llm: StructuredLLM
-    if args.replay:
-        llm = ReplayLLM(args.replay)
-    else:
-        llm = AnthropicLLM(args.model, args.effort)
-        if args.record:
-            llm = RecordingLLM(llm, args.record)
-    result = extract_profile(documents, llm)
+    result = extract_profile(documents, _llm(args))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(result.profile.model_dump_json(indent=2), encoding="utf-8")
 
