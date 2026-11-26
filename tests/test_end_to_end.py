@@ -1,10 +1,10 @@
-"""John Doe, a synthetic candidate, from material to approved profile.
+"""John Doe, a synthetic candidate, from material to estimated profile.
 
-Runs the commands a candidate runs: ingest, review export, edit, review apply. By
-default the model's answer is replayed from tests/fixtures/john_doe/extraction.json,
+Runs the commands a candidate runs: ingest, review export, edit, review apply, then
+estimate. By default the model's answers are replayed from tests/fixtures/john_doe/,
 so the test is free and offline. With UNAPPLY_LIVE=1 it calls Claude instead (about
-$0.20). With UNAPPLY_E2E_OUT=<folder> the files are kept there instead of a temporary
-folder.
+$0.30). With UNAPPLY_E2E_OUT=<folder> the files are kept there instead of a
+temporary folder.
 """
 
 import os
@@ -25,7 +25,12 @@ LIVE = os.environ.get("UNAPPLY_LIVE") == "1"
 def out(tmp_path):
     folder = Path(os.environ.get("UNAPPLY_E2E_OUT") or tmp_path)
     folder.mkdir(parents=True, exist_ok=True)
-    for name in ("profile.draft.json", "review.yaml", "profile.reviewed.json"):
+    for name in (
+        "profile.draft.json",
+        "review.yaml",
+        "profile.reviewed.json",
+        "profile.estimated.json",
+    ):
         (folder / name).unlink(missing_ok=True)
     return folder
 
@@ -53,7 +58,7 @@ def run(*args: object) -> int:
     return main([str(a) for a in args])
 
 
-def test_john_doe_from_material_to_approved_profile(out, capsys):
+def test_john_doe_from_material_to_estimated_profile(out, capsys):
     edits = yaml.safe_load((FIXTURE / "review_edits.yaml").read_text(encoding="utf-8"))
     draft, sheet, reviewed = (
         out / "profile.draft.json",
@@ -121,3 +126,32 @@ def test_john_doe_from_material_to_approved_profile(out, capsys):
     for name in edits["answer_key"]["overclaims"]:
         if name in names:
             assert profile.skill(name).self_level == SkillLevel.ADVANCED
+
+    # 5. Estimate his levels from the evidence and check his claims.
+    estimated = out / "profile.estimated.json"
+    model = (
+        ["--record", out / "estimation.json"]
+        if LIVE
+        else ["--replay", FIXTURE / "estimation.json"]
+    )
+    assert run("estimate", reviewed, *model, "--out", estimated) == 0
+    assert "problems with the model's answer" not in capsys.readouterr().out
+    profile = Profile.model_validate_json(estimated.read_text(encoding="utf-8"))
+    key = edits["answer_key"]
+    support = profile.claim_support
+    assert set(key["overclaims"]) <= set(support.overclaims)
+    assert set(key["unverified"]) <= set(support.unverified)
+    assert set(support.unsupported_claims) == set(key["self_stated_only"])
+    flagged = set(support.overclaims) | set(support.unverified)
+    assert flagged.isdisjoint(key["consistent"])
+    for name in key["consistent"]:
+        s = profile.skill(name)
+        assert abs(int(s.self_level) - int(s.estimate.level)) <= 1
+    for name in key["rated_lower_than_estimate"]:
+        s = profile.skill(name)
+        assert s.estimate.level > s.self_level
+    assert 0.8 < support.score < 1.0
+    # Estimates never see his own levels, and every one cites its own evidence.
+    for s in profile.skills:
+        assert s.estimate is not None
+        assert set(s.estimate.evidence_ids) <= set(s.evidence_ids)

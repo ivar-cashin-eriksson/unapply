@@ -243,8 +243,17 @@ class ClaimSupport(BaseModel):
     ----------
     score : float
         From 0 (nothing supported) to 1 (everything supported and consistent).
+    overclaims : list of str
+        Skills the candidate rates clearly higher than the evidence supports.
+    underclaims : list of str
+        Skills the candidate rates clearly lower than the evidence supports. Shown to
+        the candidate, but they don't lower the score.
+    unverified : list of str
+        Skills the candidate rates clearly higher than the evidence shows, where the
+        evidence says little either way. They don't lower the score; the candidate
+        is asked about them.
     unsupported_claims : list of str
-        Claims with no supporting evidence.
+        Skills backed only by the candidate's own statements.
     inconsistencies : list of str
         Disagreements between sources, such as different dates for the same job.
     computed_at : datetime
@@ -252,6 +261,9 @@ class ClaimSupport(BaseModel):
     """
 
     score: float = Field(ge=0.0, le=1.0)
+    overclaims: list[str] = Field(default_factory=list)
+    underclaims: list[str] = Field(default_factory=list)
+    unverified: list[str] = Field(default_factory=list)
     unsupported_claims: list[str] = Field(default_factory=list)
     inconsistencies: list[str] = Field(default_factory=list)
     computed_at: datetime = Field(default_factory=datetime.now)

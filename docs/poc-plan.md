@@ -24,15 +24,26 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - Known gaps: dates are year precision when the source gives only years; skill names
   need synonym matching ("radiotherapy planning" vs "radiation therapy planning").
 
-### M2: Skill estimation and claim support
-- Gap-filling interview, moved from M1: ask about skills whose evidence is weak
-  ("What did you actually build with Kafka?"), and keep the answers as the
-  candidate's own statements.
-- For each skill, estimate `estimated_level` from evidence (projects, duration, depth of
-  description, GitHub signals) with a `confidence`.
-- Claim support = agreement between self-reported and estimated levels, weighted by confidence,
-  plus consistency across sources (for example, dates matching between CV and LinkedIn).
-- Visible to the candidate, with the reasons.
+### M2a: Skill estimation and claim support (done)
+- `unapply estimate`: one model call estimates every skill's level, confidence and a
+  reason from its evidence and the candidate's roles. The model never sees the
+  candidate's own levels. Estimates resting only on the candidate's statements are
+  capped at confidence 0.3.
+- Confidence means how sure the estimate is close to the real level: "familiar with"
+  or a course is evidence of a low level, a bare skills-list entry is no information.
+- Claim support (deterministic): overclaims (own level 2+ above a sure estimate) lower
+  the score; unverified gaps (2+ above, evidence says little), underclaims and
+  low-rated own statements don't. Visible to the candidate with the reasons.
+- John Doe's answer key is met: all three overclaims, four unverified skills and both
+  self-stated skills flagged, consistent skills left alone.
+- Known limits: evidence for one skill that implies another (dbt implies SQL) isn't
+  shared; cross-source consistency (dates in CV vs LinkedIn) isn't checked yet.
+- Open question: the score is a mean over all rated skills, so a few large
+  overclaims among many honest ratings still score high (John: 0.93).
+
+### M2b: Gap-filling interview
+- Ask about unverified and unsupported skills ("What did you actually build with
+  Kafka?"), keep the answers as the candidate's own statements, and re-estimate.
 
 ### M3: Job rubric
 - Paste a job ad, have the LLM extract a `Rubric`, and let the recruiter edit it.

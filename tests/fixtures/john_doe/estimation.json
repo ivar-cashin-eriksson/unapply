@@ -1,0 +1,286 @@
+{
+  "model": "claude-opus-5-5",
+  "answer": {
+    "skills": [
+      {
+        "skill": "a/b testing",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "The CV describes designing and analysing A/B tests of pricing and promotion changes end to end, including power analysis, in the current senior role. Reported outcomes or decisions driven by these tests would support a higher level.",
+        "evidence": [
+          "E3",
+          "E17"
+        ]
+      },
+      {
+        "skill": "airflow",
+        "level": 3,
+        "confidence": 0.8,
+        "rationale": "Weekly reporting was automated with Airflow and Python, saving about a day of analyst time. This is independent professional use. Owning larger or more complex pipelines would raise the level.",
+        "evidence": [
+          "E8"
+        ]
+      },
+      {
+        "skill": "aws",
+        "level": 1,
+        "confidence": 0.3,
+        "rationale": "AWS (S3, SageMaker) appears only in a skills list, with no described use. A project or role that used these services would show the actual level.",
+        "evidence": [
+          "E19"
+        ]
+      },
+      {
+        "skill": "churn prediction",
+        "level": 3,
+        "confidence": 0.8,
+        "rationale": "A churn model for business customers was built with scikit-learn and presented to sales leadership. This is a substantial professional piece of work. Measured impact or repeated use would raise the level.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "danish",
+        "level": 5,
+        "confidence": 0.9,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E24"
+        ]
+      },
+      {
+        "skill": "dbt",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Maintaining 60 dbt models in Snowflake that feed commercial dashboards shows sustained professional use. Evidence of designing the project structure or improving its quality and performance would raise the level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "deep learning",
+        "level": 1,
+        "confidence": 0.7,
+        "rationale": "The only evidence is a completed online course in deep learning with PyTorch. Applying it in a project or at work would raise the level.",
+        "evidence": [
+          "E21"
+        ]
+      },
+      {
+        "skill": "demand forecasting",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "A LightGBM demand forecasting model was built for 4,000 products across 120 stores, a substantial production-scale piece of work. Reported accuracy or business results, or forecasting owned over several roles, would support a higher level.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "docker",
+        "level": 2,
+        "confidence": 0.7,
+        "rationale": "Docker was used to deploy a personal project on a small cloud server and also appears in the skills list. Professional use, such as containerising production services, would raise the level.",
+        "evidence": [
+          "E15",
+          "E18"
+        ]
+      },
+      {
+        "skill": "english",
+        "level": 4,
+        "confidence": 0.9,
+        "rationale": "English is stated as fluent.",
+        "evidence": [
+          "E25"
+        ]
+      },
+      {
+        "skill": "german",
+        "level": 2,
+        "confidence": 0.9,
+        "rationale": "German is stated as basic.",
+        "evidence": [
+          "E26"
+        ]
+      },
+      {
+        "skill": "git",
+        "level": 1,
+        "confidence": 0.3,
+        "rationale": "Git appears only in a skills list. Describing how it is used in team workflows would show the real level.",
+        "evidence": [
+          "E18"
+        ]
+      },
+      {
+        "skill": "kubernetes",
+        "level": 2,
+        "confidence": 0.3,
+        "rationale": "The only evidence is the candidate's own statement of deploying two model services on a client's cluster with help from their platform team, and nothing in the documents backs it. Documented, independent use would raise both level and confidence.",
+        "evidence": [
+          "E27"
+        ]
+      },
+      {
+        "skill": "lightgbm",
+        "level": 3,
+        "confidence": 0.75,
+        "rationale": "LightGBM was the basis of a demand forecasting model covering 4,000 products across 120 stores. Further projects or reported results would raise the level.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "skill": "logistics analytics",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "The evidence includes Tableau dashboards on delivery performance used by 40 regional managers, within logistics roles from 2018 to 2022. Concrete outcomes from analyses would support a higher level.",
+        "evidence": [
+          "E22",
+          "E9"
+        ]
+      },
+      {
+        "skill": "looker",
+        "level": 3,
+        "confidence": 0.25,
+        "rationale": "The only evidence is the candidate's own statement of daily use for two years, with nothing in the CV behind it. The CV also links Tableau to Kestrel rather than Nordlys. Documented Looker work would raise confidence.",
+        "evidence": [
+          "E28"
+        ]
+      },
+      {
+        "skill": "mentoring",
+        "level": 3,
+        "confidence": 0.75,
+        "rationale": "The CV describes ongoing mentoring of two junior data scientists and running the team's monthly code review session. Mentoring more people, or evidence of mentees' growth, would raise the level.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "skill": "pandas",
+        "level": 1,
+        "confidence": 0.3,
+        "rationale": "pandas appears only in a skills list. Describing specific data work done with it would show the real level.",
+        "evidence": [
+          "E18"
+        ]
+      },
+      {
+        "skill": "pricing models",
+        "level": 3,
+        "confidence": 0.5,
+        "rationale": "The CV summary states that pricing models are built in Python and SQL, and pricing is part of the current role, but no specific pricing model is described. A concrete project with results would raise the level and confidence.",
+        "evidence": [
+          "E17"
+        ]
+      },
+      {
+        "skill": "python",
+        "level": 4,
+        "confidence": 0.7,
+        "rationale": "Python has been used across two data science roles since 2019 for forecasting and pricing models and for reporting automation that saved about a day of analyst time. This amounts to sustained central use.",
+        "evidence": [
+          "E17",
+          "E8"
+        ]
+      },
+      {
+        "skill": "pytorch",
+        "level": 1,
+        "confidence": 0.7,
+        "rationale": "PyTorch appears only through a completed online deep learning course. A project using it would raise the level.",
+        "evidence": [
+          "E21"
+        ]
+      },
+      {
+        "skill": "retail analytics",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "The current senior role since 2022 includes a demand forecasting model for 4,000 products across 120 stores. Reported business impact or broader retail analyses would support a higher level.",
+        "evidence": [
+          "E22",
+          "E1"
+        ]
+      },
+      {
+        "skill": "scikit-learn",
+        "level": 3,
+        "confidence": 0.8,
+        "rationale": "A churn model was developed with scikit-learn (logistic regression and random forests) in a professional role. Additional models or reported results would raise the level.",
+        "evidence": [
+          "E6"
+        ]
+      },
+      {
+        "skill": "snowflake",
+        "level": 3,
+        "confidence": 0.75,
+        "rationale": "Snowflake underpins 60 maintained dbt models that feed commercial dashboards. Evidence of warehouse design or optimisation would raise the level.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "skill": "spark",
+        "level": 1,
+        "confidence": 0.75,
+        "rationale": "The CV describes the candidate as only \"familiar with\" Spark. Using it in a project would raise the level.",
+        "evidence": [
+          "E20"
+        ]
+      },
+      {
+        "skill": "sql",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "SQL has been used since the 2018 student job for queries and reports, and now for forecasting and pricing models. Describing complex or owned SQL systems would support a higher level.",
+        "evidence": [
+          "E17",
+          "E10"
+        ]
+      },
+      {
+        "skill": "stakeholder communication",
+        "level": 3,
+        "confidence": 0.7,
+        "rationale": "Model results were presented to sales leadership, and the candidate works closely with commercial teams so that models are used. Examples of decisions influenced would raise the level.",
+        "evidence": [
+          "E7",
+          "E23"
+        ]
+      },
+      {
+        "skill": "statistics",
+        "level": 1,
+        "confidence": 0.3,
+        "rationale": "Statistics is cited only as a skills-list entry. Work described elsewhere suggests more, but this skill's own evidence doesn't show it. Linking specific statistical analyses to this skill would show the real level.",
+        "evidence": [
+          "E19"
+        ]
+      },
+      {
+        "skill": "tableau",
+        "level": 3,
+        "confidence": 0.8,
+        "rationale": "Tableau dashboards on delivery performance were built and used by 40 regional managers. Broader dashboard ownership or design leadership would raise the level.",
+        "evidence": [
+          "E9"
+        ]
+      },
+      {
+        "skill": "time series forecasting",
+        "level": 4,
+        "confidence": 0.6,
+        "rationale": "Forecasting work includes parcel volumes with gradient boosting and a large-scale demand model for 4,000 products, along with documentation fixes to an open-source forecasting library. Reported forecast accuracy or business results would firm up this level.",
+        "evidence": [
+          "E1",
+          "E12",
+          "E16"
+        ]
+      }
+    ]
+  }
+}

@@ -70,7 +70,13 @@ preferences:
 
 # Answer key for M2 (skill estimation and claim support).
 answer_key:
+  # Evidence points to a low level: an online course, "familiar with".
   overclaims: [deep learning, pytorch, spark]
-  underclaims: [sql]
+  # Only in his skills list: the documents don't say either way.
+  unverified: [aws, git, pandas, statistics]
   self_stated_only: [kubernetes, looker]
   consistent: [python, lightgbm, a/b testing, tableau, time series forecasting]
+  # SQL is underrated (2), but the strongest evidence, 60 dbt models, is filed under
+  # dbt, so the estimate for SQL is only 3: one level, not flagged. Known limit:
+  # evidence for one skill that implies another isn't shared between them.
+  rated_lower_than_estimate: [sql]
