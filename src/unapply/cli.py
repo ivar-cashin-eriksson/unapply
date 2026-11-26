@@ -127,6 +127,22 @@ def main(argv: list[str] | None = None) -> int:
     job_apply.add_argument("sheet", type=Path, help="The edited sheet.")
     job_apply.add_argument("--out", type=Path, required=True, help="Job JSON to write.")
 
+    db = commands.add_parser("db", help="Create the database and import workspaces.")
+    db_steps = db.add_subparsers(dest="step", required=True)
+    db_init = db_steps.add_parser(
+        "init", help="Create the tables, or migrate them to the newest version."
+    )
+    db_import = db_steps.add_parser(
+        "import", help="Import candidate or job workspace folders."
+    )
+    db_import.add_argument(
+        "workspaces", nargs="+", type=Path, help="Workspace folders, such as data/me."
+    )
+    for command in (db_init, db_import):
+        command.add_argument(
+            "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
+        )
+
     app = commands.add_parser("app", help="Open the app in a browser.")
     app.add_argument("--port", type=int, default=8501)
 
@@ -154,6 +170,8 @@ def _run(args: argparse.Namespace) -> int:
         return _job(args)
     if args.command == "app":
         return _app(args)
+    if args.command == "db":
+        return _db(args)
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -255,6 +273,30 @@ def _job(args: argparse.Namespace) -> int:
     print(f"rubric version {r.version}: {len(r.criteria)} criteria -> {args.out}")
     print("Approved." if r.approved_at else "Not approved yet.")
     return 0
+
+
+def _db(args: argparse.Namespace) -> int:
+    # Imported here, so commands that don't use the database don't load SQLAlchemy.
+    from unapply.db.engine import init_db
+    from unapply.db.importer import import_workspace
+    from unapply.db.repository import Repository
+
+    url = init_db(args.url)
+    if args.step == "init":
+        print(f"Database ready: {url}")
+        return 0
+    repo = Repository.from_url(args.url)
+    failed = 0
+    for path in args.workspaces:
+        try:
+            kind = import_workspace(repo, path)
+        except ValueError as e:
+            print(f"Not imported: {path}: {e}", file=sys.stderr)
+            failed += 1
+            continue
+        print(f"Imported {kind} {path.name!r} from {path}")
+    repo.engine.dispose()
+    return 2 if failed else 0
 
 
 def _write(path: Path, text: str) -> None:

@@ -6,11 +6,13 @@ readme = "README.md"
 authors = [{ name = "ivar-cashin-eriksson" }]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.13",
     "anthropic>=2.14.0",
     "pydantic>=2.8",
     "pypdf>=7.1.1",
     "python-dotenv>=1.2.4",
     "pyyaml>=6.0.4",
+    "sqlalchemy>=2.0",
     "streamlit>=1.67.0",
 ]
 
@@ -18,7 +20,8 @@ dependencies = [
 # Added as each POC milestone needs them (see docs/poc-plan.md).
 api = ["fastapi>=0.115", "uvicorn>=0.30"]
 mcp = ["mcp>=1.2"]
-db = ["sqlalchemy>=2.0", "psycopg[binary]>=3.2", "pgvector>=0.3"]
+# SQLAlchemy and Alembic are core (SQLite works without extras); this adds Postgres.
+db = ["psycopg[binary]>=3.2", "pgvector>=0.3"]
 
 [project.scripts]
 unapply = "unapply:main"

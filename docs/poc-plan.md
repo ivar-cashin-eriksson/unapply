@@ -113,5 +113,16 @@ instead), production auth, multi-company tenancy, and verification (references, 
 
 ## Stack
 
-Python 3.12, uv, Pydantic, FastAPI, Postgres + pgvector, the MCP Python SDK, the Claude API, and
-Streamlit for the first UI.
+Python 3.12, uv, Pydantic, SQLAlchemy 2.0 and Alembic (SQLite now, Postgres + pgvector later:
+a URL change), FastAPI, the MCP Python SDK, the Claude API, and Streamlit for the first UI.
+
+### Database (done)
+- `src/unapply/db/`: tables for candidates and their profiles (sources, evidence,
+  experiences, skills with own level and estimate, claim support), interview questions
+  and answers, jobs, rubric versions and criteria, matches and criterion scores, and
+  the history of every step. Migrations build them from empty on SQLite and render for
+  Postgres.
+- A repository saves and loads the existing schemas (John Doe's profile at every step
+  and Fjord Grocery's job load back equal). Rubric versions that a match refers to
+  can't change. `unapply db init` and `unapply db import <workspace>`.
+- The app still works on workspace folders; the API will use the database.

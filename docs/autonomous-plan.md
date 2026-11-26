@@ -80,7 +80,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Done when: the workflow file is valid and every check it runs passes locally. (Its
   first run on GitHub happens on push; note in the log if it fails there.)
 
-### 2. [ ] Database (SQLite now, Postgres later)
+### 2. [x] Database (SQLite now, Postgres later)
 
 - SQLAlchemy 2.0 models and Alembic migrations. `UNAPPLY_DATABASE_URL`, by default
   `sqlite:///data/unapply.db`; nothing SQLite-specific, so Postgres is a URL change.
