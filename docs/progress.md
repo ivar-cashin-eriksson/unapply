@@ -74,7 +74,11 @@ branch, what was done, what was tested, anything to know.
   dependencies (the `api` extra is gone) and httpx a dev one; uploads go in
   `data/uploads/<name>/`; the Streamlit app still uses workspace folders; there is no
   auth (out of scope for the POC), so `--internal` must never face candidates.
-  Matching routes come with task 5.
+  Matching routes come with task 5. Left running, not by Ivar: an `unapply api --port 8765`
+  server from an earlier session of this task (started 19:16); stopping it was
+  refused by the permission check, so it still holds `.venv/Scripts/unapply.exe` and
+  makes `uv run` fail to reinstall the package (`uv run --no-sync` works). Please stop
+  it. A headless Streamlit on port 8599 (since 16:14) was left alone too.
 
 ## Questions for Ivar
 
