@@ -1,8 +1,10 @@
 # Autonomous plan
 
 Work through the tasks below in order while Ivar is away, until the usage limit is
-reached. Each `/loop` round: read this file and `docs/progress.md`, take the first task
-that isn't done, finish it (or record why it's blocked), log it, and continue.
+reached. Run it with `pwsh scripts/autorun.ps1`: one fresh Claude Code session per
+task, so no context carries over. Each session reads this file and
+`docs/progress.md`, finishes an unfinished task or takes the first one that isn't
+done, logs it, and exits.
 
 ## Ground rules
 
