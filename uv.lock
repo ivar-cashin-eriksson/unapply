@@ -1586,6 +1586,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pypdf" },
     { name = "python-dotenv" },
+    { name = "pyyaml" },
 ]
 
 [package.optional-dependencies]
@@ -1606,7 +1607,6 @@ mcp = [
 dev = [
     { name = "ipykernel" },
     { name = "pytest" },
-    { name = "pyyaml" },
     { name = "ruff" },
 ]
 
@@ -1620,6 +1620,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.8" },
     { name = "pypdf", specifier = ">=7.1.1" },
     { name = "python-dotenv", specifier = ">=1.2.4" },
+    { name = "pyyaml", specifier = ">=6.0.4" },
     { name = "sqlalchemy", marker = "extra == 'db'", specifier = ">=2.0" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.30" },
 ]
@@ -1629,7 +1630,6 @@ provides-extras = ["api", "mcp", "db"]
 dev = [
     { name = "ipykernel" },
     { name = "pytest", specifier = ">=8.0" },
-    { name = "pyyaml", specifier = ">=6.0.4" },
     { name = "ruff", specifier = ">=0.6" },
 ]
 

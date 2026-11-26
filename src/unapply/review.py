@@ -1,0 +1,326 @@
+"""The candidate's review of their draft profile.
+
+`export_review_sheet` writes a YAML sheet the candidate edits in any editor: their
+own level per skill, what to remove, corrections to experiences, skills to add and
+whether they approve. `apply_review_sheet` checks the sheet and returns the reviewed
+profile. Skills the candidate adds are recorded as their own statements, in a source
+of kind `interview`, so they stay distinguishable from evidence found in documents.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from datetime import date, datetime
+from typing import Any
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+from unapply.ingest.extract import canonical_skill
+from unapply.schemas import (
+    Evidence,
+    Preferences,
+    Profile,
+    Skill,
+    SkillCategory,
+    SkillLevel,
+    Source,
+    SourceKind,
+)
+
+LEVELS = "1 aware, 2 basic, 3 working, 4 advanced, 5 expert"
+CATEGORIES = ", ".join(c.value for c in SkillCategory)
+
+
+class ReviewError(ValueError):
+    """The review sheet can't be applied. The message says what to fix."""
+
+
+class _Strict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class _ExperienceRow(_Strict):
+    id: str
+    keep: bool = True
+    title: str
+    organisation: str
+    # YAML reads a bare year such as 2019 as a number.
+    start: int | str | None = None
+    end: int | str | None = None
+    summary: str = ""
+
+
+class _SkillRow(_Strict):
+    name: str
+    category: SkillCategory | None = None
+    level: int | None = Field(default=None, ge=1, le=5)
+    keep: bool = True
+
+
+class _NewSkill(_Strict):
+    name: str
+    category: SkillCategory
+    level: int | None = Field(default=None, ge=1, le=5)
+    note: str
+
+    @field_validator("note")
+    @classmethod
+    def _note_given(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("say where you used the skill")
+        return v
+
+
+class _Sheet(_Strict):
+    profile: str
+    approve: bool = False
+    headline: str
+    preferences: Preferences
+    experiences: list[_ExperienceRow] = Field(default_factory=list)
+    skills: list[_SkillRow] = Field(default_factory=list)
+    add_skills: list[_NewSkill] | None = None
+
+
+def export_review_sheet(profile: Profile) -> str:
+    """Write a profile as a YAML review sheet for the candidate to edit.
+
+    Parameters
+    ----------
+    profile : Profile
+        The profile to review, usually a fresh draft.
+
+    Returns
+    -------
+    str
+        The sheet, with instructions and each item's evidence as YAML comments.
+    """
+    quotes = _quotes_by_id(profile)
+    out = [
+        "# Review your profile.",
+        "#",
+        f"# skills: set `level` to your own level ({LEVELS}), or leave it empty.",
+        "#   Set `keep: false` on anything that is wrong. Evidence is shown for",
+        "#   reference: lines starting with # are ignored.",
+        "# experiences: correct anything, dates as YYYY or YYYY-MM.",
+        "# add_skills: skills that are missing. Give each a `note` saying where you",
+        "#   used it; notes are kept as your own statements.",
+        "# approve: set to true when the profile is right. Employers only see",
+        "#   approved profiles.",
+        "",
+        f"profile: {profile.id}",
+        "approve: false",
+        f"headline: {_s(profile.headline)}",
+        "",
+        "preferences:",
+    ]
+    for key, value in profile.preferences.model_dump(mode="json").items():
+        out.append(f"  {key}: {json.dumps(value, ensure_ascii=False)}")
+
+    out += ["", "experiences:"]
+    for x in profile.experiences:
+        out += [
+            f"  - id: {x.id}",
+            "    keep: true",
+            f"    title: {_s(x.title)}",
+            f"    organisation: {_s(x.organisation)}",
+            f"    start: {_d(x.start)}",
+            f"    end: {_d(x.end)}",
+            f"    summary: {_s(x.summary)}",
+        ]
+        out += [f"    # {q}" for q in _evidence_lines(x.evidence_ids, quotes)]
+
+    out += ["", f"# Categories: {CATEGORIES}.", "skills:"]
+    for s in profile.skills:
+        out += [
+            f"  - name: {_s(s.name)}",
+            f"    category: {s.category.value if s.category else ''}",
+            f"    level: {int(s.self_level) if s.self_level else ''}",
+            "    keep: true",
+        ]
+        out += [f"    # {q}" for q in _evidence_lines(s.evidence_ids, quotes)]
+
+    out += [
+        "",
+        "add_skills:",
+        "  # - name: matlab",
+        "  #   category: technology",
+        "  #   level: 3",
+        "  #   note: Used for signal processing coursework at KTH, 2016-2018.",
+        "",
+    ]
+    return "\n".join(out)
+
+
+def apply_review_sheet(profile: Profile, sheet_text: str) -> Profile:
+    """Apply an edited review sheet to the profile it was exported from.
+
+    Parameters
+    ----------
+    profile : Profile
+        The profile the sheet was exported from.
+    sheet_text : str
+        The edited sheet.
+
+    Returns
+    -------
+    Profile
+        A new profile with the candidate's levels, removals, corrections and added
+        skills. It is approved, with the current time, if the sheet says
+        `approve: true`; otherwise any earlier approval is cleared. Evidence no
+        longer referenced is dropped; every source is kept.
+
+    Raises
+    ------
+    ReviewError
+        If the sheet isn't valid YAML, is for another profile, or has invalid
+        values, unknown items or duplicate skills.
+    """
+    sheet = _parse(sheet_text)
+    if sheet.profile != str(profile.id):
+        raise ReviewError(
+            f"this sheet is for profile {sheet.profile}, not {profile.id}"
+        )
+
+    experiences = {str(x.id): x for x in profile.experiences}
+    unknown = [row.id for row in sheet.experiences if row.id not in experiences]
+    if unknown:
+        raise ReviewError(f"unknown experience ids: {unknown}")
+    new_experiences = []
+    for row in sheet.experiences:
+        if not row.keep:
+            continue
+        new_experiences.append(
+            experiences[row.id].model_copy(
+                update={
+                    "title": row.title,
+                    "organisation": row.organisation,
+                    "start": _parse_date(row.start, f"start of {row.title}"),
+                    "end": _parse_date(row.end, f"end of {row.title}"),
+                    "summary": row.summary,
+                }
+            )
+        )
+
+    skills = {s.name: s for s in profile.skills}
+    names = [canonical_skill(r.name) for r in sheet.skills]
+    duplicates = sorted({n for n in names if names.count(n) > 1})
+    if duplicates:
+        raise ReviewError(f"skills listed more than once: {duplicates}")
+    # Rows deleted from the sheet count as removed, like keep: false.
+    rows = dict(zip(names, sheet.skills, strict=True))
+    unknown = [name for name in rows if name not in skills]
+    if unknown:
+        raise ReviewError(
+            f"unknown skills: {unknown}. Skill names can't be changed; "
+            "remove the skill and add it under add_skills instead."
+        )
+    new_skills = []
+    for name, row in rows.items():
+        if row.keep:
+            new_skills.append(
+                skills[name].model_copy(
+                    update={
+                        "category": row.category,
+                        "self_level": SkillLevel(row.level) if row.level else None,
+                    }
+                )
+            )
+
+    sources = list(profile.sources)
+    evidence = list(profile.evidence)
+    if sheet.add_skills:
+        statement = Source(kind=SourceKind.INTERVIEW, uri="review sheet")
+        sources.append(statement)
+        kept = {s.name for s in new_skills}
+        for new in sheet.add_skills:
+            name = canonical_skill(new.name)
+            if name in kept:
+                raise ReviewError(f"{name!r} is already in skills; set its level there")
+            kept.add(name)
+            note = Evidence(source_id=statement.id, quote=new.note.strip())
+            evidence.append(note)
+            new_skills.append(
+                Skill(
+                    name=name,
+                    category=new.category,
+                    self_level=SkillLevel(new.level) if new.level else None,
+                    evidence_ids=[note.id],
+                )
+            )
+
+    return _pruned(
+        profile.model_copy(
+            update={
+                "headline": sheet.headline,
+                "preferences": sheet.preferences,
+                "experiences": new_experiences,
+                "skills": sorted(new_skills, key=lambda s: s.name),
+                "sources": sources,
+                "evidence": evidence,
+                "approved_by_candidate_at": datetime.now() if sheet.approve else None,
+            }
+        )
+    )
+
+
+def _parse(sheet_text: str) -> _Sheet:
+    try:
+        data: Any = yaml.safe_load(sheet_text)
+    except yaml.YAMLError as e:
+        raise ReviewError(f"the sheet isn't valid YAML: {e}") from e
+    if not isinstance(data, dict):
+        raise ReviewError("the sheet is empty or not a mapping")
+    try:
+        return _Sheet.model_validate(data)
+    except ValidationError as e:
+        problems = "; ".join(
+            f"{'.'.join(str(p) for p in err['loc'])}: {err['msg']}"
+            for err in e.errors()
+        )
+        raise ReviewError(f"invalid values: {problems}") from e
+
+
+def _pruned(profile: Profile) -> Profile:
+    """Drop evidence nothing refers to any more.
+
+    Sources are kept even when unused: they record what the profile was built from.
+    """
+    used = {i for x in profile.experiences for i in x.evidence_ids}
+    used |= {i for s in profile.skills for i in s.evidence_ids}
+    used |= {i for s in profile.skills if s.estimate for i in s.estimate.evidence_ids}
+    evidence = [e for e in profile.evidence if e.id in used]
+    return Profile.model_validate(
+        profile.model_copy(update={"evidence": evidence}).model_dump()
+    )
+
+
+def _quotes_by_id(profile: Profile) -> dict:
+    kinds = {s.id: s.kind.value for s in profile.sources}
+    return {e.id: f"{kinds[e.source_id]}: {e.quote}" for e in profile.evidence}
+
+
+def _evidence_lines(ids: list, quotes: dict) -> list[str]:
+    return [" ".join(quotes[i].split()) for i in ids if i in quotes]
+
+
+def _s(value: str) -> str:
+    """Quote a string as YAML, on one line."""
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _d(value: date | None) -> str:
+    """Write a date as 'YYYY', or 'YYYY-MM' when it isn't January."""
+    if value is None:
+        return ""
+    return str(value.year) if value.month == 1 else f'"{value:%Y-%m}"'
+
+
+def _parse_date(value: str | int | None, what: str) -> date | None:
+    if value in (None, ""):
+        return None
+    m = re.fullmatch(r"(\d{4})(?:-(\d{1,2}))?", str(value).strip())
+    if not m or not 1 <= int(m.group(2) or 1) <= 12:
+        raise ReviewError(f"{what}: {value!r} isn't YYYY or YYYY-MM")
+    return date(int(m.group(1)), int(m.group(2) or 1), 1)

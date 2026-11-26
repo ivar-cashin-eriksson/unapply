@@ -13,6 +13,8 @@ from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import cached_fetcher, fetch_github
 from unapply.llm import DEFAULT_MODEL, AnthropicLLM
+from unapply.review import ReviewError, apply_review_sheet, export_review_sheet
+from unapply.schemas import Profile
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -54,11 +56,48 @@ def main(argv: list[str] | None = None) -> int:
         "--dump-sources", type=Path, help="Also write the text sent to the model."
     )
 
+    review = commands.add_parser("review", help="Review and approve a profile.")
+    steps = review.add_subparsers(dest="step", required=True)
+    export = steps.add_parser("export", help="Write a review sheet to edit.")
+    export.add_argument("profile", type=Path, help="Profile JSON.")
+    export.add_argument("--sheet", type=Path, required=True, help="Sheet to write.")
+    apply = steps.add_parser("apply", help="Apply an edited review sheet.")
+    apply.add_argument("profile", type=Path, help="Profile JSON it was exported from.")
+    apply.add_argument("sheet", type=Path, help="The edited sheet.")
+    apply.add_argument("--out", type=Path, required=True, help="Profile JSON to write.")
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     if args.command == "ingest":
         return _ingest(args)
+    if args.command == "review":
+        return _review(args)
     return 1
+
+
+def _review(args: argparse.Namespace) -> int:
+    profile = Profile.model_validate_json(args.profile.read_text(encoding="utf-8"))
+    if args.step == "export":
+        if args.sheet.exists():
+            print(f"{args.sheet} exists; not overwriting your edits.", file=sys.stderr)
+            return 2
+        args.sheet.write_text(export_review_sheet(profile), encoding="utf-8")
+        print(f"Wrote {args.sheet}. Edit it, then run `unapply review apply`.")
+        return 0
+    try:
+        reviewed = apply_review_sheet(profile, args.sheet.read_text(encoding="utf-8"))
+    except ReviewError as e:
+        print(f"Can't apply {args.sheet}: {e}", file=sys.stderr)
+        return 2
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(reviewed.model_dump_json(indent=2), encoding="utf-8")
+    rated = sum(s.self_level is not None for s in reviewed.skills)
+    print(
+        f"{len(reviewed.experiences)} experiences, {len(reviewed.skills)} skills "
+        f"({rated} with your level) -> {args.out}"
+    )
+    print("Approved." if reviewed.approved_by_candidate_at else "Not approved yet.")
+    return 0
 
 
 def _ingest(args: argparse.Namespace) -> int:

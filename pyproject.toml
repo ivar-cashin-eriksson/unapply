@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.8",
     "pypdf>=7.1.1",
     "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.4",
 ]
 
 [project.optional-dependencies]
@@ -26,7 +27,6 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "ipykernel",
-    "pyyaml>=6.0.4",
 ]
 
 [build-system]
