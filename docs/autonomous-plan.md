@@ -190,4 +190,5 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 
 Create `user/claude` from `dev` and continue there with improvements you're confident
 about (tests, polish, documentation, small refactors), logging each in
-`docs/progress.md`. Nothing that changes product decisions.
+`docs/progress.md`. When these changes are done feel free to continue developing any 
+features you think make sense, keeping them to `user/claude` without merging to `dev`.
