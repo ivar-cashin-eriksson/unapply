@@ -30,4 +30,6 @@ CONTRIBUTING.md and make sure they pass.
 
 - Commit, push, or change branches.
 - Merge into `dev` or `main`.
-- Call paid APIs (LLM calls included) outside tests that fake them.
+- Call paid APIs (LLM calls included) outside tests that fake them. Concretely: never
+  pass `--allow-api`, set `UNAPPLY_ALLOW_API_CALLS=1`, turn on the app's API toggle,
+  or run tests with `UNAPPLY_LIVE=1`. Use `--replay` with recorded answers instead.

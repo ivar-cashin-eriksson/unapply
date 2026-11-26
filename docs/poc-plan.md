@@ -57,6 +57,15 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   Git answer changed nothing; an honest "only the course" made the deep learning
   estimate surer; a concrete Kubernetes statement stayed capped at confidence 0.3.
 
+### Candidate app (done)
+- `unapply app`: a Streamlit app for every candidate step (material, review,
+  estimate, interview, profile), on top of the same functions as the CLI. Edits
+  become review and interview sheets, so validation is shared.
+- Paid API calls are off unless the sidebar toggle is on in that session (and the
+  `UNAPPLY_ALLOW_API_CALLS` switch or `--allow-api` for the CLI); every real call is
+  logged with an estimated cost. A John Doe demo replays recorded answers for free.
+- Tested headlessly with Streamlit's AppTest, clicking through John's whole journey.
+
 ### M3: Job rubric
 - Paste a job ad, have the LLM extract a `Rubric`, and let the recruiter edit it.
 
