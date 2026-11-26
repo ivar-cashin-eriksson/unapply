@@ -22,7 +22,12 @@ db = ["sqlalchemy>=2.0", "psycopg[binary]>=3.2", "pgvector>=0.3"]
 unapply = "unapply:main"
 
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.6", "ipykernel"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "ipykernel",
+    "pyyaml>=6.0.4",
+]
 
 [build-system]
 requires = ["hatchling"]

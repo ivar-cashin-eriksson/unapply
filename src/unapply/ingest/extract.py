@@ -24,6 +24,7 @@ from unapply.schemas import (
     Preferences,
     Profile,
     Skill,
+    SkillCategory,
     SkillLevel,
     WorkMode,
 )
@@ -58,7 +59,15 @@ class ExtractedExperience(BaseModel):
 class ExtractedSkill(BaseModel):
     """A skill as the model extracted it."""
 
-    name: str
+    name: str = Field(
+        description=(
+            "The most specific conventional name the material supports, such as "
+            "'sparse gaussian processes' rather than 'gaussian processes'."
+        )
+    )
+    category: Literal[
+        "technology", "method", "domain", "soft_skill", "language", "certification"
+    ]
     self_level: int | None = Field(
         description=(
             "Only if the candidate states a level themselves: 1 aware, 2 basic, "
@@ -233,7 +242,10 @@ def build_profile(
             existing.self_level = existing.self_level or level
         else:
             skills[name] = Skill(
-                name=name, self_level=level, evidence_ids=[e.id for e in ev]
+                name=name,
+                category=SkillCategory(s.category),
+                self_level=level,
+                evidence_ids=[e.id for e in ev],
             )
 
     p = extracted.preferences

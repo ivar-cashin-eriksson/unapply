@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Protocol, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -72,11 +72,11 @@ class AnthropicLLM:
         Thinking effort: "low", "medium", "high", "xhigh" or "max", by default
         "high".
     max_tokens : int, optional
-        Output cap per request, by default 16000.
+        Output cap per request, thinking included, by default 64000.
     """
 
     def __init__(
-        self, model: str = DEFAULT_MODEL, effort: str = "high", max_tokens: int = 16000
+        self, model: str = DEFAULT_MODEL, effort: str = "high", max_tokens: int = 64000
     ) -> None:
         # Imported here so the package and its tests work without the SDK configured.
         import anthropic
@@ -108,7 +108,8 @@ class AnthropicLLM:
         LLMError
             If the model refuses, runs out of tokens or returns invalid output.
         """
-        response = self._client.beta.messages.parse(
+        # Streamed, because large outputs time out as plain requests.
+        with self._client.beta.messages.stream(
             model=self.model,
             max_tokens=self.max_tokens,
             system=system,
@@ -118,22 +119,33 @@ class AnthropicLLM:
             # On a safety refusal the API retries on a fallback model it picks.
             betas=["server-side-fallback-2026-07-01"],
             fallbacks="default",
-        )
+        ) as stream:
+            request = stream.request_id
+            try:
+                response = stream.get_final_message()
+            except ValidationError as e:
+                # The SDK parses the JSON when the text block ends, before the stop
+                # reason arrives, so truncated output surfaces here.
+                usage = stream.current_message_snapshot.usage
+                if usage.output_tokens >= self.max_tokens:
+                    raise LLMError(
+                        f"output hit max_tokens={self.max_tokens} (request {request})"
+                    ) from e
+                raise LLMError(f"output didn't match schema (request {request})") from e
         log.info(
             "model=%s request_id=%s stop_reason=%s input_tokens=%s output_tokens=%s",
             response.model,
-            response._request_id,
+            request,
             response.stop_reason,
             response.usage.input_tokens,
             response.usage.output_tokens,
         )
         if response.stop_reason == "refusal":
-            raise LLMError(f"model refused (request {response._request_id})")
+            raise LLMError(f"model refused (request {request})")
         if response.stop_reason == "max_tokens":
             raise LLMError(
-                f"output hit max_tokens={self.max_tokens} "
-                f"(request {response._request_id})"
+                f"output hit max_tokens={self.max_tokens} (request {request})"
             )
         if response.parsed_output is None:
-            raise LLMError(f"no parsable output (request {response._request_id})")
+            raise LLMError(f"no parsable output (request {request})")
         return response.parsed_output

@@ -11,7 +11,7 @@ from dotenv import find_dotenv, load_dotenv
 
 from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
-from unapply.ingest.github import fetch_github
+from unapply.ingest.github import cached_fetcher, fetch_github
 from unapply.llm import DEFAULT_MODEL, AnthropicLLM
 
 
@@ -40,6 +40,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest.add_argument("paths", nargs="*", type=Path, help="Files or folders.")
     ingest.add_argument("--github", help="GitHub username to include.")
     ingest.add_argument(
+        "--github-cache",
+        type=Path,
+        default=Path("data/.cache/github"),
+        help="Folder caching GitHub responses; delete it to refetch.",
+    )
+    ingest.add_argument(
         "--out", type=Path, required=True, help="Profile JSON to write."
     )
     ingest.add_argument("--model", default=DEFAULT_MODEL)
@@ -60,7 +66,8 @@ def _ingest(args: argparse.Namespace) -> int:
     for path in args.paths:
         documents.extend(load_path(path))
     if args.github:
-        documents.append(fetch_github(args.github))
+        fetch = cached_fetcher(args.github_cache)
+        documents.append(fetch_github(args.github, fetch=fetch))
     if not documents:
         print("Nothing to ingest: give paths or --github.", file=sys.stderr)
         return 2

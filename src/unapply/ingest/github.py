@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import urllib.error
 import urllib.request
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from unapply.ingest.documents import SourceDocument
@@ -80,6 +83,46 @@ def _readme(fetch: Fetcher, username: str, repo: str) -> str | None:
         return None
 
 
+def cached_fetcher(cache_dir: Path, fetch: Fetcher | None = None) -> Fetcher:
+    """Wrap a fetcher so each API path is fetched once and then read from disk.
+
+    Keeps reruns reproducible and within the unauthenticated rate limit. Delete the
+    folder to fetch fresh data.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Folder for cached responses. Created if missing.
+    fetch : Fetcher or None, optional
+        The fetcher to wrap. By default, the GitHub REST API.
+
+    Returns
+    -------
+    Fetcher
+        A fetcher with the same behaviour, including FileNotFoundError for paths
+        that don't exist.
+    """
+    fetch = fetch or _fetch
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def cached(path: str, raw: bool) -> Any:  # noqa: ANN401 (decoded JSON)
+        key = hashlib.sha256(f"{raw}:{path}".encode()).hexdigest()[:24]
+        file = cache_dir / f"{key}.json"
+        if file.exists():
+            entry = json.loads(file.read_text(encoding="utf-8"))
+        else:
+            try:
+                entry = {"path": path, "body": fetch(path, raw)}
+            except FileNotFoundError:
+                entry = {"path": path, "missing": True}
+            file.write_text(json.dumps(entry), encoding="utf-8")
+        if entry.get("missing"):
+            raise FileNotFoundError(path)
+        return entry["body"]
+
+    return cached
+
+
 def _fetch(path: str, raw: bool) -> Any:  # noqa: ANN401 (decoded JSON)
     """Fetch a GitHub API path; raise FileNotFoundError on 404."""
     accept = "application/vnd.github.raw+json" if raw else "application/vnd.github+json"
@@ -93,5 +136,10 @@ def _fetch(path: str, raw: bool) -> Any:  # noqa: ANN401 (decoded JSON)
     except urllib.error.HTTPError as e:
         if e.code == 404:
             raise FileNotFoundError(path) from e
+        if e.code in (403, 429) and e.headers.get("x-ratelimit-remaining") == "0":
+            raise RuntimeError(
+                "GitHub rate limit reached (60 requests an hour without a token). "
+                "Wait, or set GITHUB_TOKEN in .env."
+            ) from e
         raise
     return body if raw else json.loads(body)

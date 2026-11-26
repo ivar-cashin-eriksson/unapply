@@ -17,8 +17,8 @@ from unapply.ingest.extract import (
     extract_profile,
     render_sources,
 )
-from unapply.ingest.github import fetch_github
-from unapply.schemas import SkillLevel, Source, SourceKind
+from unapply.ingest.github import cached_fetcher, fetch_github
+from unapply.schemas import SkillCategory, SkillLevel, Source, SourceKind
 
 CV = """Alex Example - alex@example.com
 Senior Data Engineer, Acme Corp 2021–now
@@ -62,8 +62,10 @@ def _answer(experiences=(), skills=()):
     )
 
 
-def _skill(name, *quotes, level=None):
-    return ExtractedSkill(name=name, self_level=level, evidence=list(quotes))
+def _skill(name, *quotes, level=None, category="technology"):
+    return ExtractedSkill(
+        name=name, category=category, self_level=level, evidence=list(quotes)
+    )
 
 
 def test_quotes_match_despite_dash_case_and_whitespace_differences():
@@ -106,6 +108,7 @@ def test_duplicate_skills_merge_and_shared_quotes_become_one_evidence():
     result = build_profile(_answer(skills=skills), [_doc()])
     python = result.profile.skill("python")
     assert python.self_level == SkillLevel.ADVANCED
+    assert python.category == SkillCategory.TECHNOLOGY
     assert len(python.evidence_ids) == 1
     assert len(result.profile.evidence) == 1
 
@@ -187,3 +190,60 @@ def test_fetch_github_skips_forks_and_handles_missing_readme():
     assert "## tool" in doc.text and "Primary language: Python" in doc.text
     assert "### README\n# Tool\nDoes things." in doc.text
     assert "## bare" in doc.text and "forked" not in doc.text
+
+
+def test_cached_fetcher_fetches_each_path_once_including_missing(tmp_path):
+    calls = []
+
+    def fetch(path, raw):
+        calls.append(path)
+        if path == "/missing":
+            raise FileNotFoundError(path)
+        return {"path": path}
+
+    for _ in range(2):
+        cached = cached_fetcher(tmp_path, fetch)
+        assert cached("/a", False) == {"path": "/a"}
+        with pytest.raises(FileNotFoundError):
+            cached("/missing", True)
+    assert calls == ["/a", "/missing"]
+
+
+def test_linkedin_export_keeps_profile_data_and_drops_private_data(tmp_path):
+    export = tmp_path / "export.zip"
+    with zipfile.ZipFile(export, "w") as zf:
+        zf.writestr("Positions.csv", "Company Name,Title\nAcme,Engineer\n")
+        zf.writestr(
+            "Profile.csv",
+            "First Name,Last Name,Address,Headline,Geo Location\n"
+            "Alex,Example,1 Secret Street,Data engineer,Copenhagen\n",
+        )
+        zf.writestr("messages.csv", "FROM,CONTENT\nSam Other,private message\n")
+        zf.writestr("Connections.csv", "First Name,Last Name\nSam,Other\n")
+        zf.writestr("PhoneNumbers.csv", "Number\n+45 00000000\n")
+        zf.writestr(
+            "Endorsement_Received_Info.csv",
+            "Skill Name,Endorser First Name,Endorser Last Name,Endorsement Status\n"
+            "Python,Sam,Other,ACCEPTED\nPython,Kim,Third,ACCEPTED\n"
+            "Kafka,Sam,Other,REJECTED\n",
+        )
+        zf.writestr(
+            "Learning.csv",
+            "Content Title,Content Type,Content Completed At (if completed)\n"
+            "Intro to Rust,Course,2025-01-02\nUnfinished Thing,Course,\n",
+        )
+    [doc] = load_path(export)
+    assert "Headline: Data engineer; Geo Location: Copenhagen" in doc.text
+    assert "## Endorsements received (per skill)\nPython: 2" in doc.text
+    assert "Intro to Rust (Course), completed 2025-01-02" in doc.text
+    for private in [
+        "Alex",
+        "Secret Street",
+        "Sam",
+        "Kim",
+        "private message",
+        "+45",
+        "Kafka",
+        "Unfinished",
+    ]:
+        assert private not in doc.text

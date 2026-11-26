@@ -76,6 +76,17 @@ class SkillLevel(IntEnum):
     EXPERT = 5  # Deep, recognised expertise
 
 
+class SkillCategory(StrEnum):
+    """What kind of skill it is. Also the axes employers can group skills by."""
+
+    TECHNOLOGY = "technology"  # Languages, libraries, tools, platforms
+    METHOD = "method"  # Techniques, such as Gaussian processes or A/B testing
+    DOMAIN = "domain"  # Industries and problem areas, such as pharmaceuticals
+    SOFT_SKILL = "soft_skill"  # Leadership, mentoring, communication
+    LANGUAGE = "language"  # Spoken languages
+    CERTIFICATION = "certification"
+
+
 class SkillEstimate(BaseModel):
     """The skill level the evidence supports.
 
@@ -112,6 +123,8 @@ class Skill(BaseModel):
     ----------
     name : str
         Canonical lowercase name, such as "python" or "kafka".
+    category : SkillCategory or None
+        What kind of skill it is, if known.
     self_level : SkillLevel or None
         The level the candidate reports, if they gave one.
     estimate : SkillEstimate or None
@@ -121,6 +134,7 @@ class Skill(BaseModel):
     """
 
     name: str
+    category: SkillCategory | None = None
     self_level: SkillLevel | None = None
     estimate: SkillEstimate | None = None
     evidence_ids: list[UUID] = Field(default_factory=list)
