@@ -1,0 +1,76 @@
+# What John changes in his review sheet. Applied by tests/test_end_to_end.py.
+# Skill names are as extracted in extraction.json; a live run may name some
+# differently, and the live test reports those instead of failing.
+
+# His own levels: 1 aware, 2 basic, 3 working, 4 advanced, 5 expert.
+levels:
+  python: 5
+  pandas: 4
+  scikit-learn: 4
+  lightgbm: 4
+  time series forecasting: 4
+  demand forecasting: 4
+  a/b testing: 4
+  statistics: 4
+  git: 4
+  tableau: 4
+  stakeholder communication: 4
+  dbt: 3
+  snowflake: 3
+  airflow: 3
+  docker: 3
+  aws: 3
+  mentoring: 3
+  # Overclaims: the only evidence is an online course or "familiar with".
+  deep learning: 4
+  pytorch: 4
+  spark: 4
+  # Underclaim: he maintains 60 dbt models and has written SQL for years.
+  sql: 2
+
+# Trimmed: noise, duplicates and things too minor to show employers.
+remove_skills:
+  - excel
+  - urban mobility
+  - open-source contribution
+  - reporting automation
+  - customer churn
+  - aws s3
+  - amazon sagemaker
+  - code review
+  - data modelling
+  - model deployment
+  - power analysis
+  - pricing and promotions
+  - logistic regression
+  - random forests
+  - gradient boosting
+  - dashboarding
+  - streamlit
+remove_experiences:  # titles, matched from the start
+  - Open-source contributor
+
+add_skills:
+  - name: kubernetes
+    category: technology
+    level: 2
+    note: Deployed two model services on a client's Kubernetes cluster with help from their platform team.
+  - name: looker
+    category: technology
+    level: 3
+    note: Used Looker daily for two years before Nordlys Retail moved to Tableau.
+
+preferences:
+  locations: [Copenhagen]
+  work_modes: [hybrid]
+  work_permits: [EU]
+  salary_min: 600000
+  salary_currency: DKK
+  dealbreakers: [Regular on-call rotations]
+
+# Answer key for M2 (skill estimation and claim support).
+answer_key:
+  overclaims: [deep learning, pytorch, spark]
+  underclaims: [sql]
+  self_stated_only: [kubernetes, looker]
+  consistent: [python, lightgbm, a/b testing, tableau, time series forecasting]

@@ -12,7 +12,13 @@ from dotenv import find_dotenv, load_dotenv
 from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import cached_fetcher, fetch_github
-from unapply.llm import DEFAULT_MODEL, AnthropicLLM
+from unapply.llm import (
+    DEFAULT_MODEL,
+    AnthropicLLM,
+    RecordingLLM,
+    ReplayLLM,
+    StructuredLLM,
+)
 from unapply.review import ReviewError, apply_review_sheet, export_review_sheet
 from unapply.schemas import Profile
 
@@ -54,6 +60,15 @@ def main(argv: list[str] | None = None) -> int:
     ingest.add_argument("--effort", default="high")
     ingest.add_argument(
         "--dump-sources", type=Path, help="Also write the text sent to the model."
+    )
+    recording = ingest.add_mutually_exclusive_group()
+    recording.add_argument(
+        "--record", type=Path, help="Save the model's answer to this file."
+    )
+    recording.add_argument(
+        "--replay",
+        type=Path,
+        help="Use an answer saved with --record instead of calling the model.",
     )
 
     review = commands.add_parser("review", help="Review and approve a profile.")
@@ -117,7 +132,14 @@ def _ingest(args: argparse.Namespace) -> int:
 
         args.dump_sources.write_text(render_sources(documents), encoding="utf-8")
 
-    result = extract_profile(documents, AnthropicLLM(args.model, args.effort))
+    llm: StructuredLLM
+    if args.replay:
+        llm = ReplayLLM(args.replay)
+    else:
+        llm = AnthropicLLM(args.model, args.effort)
+        if args.record:
+            llm = RecordingLLM(llm, args.record)
+    result = extract_profile(documents, llm)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(result.profile.model_dump_json(indent=2), encoding="utf-8")
 

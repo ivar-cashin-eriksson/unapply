@@ -6,7 +6,9 @@ models can be swapped without touching callers.
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 from typing import Protocol, TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -149,3 +151,93 @@ class AnthropicLLM:
         if response.parsed_output is None:
             raise LLMError(f"no parsable output (request {request})")
         return response.parsed_output
+
+
+class RecordingLLM:
+    """Pass calls to another model and save its answer to a file.
+
+    The saved answer can be replayed with `ReplayLLM`, so tests and repeated runs
+    don't call the API.
+
+    Parameters
+    ----------
+    inner : StructuredLLM
+        The model that answers.
+    path : Path
+        JSON file to write the answer to. Overwritten on each call.
+    """
+
+    def __init__(self, inner: StructuredLLM, path: Path) -> None:
+        self.model = inner.model
+        self._inner = inner
+        self._path = path
+
+    def parse(self, *, system: str, prompt: str, output_type: type[T]) -> T:
+        """Answer with the inner model and save the answer.
+
+        Parameters
+        ----------
+        system : str
+            System prompt.
+        prompt : str
+            User message.
+        output_type : type of BaseModel
+            The schema the answer must follow.
+
+        Returns
+        -------
+        BaseModel
+            The inner model's answer.
+        """
+        answer = self._inner.parse(
+            system=system, prompt=prompt, output_type=output_type
+        )
+        record = {"model": self.model, "answer": answer.model_dump(mode="json")}
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._path.write_text(
+            json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        return answer
+
+
+class ReplayLLM:
+    """Answer with an answer saved by `RecordingLLM`, without calling any model.
+
+    Parameters
+    ----------
+    path : Path
+        JSON file written by `RecordingLLM`.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self._record = json.loads(path.read_text(encoding="utf-8"))
+        self.model = f"replay:{self._record['model']}"
+
+    def parse(self, *, system: str, prompt: str, output_type: type[T]) -> T:
+        """Return the saved answer, validated against `output_type`.
+
+        Parameters
+        ----------
+        system : str
+            System prompt. Ignored.
+        prompt : str
+            User message. Ignored.
+        output_type : type of BaseModel
+            The schema the saved answer must follow.
+
+        Returns
+        -------
+        BaseModel
+            The saved answer.
+
+        Raises
+        ------
+        LLMError
+            If the saved answer doesn't match `output_type`.
+        """
+        try:
+            return output_type.model_validate(self._record["answer"])
+        except ValidationError as e:
+            raise LLMError(
+                f"recorded answer doesn't match {output_type.__name__}"
+            ) from e

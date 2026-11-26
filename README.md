@@ -67,6 +67,7 @@ gitignored; variables already set in your environment take precedence over it.
 | `uv run ruff format .` | Format |
 | `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
 | `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` in `.env`) |
+| `uv run unapply ingest ... --record answer.json` / `--replay answer.json` | Save the model's answer, or reuse a saved one without calling the API |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 
@@ -82,7 +83,7 @@ gitignored; variables already set in your environment take precedence over it.
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
 | `docs/` | Plans and design notes |
 | `tests/` | Tests for the package |
-| `tests/fixtures/` | Synthetic test data |
+| `tests/fixtures/` | Synthetic test data, including John Doe, a made-up candidate run end to end (see its README) |
 | `data/` | Local uploads and real personal data, gitignored |
 | `scratch/` | Personal exploration, gitignored |
 | `pyproject.toml` | Python project, dependencies, and Ruff and pytest settings |
