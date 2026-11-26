@@ -136,7 +136,13 @@ descriptions are useful, so reviewers check those.
 | `experiment/<description>` | Investigations that may never be merged | `dev`, if at all |
 | `hotfix/<description>` | Urgent fixes to `main`, branched from `main` | `main`, then also `dev` |
 
-Only `dev` and `hotfix/*` branches are merged into `main`.
+Only `dev` and `hotfix/*` branches are merged into `main`. Delete a branch, locally
+and on GitHub, once it is merged:
+
+```bash
+git branch -d <branch>
+git push origin --delete <branch>
+```
 
 ### Commit messages
 
