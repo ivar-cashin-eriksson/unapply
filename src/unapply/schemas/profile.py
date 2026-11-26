@@ -237,35 +237,38 @@ class ClaimSupport(BaseModel):
     """How well self-reports are backed by evidence and agree across sources.
 
     This is deliberately not an "honesty" score: it measures evidence, not character,
-    and the candidate can always see it, together with the reasons.
+    and the candidate can always see it, together with the reasons. It is shown as
+    counts of each kind of finding rather than one number, which hides too much; how
+    findings should combine into a score is still open (see `penalty_score`).
 
     Parameters
     ----------
-    score : float
-        From 0 (nothing supported) to 1 (everything supported and consistent).
+    rated : int
+        How many skills the candidate gave a level.
     overclaims : list of str
         Skills the candidate rates clearly higher than the evidence supports.
     underclaims : list of str
-        Skills the candidate rates clearly lower than the evidence supports. Shown to
-        the candidate, but they don't lower the score.
+        Skills the candidate rates clearly lower than the evidence supports.
     unverified : list of str
         Skills the candidate rates clearly higher than the evidence shows, where the
-        evidence says little either way. They don't lower the score; the candidate
-        is asked about them.
+        evidence says little either way. The candidate is asked about them.
     unsupported_claims : list of str
         Skills backed only by the candidate's own statements.
     inconsistencies : list of str
         Disagreements between sources, such as different dates for the same job.
+    score : float or None
+        Optional single score from 0 to 1, for experiments. Not set by default.
     computed_at : datetime
-        When the score was computed, local time.
+        When this was computed, local time.
     """
 
-    score: float = Field(ge=0.0, le=1.0)
+    rated: int = Field(default=0, ge=0)
     overclaims: list[str] = Field(default_factory=list)
     underclaims: list[str] = Field(default_factory=list)
     unverified: list[str] = Field(default_factory=list)
     unsupported_claims: list[str] = Field(default_factory=list)
     inconsistencies: list[str] = Field(default_factory=list)
+    score: float | None = Field(default=None, ge=0.0, le=1.0)
     computed_at: datetime = Field(default_factory=datetime.now)
 
 

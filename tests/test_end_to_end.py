@@ -150,7 +150,7 @@ def test_john_doe_from_material_to_estimated_profile(out, capsys):
     for name in key["rated_lower_than_estimate"]:
         s = profile.skill(name)
         assert s.estimate.level > s.self_level
-    assert 0.8 < support.score < 1.0
+    assert support.rated == 26 and support.score is None
     # Estimates never see his own levels, and every one cites its own evidence.
     for s in profile.skills:
         assert s.estimate is not None

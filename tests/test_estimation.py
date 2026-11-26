@@ -2,7 +2,7 @@
 
 import pytest
 
-from unapply.estimation.claims import claim_support
+from unapply.estimation.claims import claim_support, penalty_score, summary
 from unapply.estimation.skills import (
     EstimatedSkill,
     SkillEstimates,
@@ -168,14 +168,21 @@ def test_claim_support_flags_and_scores():
     assert [level[n] for n in support.unverified] == [(4, 1)]
     assert [level[n] for n in support.underclaims] == [(2, 4)]
     assert len(support.unsupported_claims) == 1
+    assert support.rated == 6 and support.score is None
+    assert summary(support) == (
+        "1 overclaim, 1 unverified, 1 underclaim, 1 only your own statement, "
+        "of 6 rated skills"
+    )
     # Penalties: overclaim (2-1)/3*0.9 = 0.3; statement 0.5; mean over 6 rated.
-    assert support.score == pytest.approx(1 - (0.3 + 0.5) / 6, abs=1e-3)
+    assert penalty_score(p, support) == pytest.approx(1 - (0.3 + 0.5) / 6, abs=1e-3)
 
 
-def test_claim_support_is_perfect_with_nothing_rated():
-    assert claim_support(_profile((None, 3, 0.9))).score == 1.0
+def test_penalty_score_is_perfect_with_nothing_rated():
+    p = _profile((None, 3, 0.9))
+    assert penalty_score(p, claim_support(p)) == 1.0
 
 
 def test_low_rated_statement_costs_nothing():
-    support = claim_support(_profile((2, None, 0.0, SourceKind.INTERVIEW)))
-    assert support.score == 1.0 and len(support.unsupported_claims) == 1
+    p = _profile((2, None, 0.0, SourceKind.INTERVIEW))
+    support = claim_support(p)
+    assert penalty_score(p, support) == 1.0 and len(support.unsupported_claims) == 1

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 
-from unapply.estimation.claims import claim_support
+from unapply.estimation.claims import claim_support, summary
 from unapply.estimation.skills import estimate_skills
 from unapply.ingest.documents import SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
@@ -141,7 +141,7 @@ def _estimate(args: argparse.Namespace) -> int:
             f"{s.name[:30]:<30} {own:>3} {int(s.estimate.level):>3} "
             f"{s.estimate.confidence:>4.2f}  {flag}{s.estimate.rationale}"
         )
-    print(f"\nclaim support: {support.score:.2f}")
+    print(f"\nclaim support: {summary(support)}")
     for label, names in [
         ("overclaims", support.overclaims),
         ("underclaims", support.underclaims),
