@@ -80,8 +80,9 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   ad are ignored (the fixture ad contains one).
 - `unapply job export` / `apply`, and the app's Employer side: the recruiter edits
   filters and criteria and approves; any change raises the rubric's version.
-- Demo: the fictional Fjord Grocery ad, which fits John Doe partly. Its recorded
-  extraction is still a hand-written stand-in until it is recorded with Claude.
+- Demo: the fictional Fjord Grocery ad, which fits John Doe partly, with a recorded
+  extraction: Claude found the filters (Copenhagen, hybrid, EU, 4+ years), 6
+  must-haves and 4 nice-to-haves, dropped nothing and ignored the injected line.
 
 ### M4: Matching over MCP
 - Deterministic hard filters first (location, work permit, seniority band).

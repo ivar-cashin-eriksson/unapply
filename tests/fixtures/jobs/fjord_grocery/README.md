@@ -7,9 +7,9 @@ match; strong SQL, Spark and deep learning are where he is weaker.
 | File | What it is |
 |---|---|
 | `ad.md` | The job ad. Its last line is a prompt injection, to check it is ignored |
-| `extraction.json` | The rubric extraction to replay. **Currently hand-written**, not a model answer (see its `model` field) |
+| `extraction.json` | A recorded rubric extraction by Claude Opus 5.5, replayed by the tests and the demo |
 
-Record a real extraction (one paid call, about $0.05):
+To re-record it, for example after changing the ad or the prompt (one paid call, about $0.03):
 
 ```bash
 uv run unapply job extract tests/fixtures/jobs/fjord_grocery/ad.md --allow-api --record tests/fixtures/jobs/fjord_grocery/extraction.json --out data/jobs/fjord.json

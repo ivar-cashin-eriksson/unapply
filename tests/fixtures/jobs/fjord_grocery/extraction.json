@@ -1,54 +1,60 @@
 {
-  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "model": "claude-opus-5-5",
   "answer": {
     "company": "Fjord Grocery ApS",
     "title": "Senior Data Scientist, Pricing and Forecasting",
     "hard_filters": {
-      "locations": ["Copenhagen"],
-      "work_modes": ["hybrid"],
-      "required_work_permits": ["EU"],
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
       "min_years_experience": 4
     },
     "criteria": [
       {
         "kind": "must_have",
-        "description": "Strong Python",
+        "description": "Strong Python skills",
         "skill": "python",
         "min_level": 4,
         "weight": 5,
-        "quote": "Strong Python and SQL."
+        "quote": "Strong Python and SQL"
       },
       {
         "kind": "must_have",
-        "description": "Strong SQL",
+        "description": "Strong SQL skills",
         "skill": "sql",
         "min_level": 4,
-        "weight": 4,
-        "quote": "Strong Python and SQL."
+        "weight": 5,
+        "quote": "Strong Python and SQL"
       },
       {
         "kind": "must_have",
-        "description": "Production experience with time series forecasting",
+        "description": "Hands-on experience with time series forecasting in production",
         "skill": "time series forecasting",
         "min_level": 3,
         "weight": 5,
-        "quote": "Hands-on experience with time series forecasting in production."
+        "quote": "Hands-on experience with time series forecasting in production"
       },
       {
         "kind": "must_have",
-        "description": "Solid statistics",
+        "description": "Solid understanding of statistics",
         "skill": "statistics",
         "min_level": 3,
-        "weight": 3,
-        "quote": "Solid understanding of statistics and A/B testing."
+        "weight": 4,
+        "quote": "Solid understanding of statistics and A/B testing"
       },
       {
         "kind": "must_have",
-        "description": "Designs and analyses A/B tests",
+        "description": "Solid understanding of A/B testing",
         "skill": "a/b testing",
         "min_level": 3,
         "weight": 4,
-        "quote": "Solid understanding of statistics and A/B testing."
+        "quote": "Solid understanding of statistics and A/B testing"
       },
       {
         "kind": "must_have",
@@ -56,31 +62,31 @@
         "skill": "stakeholder communication",
         "min_level": null,
         "weight": 3,
-        "quote": "You communicate clearly with non-technical stakeholders."
+        "quote": "You communicate clearly with non-technical stakeholders"
       },
       {
         "kind": "nice_to_have",
-        "description": "Experience with Spark or similar tools for large datasets",
+        "description": "Experience with Spark or other tools for large datasets",
         "skill": "spark",
         "min_level": null,
         "weight": 2,
-        "quote": "Experience with Spark or other tools for large datasets."
+        "quote": "Experience with Spark or other tools for large datasets"
       },
       {
         "kind": "nice_to_have",
-        "description": "Deep learning for forecasting",
+        "description": "Experience with deep learning for forecasting",
         "skill": "deep learning",
         "min_level": null,
         "weight": 2,
-        "quote": "Experience with deep learning for forecasting."
+        "quote": "Experience with deep learning for forecasting"
       },
       {
         "kind": "nice_to_have",
-        "description": "Retail or e-commerce experience",
-        "skill": "retail analytics",
+        "description": "Experience in retail or e-commerce",
+        "skill": null,
         "min_level": null,
         "weight": 2,
-        "quote": "Retail or e-commerce experience."
+        "quote": "Retail or e-commerce experience"
       },
       {
         "kind": "nice_to_have",
