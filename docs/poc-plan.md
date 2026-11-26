@@ -10,16 +10,24 @@
 
 ## Milestones
 
-### M0: Schemas
+### M0: Schemas (done)
 Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapply/schemas/`).
 
-### M1: Candidate ingestion
+### M1: Candidate ingestion (done)
 - Inputs: CV PDF, LinkedIn data export, GitHub URL, free text.
-- LLM extraction into `Profile`; every claim gets `Evidence`.
-- Optional gap-filling interview ("What did you actually build with Kafka?").
-- The candidate reviews and approves the profile.
+- LLM extraction into `Profile`; every claim gets `Evidence`, and quotes not found
+  verbatim in their source are discarded.
+- The candidate reviews and approves the profile through a YAML review sheet
+  (`unapply review export` / `apply`): own levels, removals, corrections, added skills.
+- Result on the author's own material (CV, resume-builder profile, LinkedIn, GitHub):
+  48 of the 50 skills in their hand-written list extracted, no invented quotes.
+- Known gaps: dates are year precision when the source gives only years; skill names
+  need synonym matching ("radiotherapy planning" vs "radiation therapy planning").
 
 ### M2: Skill estimation and claim support
+- Gap-filling interview, moved from M1: ask about skills whose evidence is weak
+  ("What did you actually build with Kafka?"), and keep the answers as the
+  candidate's own statements.
 - For each skill, estimate `estimated_level` from evidence (projects, duration, depth of
   description, GitHub signals) with a `confidence`.
 - Claim support = agreement between self-reported and estimated levels, weighted by confidence,

@@ -53,6 +53,9 @@ uv sync
 uv run pytest
 ```
 
+To call the Claude API, copy `.env.example` to `.env` and add your key. `.env` is
+gitignored; variables already set in your environment take precedence over it.
+
 ## Common commands
 
 | Command | What it does |
@@ -63,6 +66,9 @@ uv run pytest
 | `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
 | `uv run ruff format .` | Format |
 | `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
+| `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` in `.env`) |
+| `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
+| `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 
 ## Layout
 
@@ -70,6 +76,9 @@ uv run pytest
 |---|---|
 | `src/unapply/` | The Python package |
 | `src/unapply/schemas/` | Pydantic schemas: profiles, evidence, skills, jobs, rubrics, matches |
+| `src/unapply/ingest/` | Loading material (PDF, text, LinkedIn export, GitHub) and extracting a profile |
+| `src/unapply/llm.py` | The one place that calls a language model |
+| `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | JSON configuration, such as skill taxonomies and thresholds |
 | `docs/` | Plans and design notes |
 | `tests/` | Tests for the package |

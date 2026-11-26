@@ -3,4 +3,6 @@
 
 def main() -> None:
     """Run the command-line entry point."""
-    print("Hello from unapply!")
+    from unapply.cli import main as cli_main
+
+    raise SystemExit(cli_main())

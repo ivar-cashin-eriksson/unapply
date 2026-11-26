@@ -6,22 +6,28 @@ readme = "README.md"
 authors = [{ name = "ivar-cashin-eriksson" }]
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.14.0",
     "pydantic>=2.8",
+    "pypdf>=7.1.1",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.4",
 ]
 
 [project.optional-dependencies]
 # Added as each POC milestone needs them (see docs/poc-plan.md).
 api = ["fastapi>=0.115", "uvicorn>=0.30"]
-llm = ["anthropic>=0.40"]
 mcp = ["mcp>=1.2"]
 db = ["sqlalchemy>=2.0", "psycopg[binary]>=3.2", "pgvector>=0.3"]
-ingest = ["pypdf>=5.0"]
 
 [project.scripts]
 unapply = "unapply:main"
 
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.6", "ipykernel"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "ipykernel",
+]
 
 [build-system]
 requires = ["hatchling"]
