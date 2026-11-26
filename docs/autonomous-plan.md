@@ -117,7 +117,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Done when: tests with FastAPI's TestClient cover each endpoint, including refusal of
   paid calls and the hidden assessment.
 
-### 5. [ ] Matching (M4)
+### 5. [x] Matching (M4)
 
 - Hard filters in plain code: location, work mode, work permit, minimum years (from
   experience dates, counting overlapping roles once).

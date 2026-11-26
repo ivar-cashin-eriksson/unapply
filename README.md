@@ -118,6 +118,10 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   read the profile. Candidate routes never return the assessment.
 - **Jobs** (`/jobs`): create with the ad, extract a rubric, read any version and
   save the recruiter's edit (any change raises the version).
+- **Matching** (`/jobs/<name>/match`, `/jobs/<name>/ranking`): match every
+  candidate with an approved profile to a job with an approved rubric, with the
+  baseline or the LLM scorer, and read the anonymised ranking (profile ids, never
+  names).
 - **Demos** (`/demos/candidate`, `/demos/job`): John Doe and Fjord Grocery, which
   replay recorded answers for free.
 
@@ -139,6 +143,39 @@ doesn't know are kept as written, lowercased. Relations are for matching: eviden
 for a specific skill also counts for the general one. To use another file, set
 `UNAPPLY_SKILLS` to its path.
 
+## Matching
+
+`unapply match <job>` matches the candidates in the database to a job and ranks
+them. Only candidates who approved their profile are matched, and only against an
+approved rubric; matching locks that rubric version.
+
+```bash
+uv run unapply match fjord-grocery-demo                    # the baseline: free
+uv run unapply match fjord-grocery-demo --scorer llm --allow-api   # one paid call per candidate
+```
+
+1. **Hard filters**, in plain code: work mode, location (skipped when both sides
+   accept remote work), work permit ("EU" and EU member states cover each other)
+   and minimum years of work, from experience dates at month precision with
+   overlapping roles counted once and education left out. A filter the profile
+   says nothing about is "unknown" and doesn't exclude anyone. Candidates who fail
+   one aren't scored.
+2. **Scores per criterion**, from 0 to 1, each with a reason and cited evidence:
+   - `baseline` (default): no model. The candidate's level (the estimate and their
+     own level, weighted by the estimate's confidence) against the criterion's
+     minimum level, times a factor for how many document quotes back it. Evidence
+     for a related skill counts through the taxonomy ("dbt" for "sql"), for less.
+     Criteria that name no skill aren't scored.
+   - `llm`: one model call per candidate, which sees the criteria and the
+     anonymised profile (names, email addresses, phone numbers and links removed)
+     but never the hard filters. Cited evidence must be the candidate's.
+3. **Ranking** by `Match.total`, the weighted mean of the criterion scores.
+
+`--replay` and `--record` take a folder with one `<candidate>.json` each, or a file
+for one candidate. John Doe against Fjord Grocery: 0.81 with the baseline, 0.71 with
+the LLM scorer's stand-in answer (not yet a real recording; see
+[docs/to-record.md](docs/to-record.md)).
+
 ## Common commands
 
 | Command | What it does |
@@ -157,6 +194,7 @@ for a specific skill also counts for the general one. To use another file, set
 | `uv run unapply api` | Start the HTTP API over the database (docs at http://127.0.0.1:8000/docs) |
 | `uv run unapply db init` | Create the database's tables, or migrate them to the newest version, and load the skill taxonomy |
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
+| `uv run unapply match acme` | Match the database's candidates to a job and rank them (`--scorer llm` calls the Claude API: add `--allow-api`) |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 | `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |
@@ -177,7 +215,8 @@ for a specific skill also counts for the general one. To use another file, set
 | `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
-| `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, demo and internal routes |
+| `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, matching, demo and internal routes |
+| `src/unapply/matching/` | Matching: hard filters, the baseline and LLM scorers, anonymisation and ranking |
 | `src/unapply/taxonomy.py` | The skill taxonomy: canonical names, synonyms, implied and broader skills |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
 | `config/` | Configuration, such as the skill taxonomy (`skills.yaml`) |

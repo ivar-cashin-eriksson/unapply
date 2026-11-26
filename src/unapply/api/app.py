@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from unapply.api import candidates, internal, jobs
+from unapply.api import candidates, internal, jobs, matching
 from unapply.api.deps import Context, LLMFactory, claude
 from unapply.db.engine import init_db
 from unapply.db.repository import NotFound, Repository, RubricLocked
@@ -19,7 +19,8 @@ from unapply.workspace import data_dir
 
 DESCRIPTION = """\
 Candidates upload material once, review the profile extracted from it and answer a
-few questions. Employers turn a job ad into a rubric and edit it.
+few questions. Employers turn a job ad into a rubric, edit it, and match and rank
+the candidates against it, anonymised.
 
 **Paid model calls are refused** unless the request adds `?allow_api=true` (or the
 server runs with `UNAPPLY_ALLOW_API_CALLS=1`). Demo candidates and jobs, created
@@ -79,7 +80,7 @@ def create_app(
         uploads=uploads or data_dir() / "uploads",
         llm_factory=llm_factory or claude,
     )
-    for router in (candidates.router, candidates.demos, jobs.router):
+    for router in (candidates.router, candidates.demos, jobs.router, matching.router):
         app.include_router(router)
     if internal_routes:
         app.include_router(internal.router)

@@ -79,6 +79,42 @@ branch, what was done, what was tested, anything to know.
   refused by the permission check, so it still holds `.venv/Scripts/unapply.exe` and
   makes `uv run` fail to reinstall the package (`uv run --no-sync` works). Please stop
   it. A headless Streamlit on port 8599 (since 16:14) was left alone too.
+- 2026-11-26 · Task 5, Matching (M4) · `feat/matching` · Added
+  `src/unapply/matching/`: hard filters in plain code (`filters.py`: work mode,
+  location, work permit with "EU" and member states, minimum years from experience
+  dates at month precision with overlapping roles counted once; pass, fail or
+  "unknown" when the profile doesn't say, which doesn't exclude), a deterministic
+  `BaselineScorer` (level blended from own and estimated by confidence, against
+  `min_level` or WORKING, times an evidence factor; related skills through the
+  taxonomy at 0.75), an `LLMScorer` with its prompt (one call per candidate on the
+  anonymised profile; `anonymise.redact` removes emails, phone numbers, links,
+  @handles and known names; source paths and hard filters are never sent; cited
+  evidence ids checked to be the candidate's), `match_candidate`, `rank` (ties
+  share a rank) and `latest`, and `run.match_job` over the database.
+  `unapply match <job> [--scorer baseline|llm] [--candidates ...] [--today]` and
+  the API's `POST /jobs/<name>/match` and `GET /jobs/<name>/ranking` (anonymised:
+  profile ids, no names). Hand-written stand-in for the LLM scorer:
+  `tests/fixtures/jobs/fjord_grocery/match_john_doe.json`, in `docs/to-record.md`.
+  Tested (65 new tests, 218 in all): filters at their edges (47 vs 48 months,
+  overlaps, education and personal projects skipped, current roles, remote, permit
+  matrix, unknowns), the baseline on John against Fjord Grocery (total 0.81:
+  Python, forecasting, A/B testing 1.0; SQL 0.46; Spark and deep learning 0.31) and
+  on synonyms, related skills and statement-only evidence, the LLM scorer's stand-in
+  (total 0.71) and its answer checks, that no name, email, phone or link reaches the
+  model, ranking ties, the CLI (both scorers, refused paid calls saving nothing,
+  unapproved rubrics and profiles) and the API (demos free with both scorers, a real
+  candidate or a real job needs `allow_api`, ranking read back, rubric locked).
+  Decisions to check (conservative, small): only approved profiles and approved
+  rubrics are matched, since matching locks the rubric version; missing
+  information is "unknown", not a failure; candidates failing a filter aren't
+  scored (not even by the free baseline); criteria without a skill aren't scored by
+  the baseline and `Match.total` averages over the rest; a member state's permit
+  meets a job's "EU". To know: filter outcomes aren't stored with the match (no
+  schema change; the API works them out again; task 6's audit log could keep
+  them); education is recognised by title words, as `Experience` has no kind; the
+  real candidate name isn't stored anywhere, so only contact patterns and the
+  GitHub username are redacted. Scoring over MCP is left for task 11. The API
+  server from task 4 still runs on port 8765, so this used `uv run --no-sync`.
 
 ## Questions for Ivar
 

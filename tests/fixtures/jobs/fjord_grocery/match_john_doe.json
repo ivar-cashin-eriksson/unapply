@@ -1,0 +1,67 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.85,
+        "rationale": "Python is used across two roles since 2019: reporting automation with Airflow and the forecasting and pricing models, and a detailed statement about a pandas feature pipeline over 50 million rows. Clearly working to advanced; nothing shows library or framework design beyond that.",
+        "evidence": ["E8", "E17", "E18", "E30"]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.6,
+        "rationale": "Maintains 60 dbt models in Snowflake and has written SQL since a student job in 2018, which shows solid working SQL. Nothing shows the strong, advanced level asked for, such as query optimisation or data modelling at scale.",
+        "evidence": ["E4", "E10", "E17"]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.9,
+        "rationale": "Built a LightGBM demand forecasting model for 4,000 products across 120 stores that cut forecast error by 18% against the baseline, and maintains its nightly feature pipeline: forecasting in production, at the scale of this job.",
+        "evidence": ["E1", "E2", "E30"]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.6,
+        "rationale": "Statistics appears only in the skills list, but designing and analysing A/B tests from power analysis to a recommendation, and an MSc in Business Analytics, imply a working understanding. Little direct evidence beyond that.",
+        "evidence": ["E3", "E11", "E19"]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.85,
+        "rationale": "Designed and analysed A/B tests of pricing and promotion changes, from power analysis to the final recommendation, in the current role: the same kind of experiments this job runs.",
+        "evidence": ["E3", "E17"]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.75,
+        "rationale": "Presented a churn model to sales leadership, works closely with commercial teams so models are used, and built dashboards used by 40 regional managers. No direct evidence of how well this went.",
+        "evidence": ["E7", "E9", "E23"]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.2,
+        "rationale": "Only \"Familiar with Spark\" in the skills list; the largest data handled is a 50-million-row pandas pipeline, which is sizeable but not a large-data tool.",
+        "evidence": ["E20", "E30"]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.1,
+        "rationale": "An online course in deep learning with PyTorch, and the candidate confirms it hasn't been used beyond the course. No deep learning for forecasting.",
+        "evidence": ["E21", "E32"]
+      },
+      {
+        "criterion": "C9",
+        "score": 1.0,
+        "rationale": "Senior data scientist at a retail company since 2022, forecasting demand and analysing pricing for 120 stores.",
+        "evidence": ["E1", "E3", "E22"]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is listed as native.",
+        "evidence": ["E24"]
+      }
+    ]
+  }
+}

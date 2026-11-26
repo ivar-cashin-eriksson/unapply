@@ -88,7 +88,9 @@ def demo_llm(purpose: str, profile: Profile | None = None) -> ReplayLLM:
     Parameters
     ----------
     purpose : str
-        "extract", "estimate", "questions" or "rubric".
+        "extract", "estimate", "questions", "rubric" or "match" (the LLM scorer's
+        answer for John's re-estimated profile against Fjord Grocery, a
+        hand-written stand-in until it is recorded).
     profile : Profile or None, optional
         For "estimate": after an interview, the re-estimate is replayed.
 
@@ -99,6 +101,8 @@ def demo_llm(purpose: str, profile: Profile | None = None) -> ReplayLLM:
     """
     if purpose == "rubric":
         return ReplayLLM(JOB_FIXTURE / "extraction.json")
+    if purpose == "match":
+        return ReplayLLM(JOB_FIXTURE / "match_john_doe.json")
     if purpose == "extract":
         return ReplayLLM(FIXTURE / "extraction.json")
     if purpose == "questions":

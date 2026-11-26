@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from datetime import date
 from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
@@ -145,6 +146,36 @@ def main(argv: list[str] | None = None) -> int:
             "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
         )
 
+    match = commands.add_parser(
+        "match",
+        help="Match the candidates in the database to a job, save and rank them.",
+    )
+    match.add_argument("job", help="The job's name in the database.")
+    match.add_argument(
+        "--candidates",
+        nargs="+",
+        help="Only these candidates; by default all with an approved profile.",
+    )
+    match.add_argument(
+        "--scorer",
+        choices=["baseline", "llm"],
+        default="baseline",
+        help="baseline: plain code, free (default). llm: one model call per candidate.",
+    )
+    match.add_argument(
+        "--today",
+        type=date.fromisoformat,
+        help="Date current roles run to, for years of experience (YYYY-MM-DD).",
+    )
+    match.add_argument(
+        "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
+    )
+    _add_model_options(match)
+    match.epilog = (
+        "With --scorer llm, --record and --replay take a folder with one "
+        "<candidate>.json per candidate, or a file for a single candidate."
+    )
+
     app = commands.add_parser("app", help="Open the app in a browser.")
     app.add_argument("--port", type=int, default=8501)
 
@@ -187,6 +218,8 @@ def _run(args: argparse.Namespace) -> int:
         return _api(args)
     if args.command == "db":
         return _db(args)
+    if args.command == "match":
+        return _match(args)
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -322,6 +355,83 @@ def _db(args: argparse.Namespace) -> int:
     return 2 if failed else 0
 
 
+def _match(args: argparse.Namespace) -> int:
+    # Imported here, so commands that don't use the database don't load SQLAlchemy.
+    from unapply.db.engine import init_db
+    from unapply.db.repository import NotFound, Repository
+    from unapply.matching import BaselineScorer, LLMScorer, Scorer
+    from unapply.matching.run import MatchingError, match_job
+
+    if args.scorer == "baseline" and (args.record or args.replay or args.allow_api):
+        print(
+            "Note: the baseline scorer calls no model; --record, --replay and "
+            "--allow-api are ignored."
+        )
+    # Before anything else, so a refused paid call costs no time.
+    llm = _paid_llm(args) if args.scorer == "llm" and not args.replay else None
+    recorded: list[str] = []
+
+    def scorer_for(name: str, settings: dict) -> Scorer:
+        if args.scorer == "baseline":
+            return BaselineScorer()
+        names = [settings["github"]] if settings.get("github") else []
+        if args.replay:
+            path = args.replay / f"{name}.json" if args.replay.is_dir() else args.replay
+            if not path.is_file():
+                raise MatchingError(f"no recorded answer for {name!r} at {path}")
+            return LLMScorer(ReplayLLM(path), names)
+        assert llm is not None  # Made above whenever nothing is replayed.
+        if args.record:
+            recorded.append(name)
+            single = args.record.suffix == ".json"
+            if single and len(recorded) > 1:
+                raise MatchingError(
+                    "--record FILE fits one candidate; give a folder to record several"
+                )
+            path = args.record if single else args.record / f"{name}.json"
+            return LLMScorer(RecordingLLM(llm, path), names)
+        return LLMScorer(llm, names)
+
+    init_db(args.url)
+    repo = Repository.from_url(args.url)
+    try:
+        matching = match_job(
+            repo, args.job, scorer_for, candidates=args.candidates, today=args.today
+        )
+    except (NotFound, MatchingError) as e:
+        print(f"Can't match: {e}", file=sys.stderr)
+        return 2
+    finally:
+        repo.engine.dispose()
+
+    job = matching.job
+    criteria = {c.id: c for c in job.rubric.criteria}
+    scorers = sorted({r.match.model for r in matching.results.values()})
+    print(
+        f"{job.title} at {job.company}, rubric version {job.rubric.version}: "
+        f"{len(matching.results)} candidates, scored by {', '.join(scorers) or '-'}"
+    )
+    for ranked in matching.ranking:
+        name = matching.name_of(ranked)
+        result = matching.results[name]
+        status = "" if ranked.match.passed_hard_filters else "  (failed hard filters)"
+        print()
+        print(f"#{ranked.rank}  {name}  total {ranked.total:.2f}{status}")
+        for check in result.filters.checks:
+            print(f"  [{check.outcome.value}] {check.name}: {check.reason}")
+        for s in ranked.match.criterion_scores:
+            c = criteria[s.criterion_id]
+            print(f"  {s.score:.2f}  {c.kind.value} w{c.weight:g}  {c.description}")
+            print(f"        {s.rationale}")
+        if result.problems:
+            print(f"  problems ({len(result.problems)}):")
+            for p in result.problems:
+                print(f"    {p}")
+    if not matching.results:
+        print("No candidate has an approved profile yet.")
+    return 0
+
+
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -375,13 +485,19 @@ def _llm(args: argparse.Namespace) -> StructuredLLM:
     """Pick the model client; refuse up front if a paid call isn't allowed."""
     if args.replay:
         return ReplayLLM(args.replay)
+    llm = _paid_llm(args)
+    return RecordingLLM(llm, args.record) if args.record else llm
+
+
+def _paid_llm(args: argparse.Namespace) -> AnthropicLLM:
+    """Make the Claude client; refuse up front if paid calls aren't allowed."""
     llm = AnthropicLLM(args.model, args.effort, allow=args.allow_api)
     if not llm.allowed:
         raise APICallsDisabled(
             "this would make a paid API call, which is off. Add --allow-api to allow "
             f"it for this command, set {API_SWITCH}=1 in .env, or use --replay."
         )
-    return RecordingLLM(llm, args.record) if args.record else llm
+    return llm
 
 
 def _estimate(args: argparse.Namespace) -> int:
