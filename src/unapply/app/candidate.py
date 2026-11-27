@@ -7,13 +7,15 @@ Assessment page with it.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 import pandas as pd
 import streamlit as st
 
 from unapply.app import common, demo, forms
 from unapply.estimation.claims import claim_support, summary
 from unapply.estimation.skills import estimate_skills, skills_without_estimate
-from unapply.ingest.documents import load_path
+from unapply.ingest.documents import load_path, skip_reason
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import cached_fetcher, fetch_github
 from unapply.interview.questions import (
@@ -170,6 +172,9 @@ def material_page(ws: Workspace) -> None:
             with st.container(horizontal=True, vertical_alignment="center"):
                 st.markdown(f":material/description: {f.name}")
                 st.caption(f"{f.stat().st_size / 1024:.0f} KB")
+                # The folder is read as a whole, which leaves these out.
+                if f.is_file() and (reason := skip_reason(f)):
+                    st.caption(f":orange[Not read: {reason}]")
                 if not common.is_demo(ws):
                     st.button(
                         "Remove",
@@ -192,6 +197,29 @@ def material_page(ws: Workspace) -> None:
         ws, "Extract my profile", "extract", "extract", ":material/auto_awesome:"
     ):
         _extract(ws)
+
+
+def _evidence_in_full(
+    profile: Profile, items: list[tuple[str, list[UUID]]], key: str
+) -> None:
+    """Show all the evidence for one chosen item; the review table cuts it short."""
+    if not items:
+        return
+    with st.expander("Evidence in full", icon=":material/format_quote:"):
+        choice = st.selectbox(
+            "Show the evidence for",
+            range(len(items)),
+            format_func=lambda i: items[i][0],
+            key=key,
+        )
+        details = forms.evidence_details(profile, items[choice][1])
+        if not details:
+            st.caption("No evidence from your material.")
+        for d in details:
+            with st.container(border=True):
+                st.caption(d["source"])
+                # As text, so the quote shows exactly as written, not as Markdown.
+                st.text(d["quote"])
 
 
 def _extract(ws: Workspace) -> None:
@@ -272,6 +300,9 @@ def review_page(ws: Workspace) -> None:
                 ),
             },
         )
+        _evidence_in_full(
+            profile, [(s.name, s.evidence_ids) for s in profile.skills], f"ev_skill_{v}"
+        )
     with experience_tab:
         experiences = st.data_editor(
             pd.DataFrame(forms.experience_rows(profile)),
@@ -291,6 +322,14 @@ def review_page(ws: Workspace) -> None:
                 ),
                 "summary": st.column_config.TextColumn("Summary", width="large"),
             },
+        )
+        _evidence_in_full(
+            profile,
+            [
+                (f"{x.title} · {x.organisation}", x.evidence_ids)
+                for x in profile.experiences
+            ],
+            f"ev_experience_{v}",
         )
     with add_tab:
         st.caption(
@@ -586,7 +625,7 @@ def profile_page(ws: Workspace) -> None:
     with left:
         st.subheader("Experience", anchor=False)
         for x in profile.experiences:
-            when = forms.period(x.start, x.end)
+            when = forms.period(x)
             line = f"**{x.title}** · {x.organisation}"
             st.markdown(line + (f"  \n:gray[{when}]" if when else ""))
             if x.summary:

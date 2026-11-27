@@ -16,7 +16,7 @@ from unapply.estimation.skills import (
     estimate_skills,
     skills_without_estimate,
 )
-from unapply.ingest.documents import SourceDocument, load_path
+from unapply.ingest.documents import SkippedFile, SourceDocument, load_path
 from unapply.ingest.extract import extract_profile
 from unapply.ingest.github import cached_fetcher, fetch_github
 from unapply.interview.questions import MAX_QUESTIONS, select_topics, write_questions
@@ -64,6 +64,15 @@ def main(argv: list[str] | None = None) -> int:
 
     ingest = commands.add_parser("ingest", help="Extract a profile from material.")
     ingest.add_argument("paths", nargs="*", type=Path, help="Files or folders.")
+    ingest.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="Leave out files in the folders that match, such as 'old_cv.pdf' or "
+        "'drafts/*'. Can be given more than once. README files and schemas are "
+        "always left out of folders.",
+    )
     ingest.add_argument("--github", help="GitHub username to include.")
     ingest.add_argument(
         "--github-cache",
@@ -759,8 +768,11 @@ def _review(args: argparse.Namespace) -> int:
 def _ingest(args: argparse.Namespace) -> int:
     llm = _llm(args)  # Before any loading, so a refused call costs no time.
     documents: list[SourceDocument] = []
+    skipped: list[SkippedFile] = []
     for path in args.paths:
-        documents.extend(load_path(path))
+        documents.extend(load_path(path, exclude=args.exclude, skipped=skipped))
+    for f in skipped:
+        print(f"skipped: {f.path.as_posix()} ({f.reason})")
     if args.github:
         fetch = cached_fetcher(args.github_cache)
         documents.append(fetch_github(args.github, fetch=fetch))

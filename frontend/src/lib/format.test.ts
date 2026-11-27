@@ -5,8 +5,13 @@ describe('dates', () => {
     expect(month('2022-03-01')).toBe('Mar 2022')
   })
 
-  it('shows only the year for 1 January, as year-only dates are stored that way', () => {
-    expect(month('2019-01-01')).toBe('2019')
+  it('shows only the year for a date known only to the year', () => {
+    expect(month('2019-01-01', 'year')).toBe('2019')
+  })
+
+  it('shows January for a date known to the month', () => {
+    expect(month('2019-01-01')).toBe('Jan 2019')
+    expect(month('2019-01-01', 'month')).toBe('Jan 2019')
   })
 
   it('shows nothing for an unknown date', () => {
@@ -17,6 +22,12 @@ describe('dates', () => {
     expect(period('2020-03-01', null)).toBe('Mar 2020 – now')
     expect(period(null, '2021-06-01')).toBe('? – Jun 2021')
     expect(period(null, null)).toBe('')
+  })
+
+  it('writes each end of a period as precisely as it is known', () => {
+    expect(period('2017-01-01', '2019-01-01', 'year', 'year')).toBe('2017 – 2019')
+    expect(period('2018-01-01', '2019-07-01', 'month', 'month')).toBe('Jan 2018 – Jul 2019')
+    expect(period('2019-08-01', '2021-01-01', 'month', 'year')).toBe('Aug 2019 – 2021')
   })
 })
 

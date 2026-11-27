@@ -252,6 +252,43 @@ branch, what was done, what was tested, anything to know.
   replays that candidate's recording with the LLM scorer. To know: no new stand-in
   recordings (the pool's are already in `docs/to-record.md`); the build still warns
   the bundle is over 500 kB.
+- 2026-11-27 · Task 10, Smaller fixes · `feat/smaller-fixes` · **Dates:** a
+  schema change: `Experience` has `start_precision` and `end_precision`
+  (`DatePrecision`, "year" or "month", default "month"), with columns on
+  `experiences` (migration `0005`; rows stored before get "month"). New
+  `src/unapply/dates.py` (`parse_partial_date`, `format_partial_date`) used by
+  extraction, the review sheet, the Streamlit tables and profile, the estimation and
+  LLM scorer prompts, and the shortlist; the frontend's `month`/`period` take the
+  precision. So "2017" stays "2017" and "2018-01" stays "2018-01" (before, every
+  January was shown as a bare year, and John's "2018-01" came back from the review
+  sheet as "2018"). An experience is in order when either date is known only to the
+  year and the years are in order ("2019-08" to "2019" used to be refused). A month
+  the model gives out of range keeps the year. **Ingestion:** in a folder,
+  `load_path` skips files that describe the folder (`README`, `CHANGELOG`,
+  `CONTRIBUTING`, `LICENSE`, any supported suffix) and JSON or YAML with a top-level
+  `$schema`; a file given by name is still read. `load_path(..., exclude=[globs],
+  skipped=[])` lets the candidate leave files or folders out and reports every
+  skipped file with the reason; `unapply ingest --exclude PATTERN` (repeatable)
+  prints them. The API now reads each upload on its own (an uploaded README is the
+  candidate's choice, so it is read; they remove a file to leave it out); the
+  Streamlit material list marks files the folder load won't read. **Streamlit
+  review:** an "Evidence in full" view under the skills and experience tables shows
+  each quote of a chosen item exactly as written, with source, file name and
+  locator (`forms.evidence_details`). Tested: 29 new pytest tests (302 in all):
+  parsing and formatting, John's extraction keeping both precisions, review sheet
+  round trip and edits, a bad date refused, the year comparison, the prompts, the
+  shortlist and the database keeping precision; folders skipping READMEs (also in
+  subfolders), schemas and unsupported files with reasons, a README by name, YAML
+  and JSON that aren't schemas, exclusions by name, folder and path, LinkedIn zips
+  in a folder, the CLI's `--exclude` and report, the API reading an uploaded README
+  and not a removed file; the detail view's helper and an AppTest clicking it for a
+  skill and an experience. Frontend: 2 more Vitest tests (78), e2e unchanged (5).
+  All checks pass. To know: profile hashes in the audit log change for the same
+  content (new fields), as noted in task 6; the minimum-years filter still counts a
+  year-only date as January (a year-only end undercounts by up to 11 months), not
+  changed so the pool's filter edges and the evaluation stay as they were; the
+  frontend's review form already took "YYYY" or "YYYY-MM" text, so it keeps the
+  precision through the API with no change.
 
 ## Questions for Ivar
 

@@ -575,7 +575,8 @@ function Roles({ candidate }: { candidate: AnonymousCandidate }) {
             <span className="font-medium">{x.title}</span>
             <span className="text-muted-foreground">
               {' '}
-              · {x.organisation} · {month(x.start) || '?'} – {x.end ? month(x.end) : 'now'}
+              · {x.organisation} · {month(x.start, x.start_precision) || '?'} –{' '}
+              {x.end ? month(x.end, x.end_precision) : 'now'}
             </span>
             {x.summary && <p className="text-muted-foreground">{x.summary}</p>}
           </li>

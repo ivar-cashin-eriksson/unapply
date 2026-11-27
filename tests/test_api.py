@@ -201,6 +201,20 @@ def test_upload_list_and_remove_material(client):
     assert client.delete("/candidates/jane/material/notes.md").status_code == 404
 
 
+def test_every_upload_is_read_even_a_readme_and_removed_files_are_not(client, fake):
+    """Uploads are the candidate's choice; they leave a file out by removing it."""
+    ok(client.post("/candidates", json={"name": "jane"}), 201)
+    ok(upload_john(client), 201)
+    readme = ("files", ("README.md", b"About me: I build forecasts.", "text/markdown"))
+    ok(client.post("/candidates/jane/material", files=[readme]), 201)
+    ok(client.delete("/candidates/jane/material/notes.md"), 204)
+    profile = ok(client.post("/candidates/jane/extract?allow_api=true"))["profile"]
+    assert sorted(s["uri"].rsplit("/", 1)[-1] for s in profile["sources"]) == [
+        "README.md",
+        "cv.md",
+    ]
+
+
 def test_upload_refuses_unsupported_files_and_adds_nothing(client):
     ok(client.post("/candidates", json={"name": "jane"}), 201)
     files = [

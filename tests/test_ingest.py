@@ -247,3 +247,120 @@ def test_linkedin_export_keeps_profile_data_and_drops_private_data(tmp_path):
         "Unfinished",
     ]:
         assert private not in doc.text
+
+
+def _material(folder):
+    """A candidate folder with a README and a schema next to the material."""
+    folder.mkdir(exist_ok=True)
+    (folder / "cv.md").write_text(CV, encoding="utf-8")
+    (folder / "notes.md").write_text("I like Python.", encoding="utf-8")
+    (folder / "README.md").write_text(
+        "# Profile folder\n\n`cv.md` is the CV; skills are 1 to 5.", encoding="utf-8"
+    )
+    (folder / "profile.schema.json").write_text(
+        json.dumps({"$schema": "https://json-schema.org/draft/2020-12/schema"}),
+        encoding="utf-8",
+    )
+    (folder / "projects.yaml").write_text("- Forecasting app in Python\n")
+    (folder / "old").mkdir()
+    (folder / "old" / "cv_2015.md").write_text("Junior analyst.", encoding="utf-8")
+    (folder / "old" / "readme.txt").write_text("Old versions.", encoding="utf-8")
+    (folder / "photo.jpg").write_bytes(b"\xff\xd8")
+    return folder
+
+
+def test_folders_skip_readmes_and_schemas_and_say_why(tmp_path):
+    from unapply.ingest.documents import DESCRIBES_FOLDER, SCHEMA, UNSUPPORTED
+
+    skipped = []
+    docs = load_path(_material(tmp_path), skipped=skipped)
+    assert [d.name for d in docs] == [
+        "cv.md",
+        "notes.md",
+        "cv_2015.md",  # old/cv_2015.md, in path order
+        "projects.yaml",
+    ]
+    assert {(f.path.relative_to(tmp_path).as_posix(), f.reason) for f in skipped} == {
+        ("README.md", DESCRIBES_FOLDER),
+        ("old/readme.txt", DESCRIBES_FOLDER),
+        ("photo.jpg", UNSUPPORTED),
+        ("profile.schema.json", SCHEMA),
+    }
+
+
+def test_a_readme_given_by_name_is_still_read(tmp_path):
+    readme = _material(tmp_path) / "README.md"
+    [doc] = load_path(readme)
+    assert doc.name == "README.md"
+
+
+def test_yaml_and_json_are_read_unless_they_are_schemas(tmp_path):
+    from unapply.ingest.documents import SCHEMA, skip_reason
+
+    (tmp_path / "a.yaml").write_text("$schema: x\ntype: object\n")
+    (tmp_path / "b.json").write_text('{"skills": ["python"]}')
+    (tmp_path / "c.json").write_text("not json at all {")
+    assert skip_reason(tmp_path / "a.yaml") == SCHEMA
+    assert skip_reason(tmp_path / "b.json") is None
+    assert skip_reason(tmp_path / "c.json") is None
+
+
+def test_the_candidate_can_exclude_files_and_folders(tmp_path):
+    from unapply.ingest.documents import EXCLUDED
+
+    skipped = []
+    docs = load_path(
+        _material(tmp_path), exclude=["OLD", "*.yaml", "notes.MD"], skipped=skipped
+    )
+    assert [d.name for d in docs] == ["cv.md"]
+    excluded = {
+        f.path.relative_to(tmp_path).as_posix() for f in skipped if f.reason == EXCLUDED
+    }
+    assert excluded == {"old", "projects.yaml", "notes.md"}
+    # A pattern can name a path inside the folder.
+    docs = load_path(tmp_path, exclude=["old/cv_*"])
+    assert "cv_2015.md" not in [d.name for d in docs]
+
+
+def test_a_linkedin_export_in_a_folder_is_still_read(tmp_path):
+    export = tmp_path / "Basic_LinkedInDataExport.zip"
+    with zipfile.ZipFile(export, "w") as zf:
+        zf.writestr("Positions.csv", "Company Name,Title\nAcme,Engineer\n")
+    skipped = []
+    [doc] = load_path(tmp_path, skipped=skipped)
+    assert doc.source.kind == SourceKind.LINKEDIN
+    assert skipped == []
+
+
+def test_ingest_command_excludes_and_reports_skipped_files(tmp_path, capsys):
+    from unapply.cli import main
+
+    folder = _material(tmp_path / "material")
+    out = tmp_path / "profile.json"
+    recording = tmp_path / "answer.json"
+    recording.write_text(
+        json.dumps({"model": "fake", "answer": _answer().model_dump(mode="json")}),
+        encoding="utf-8",
+    )
+    code = main(
+        [
+            "ingest",
+            str(folder),
+            "--exclude",
+            "old",
+            "--replay",
+            str(recording),
+            "--out",
+            str(out),
+        ]  # fmt: skip
+    )
+    assert code == 0, capsys.readouterr().err
+    printed = capsys.readouterr().out
+    assert "skipped: " in printed and "README.md (describes the folder" in printed
+    assert "old (excluded)" in printed
+    uris = [s["uri"] for s in json.loads(out.read_text(encoding="utf-8"))["sources"]]
+    assert [u.rsplit("/", 1)[-1] for u in uris] == [
+        "cv.md",
+        "notes.md",
+        "projects.yaml",
+    ]

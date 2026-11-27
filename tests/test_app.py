@@ -11,7 +11,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from unapply.app import employer
-from unapply.workspace import Workspace, jobs_dir
+from unapply.workspace import Workspace, data_dir, jobs_dir
 
 APP = Path(__file__).parents[1] / "src" / "unapply" / "app" / "main.py"
 # Words that would give the hidden assessment away on a candidate's page.
@@ -113,6 +113,35 @@ def test_john_doe_demo_hides_the_assessment_from_the_candidate():
     assert any("Internal" in w.value for w in at.warning)
     assert [m.value for m in at.metric] == ["3", "3", "0", "2"]
     assert "Every skill has an estimate." in [c.value for c in at.caption]
+
+
+def test_review_shows_the_evidence_in_full():
+    """The review table shortens quotes; the detail view shows them as written."""
+    at = start()
+    click(at, "demo")
+    click(at, "extract")
+    assert at.session_state["step"] == "Review"
+    profile = Workspace(data_dir() / "john-doe-demo").profile()
+    skills = [s.name for s in profile.skills]
+    quotes = {e.id: e.quote.strip() for e in profile.evidence}
+
+    # The skill with the most evidence, chosen in the skills tab's detail view.
+    most = max(profile.skills, key=lambda s: len(s.evidence_ids))
+    [pick, _] = [b for b in at.selectbox if b.label == "Show the evidence for"]
+    pick.set_value(skills.index(most.name)).run()
+    assert not at.exception
+    # Both tabs are on the page: the skills tab's view comes first.
+    expected = [quotes[i] for i in most.evidence_ids]
+    assert len(expected) > 1
+    assert [t.value for t in at.text][: len(expected)] == expected
+    assert_no_assessment(at)
+
+    # And for an experience, in the experience tab's view, which comes last.
+    [_, pick] = [b for b in at.selectbox if b.label == "Show the evidence for"]
+    last = profile.experiences[-1]
+    pick.set_value(len(profile.experiences) - 1).run()
+    expected = [quotes[i] for i in last.evidence_ids]
+    assert [t.value for t in at.text][-len(expected) :] == expected
 
 
 def test_paid_steps_are_disabled_until_allowed():

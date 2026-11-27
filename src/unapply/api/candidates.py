@@ -162,7 +162,10 @@ def extract(name: str, ctx: Ctx, allow_api: AllowAPI = False) -> Extraction:
     settings = ctx.repo.settings(name)
     llm = ctx.model(settings, "extract", allow_api)  # Refuses before any work.
     folder = ctx.material(name)
-    documents = load_path(folder) if folder.exists() else []
+    # Each upload is the candidate's choice, so each is read, even a README; they
+    # leave a file out by removing it.
+    files = sorted(folder.iterdir()) if folder.exists() else []
+    documents = [d for f in files if f.is_file() for d in load_path(f)]
     if github := settings.get("github"):
         fetch = cached_fetcher(data_dir() / ".cache" / "github")
         documents.append(fetch_github(github, fetch=fetch))

@@ -14,6 +14,7 @@ from xml.sax.saxutils import escape, quoteattr
 
 from pydantic import BaseModel, Field
 
+from unapply.dates import format_partial_date
 from unapply.llm import StructuredLLM
 from unapply.schemas import Profile, SkillEstimate, SkillLevel, SourceKind
 
@@ -121,8 +122,8 @@ def render_roles(profile: Profile) -> str:
     """
     lines = ["<roles>"]
     for x in profile.experiences:
-        start = f"{x.start:%Y-%m}" if x.start else "?"
-        end = f"{x.end:%Y-%m}" if x.end else "present"
+        start = format_partial_date(x.start, x.start_precision) or "?"
+        end = format_partial_date(x.end, x.end_precision) or "present"
         skills = f" Skills used: {', '.join(x.skills)}." if x.skills else ""
         lines.append(
             f"- {escape(x.title)}, {escape(x.organisation)}, {start} to {end}."

@@ -173,7 +173,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Done when: the views work on the synthetic pool in the demo, with tests and
   screenshots.
 
-### 10. [ ] Smaller fixes
+### 10. [x] Smaller fixes
 
 - Dates: store whether a date is year or month precision, and show it that way.
 - Ingestion: skip files that describe a schema rather than the candidate (such as a

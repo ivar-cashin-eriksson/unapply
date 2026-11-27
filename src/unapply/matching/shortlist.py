@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from unapply.matching.anonymise import redact
 from unapply.matching.baseline import level
-from unapply.schemas import Profile, Rubric, SkillLevel, SourceKind
+from unapply.schemas import DatePrecision, Profile, Rubric, SkillLevel, SourceKind
 from unapply.taxonomy import Taxonomy, default_taxonomy
 
 
@@ -120,6 +120,10 @@ class AnonymousExperience(BaseModel):
         When it started, if known.
     end : date or None
         When it ended; None means now or unknown.
+    start_precision : DatePrecision
+        Whether `start` is known to the month or only to the year.
+    end_precision : DatePrecision
+        The same for `end`.
     summary : str
         What the candidate did.
     """
@@ -128,6 +132,8 @@ class AnonymousExperience(BaseModel):
     organisation: str
     start: date | None = None
     end: date | None = None
+    start_precision: DatePrecision = DatePrecision.MONTH
+    end_precision: DatePrecision = DatePrecision.MONTH
     summary: str = ""
 
 
@@ -284,6 +290,8 @@ def anonymous_candidate(
                 organisation=text(x.organisation),
                 start=x.start,
                 end=x.end,
+                start_precision=x.start_precision,
+                end_precision=x.end_precision,
                 summary=text(x.summary),
             )
             for x in profile.experiences
