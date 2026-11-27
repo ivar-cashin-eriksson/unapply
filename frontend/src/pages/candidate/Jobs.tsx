@@ -1,9 +1,28 @@
-import { ArrowLeft, Briefcase, Building2, Link2, Link2Off, MapPin, PlayCircle, Search, ShieldCheck, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  Check,
+  Download,
+  Eye,
+  Link2,
+  Link2Off,
+  Loader2,
+  Mail,
+  MapPin,
+  PlayCircle,
+  Search,
+  Send,
+  ShieldCheck,
+  Users,
+  X,
+} from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { AdText } from '@/components/AdText'
+import { Counts } from '@/components/Counts'
 import { FitBadge, FitSummary, MissedFilters } from '@/components/FitBadge'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -12,9 +31,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
 import { adSummary, day, placeText, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
-import type { BoardQuery, Connection, Fit, Listing, Seniority, WorkMode } from '@/lib/types'
+import type { BoardQuery, Connection, Fit, Listing, Seniority, Stage, WorkMode } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
 import { useCandidate } from '@/pages/candidate/context'
@@ -46,7 +66,8 @@ export function JobBoard() {
   }
   const board = useResource(() => api.board(query), JSON.stringify(query))
   const connections = useResource(() => api.connections(name), name)
-  const connected = new Set((connections.data ?? []).map((c) => c.job))
+  const stageOf = new Map((connections.data ?? []).map((c) => [c.job, c.stage]))
+  const requests = (connections.data ?? []).filter((c) => c.stage === 'requested' && c.listing)
   // How well you fit each job; the board works without it if it can't load.
   const fits = useResource(() => api.fits(name), `${name}:${board.data?.total ?? 0}`)
   const fitOf = new Map((fits.data ?? []).map((f) => [f.job, f]))
@@ -131,6 +152,7 @@ export function JobBoard() {
       <div className="mb-4 empty:hidden">
         <ErrorAlert error={error} title="Couldn't add the demo jobs" />
       </div>
+      {requests.length > 0 && <Requests requests={requests} />}
       <div role="search" aria-label="Filter the jobs" className="mb-6 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
         <div className="space-y-1.5">
           <Label htmlFor="board-q">Search</Label>
@@ -197,7 +219,7 @@ export function JobBoard() {
         <ul className="space-y-3" aria-label="Jobs">
           {b.listings.map((x) => (
             <li key={x.name}>
-              <ListingCard listing={x} connected={connected.has(x.name)} fit={fitOf.get(x.name)} />
+              <ListingCard listing={x} stage={stageOf.get(x.name)} fit={fitOf.get(x.name)} />
             </li>
           ))}
         </ul>
@@ -237,7 +259,44 @@ function Filter({
   )
 }
 
-function ListingCard({ listing: x, connected, fit }: { listing: Listing; connected: boolean; fit?: Fit }) {
+/** What a candidate's stage on a job is called, and its badge's icon. */
+const STAGES: Record<Stage, { label: string; icon: typeof Link2 }> = {
+  connected: { label: 'Connected', icon: Link2 },
+  revealed: { label: 'Revealed', icon: Eye },
+  requested: { label: 'Asked to apply', icon: Mail },
+  applied: { label: 'Applied', icon: Check },
+  declined: { label: 'Declined', icon: X },
+}
+
+/** The jobs whose employer asked you to apply and are waiting for your answer. */
+function Requests({ requests }: { requests: Connection[] }) {
+  return (
+    <section aria-labelledby="requests" className="mb-6 space-y-3 rounded-xl border border-primary/40 bg-accent/40 p-4">
+      <h2 id="requests" className="flex items-center gap-2 font-semibold">
+        <Mail className="size-4 text-primary" aria-hidden />
+        Asked to apply
+      </h2>
+      <ul className="space-y-2">
+        {requests.map((c) => (
+          <li key={c.job} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span>
+              <span className="font-medium">{c.listing?.company}</span> asked you to apply for{' '}
+              <span className="font-medium">{c.listing?.title}</span>
+              {c.progress?.requested_at && <span className="text-muted-foreground"> · {day(c.progress.requested_at)}</span>}
+            </span>
+            <Button size="sm" asChild>
+              <Link to={c.job}>Answer</Link>
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function ListingCard({ listing: x, stage, fit }: { listing: Listing; stage?: Stage; fit?: Fit }) {
+  const connected = stage !== undefined
+  const StageIcon = stage ? STAGES[stage].icon : Link2
   return (
     <Card className={cn('transition-colors hover:border-primary/40', connected && 'border-primary/40')}>
       <CardHeader className="gap-1">
@@ -247,9 +306,9 @@ function ListingCard({ listing: x, connected, fit }: { listing: Listing; connect
               {x.title}
             </Link>
           </CardTitle>
-          {connected && (
-            <Badge>
-              <Link2 aria-hidden /> Connected
+          {stage && (
+            <Badge variant={stage === 'declined' ? 'outline' : 'default'}>
+              <StageIcon aria-hidden /> {STAGES[stage].label}
             </Badge>
           )}
         </div>
@@ -269,6 +328,7 @@ function ListingCard({ listing: x, connected, fit }: { listing: Listing; connect
           </Badge>
         </div>
         {fit && <FitSummary fit={fit} />}
+        {x.counts && <Counts counts={x.counts} className="text-xs" />}
       </CardContent>
     </Card>
   )
@@ -365,11 +425,20 @@ export function JobListing() {
                 <dt className="text-muted-foreground">Posted</dt>
                 <dd>{day(x.posted_at)}</dd>
               </dl>
+              {x.counts && <Counts counts={x.counts} className="mt-3 flex-col" />}
               {x.demo && (
                 <p className="mt-3 text-xs text-muted-foreground">A demo job: the company is invented.</p>
               )}
             </CardContent>
           </Card>
+          {connection?.progress && connection.stage !== 'revealed' && (
+            <ApplicationCard
+              candidate={name}
+              connection={connection}
+              company={x.company}
+              onAnswered={() => Promise.all([connections.reload(), listing.reload()]).then(() => undefined)}
+            />
+          )}
           {fit.data && <FitCard fit={fit.data} />}
           <ConnectCard
             company={x.company}
@@ -403,6 +472,20 @@ function ConnectCard({
   onChange: (connect: boolean) => void
 }) {
   if (loading) return <Loading label="Loading your connections" />
+  if (connection?.progress?.revealed_at) {
+    return (
+      <Alert role="region" aria-label="Your connection" className="border-primary/40">
+        <Eye aria-hidden />
+        <AlertTitle>Revealed on {day(connection.progress.revealed_at)}</AlertTitle>
+        <AlertDescription>
+          <p>
+            {company} has seen your name, contact details and the quotes behind your scores. You
+            connected on {day(connection.connected_at)}; once revealed, the connection stays.
+          </p>
+        </AlertDescription>
+      </Alert>
+    )
+  }
   if (connection) {
     return (
       <Alert role="region" aria-label="Your connection" className="border-primary/40">
@@ -484,6 +567,143 @@ function FitCard({ fit }: { fit: Fit }) {
         ) : (
           <p className="text-muted-foreground">Connect to see your place among the connected candidates.</p>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The employer asked you to apply: write or upload your application, or decline. */
+function ApplicationCard({
+  candidate,
+  connection,
+  company,
+  onAnswered,
+}: {
+  candidate: string
+  connection: Connection
+  company: string
+  onAnswered: () => Promise<void>
+}) {
+  const [letter, setLetter] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [busy, setBusy] = useState<'apply' | 'decline' | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const letterId = useId()
+  const filesId = useId()
+  const p = connection.progress
+  if (!p) return null
+
+  async function answer(choice: 'apply' | 'decline') {
+    setBusy(choice)
+    setError(null)
+    try {
+      if (choice === 'apply') {
+        await api.apply(candidate, connection.job, letter, files)
+        toast.success(`Your application is sent to ${company}.`)
+      } else {
+        await api.decline(candidate, connection.job)
+        toast.success(`You declined ${company}'s request.`)
+      }
+      await onAnswered()
+    } catch (e) {
+      setError(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  if (p.answer === 'applied') {
+    return (
+      <Card role="region" aria-label="Your application" className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Check className="size-4 text-primary" aria-hidden /> You applied
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            Sent to {company}
+            {p.answered_at && ` on ${day(p.answered_at)}`}.
+          </p>
+          {p.letter && <p className="line-clamp-6 whitespace-pre-wrap">{p.letter}</p>}
+          {p.files.length > 0 && (
+            <ul className="space-y-1" aria-label="Files sent">
+              {p.files.map((f) => (
+                <li key={f.id}>
+                  <a
+                    href={api.ownApplicationFileUrl(candidate, connection.job, f.id)}
+                    download={f.name}
+                    className="inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline"
+                  >
+                    <Download className="size-3.5" aria-hidden /> {f.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+  if (p.answer === 'declined') {
+    return (
+      <Alert role="region" aria-label="Your application">
+        <X aria-hidden />
+        <AlertTitle>You declined</AlertTitle>
+        <AlertDescription>
+          {company} asked you to apply{p.answered_at && `, and you declined on ${day(p.answered_at)}`}.
+        </AlertDescription>
+      </Alert>
+    )
+  }
+  return (
+    <Card role="region" aria-label="Asked to apply" className="border-primary/60 ring-3 ring-primary/15">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Mail className="size-4 text-primary" aria-hidden /> {company} asks you to apply
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        <p className="text-muted-foreground">
+          They revealed you and would like your application
+          {p.requested_at && ` (asked on ${day(p.requested_at)})`}. Write a cover letter, add files
+          such as your CV, or both.
+        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor={letterId}>Cover letter</Label>
+          <Textarea
+            id={letterId}
+            value={letter}
+            rows={6}
+            placeholder={`Dear ${company}, …`}
+            onChange={(e) => setLetter(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={filesId}>Files</Label>
+          <Input
+            id={filesId}
+            type="file"
+            multiple
+            accept=".pdf,.md,.txt,.docx,.odt,.rtf"
+            onChange={(e) => setFiles([...(e.target.files ?? [])])}
+          />
+          <p className="text-xs text-muted-foreground">PDF, Word, Markdown or text; up to 5 files of 10 MB.</p>
+        </div>
+        <ErrorAlert error={error} title="Couldn't send your answer" />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={busy !== null || (!letter.trim() && files.length === 0)}
+            onClick={() => answer('apply')}
+          >
+            {busy === 'apply' ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />}
+            Apply
+          </Button>
+          <Button variant="outline" disabled={busy !== null} onClick={() => answer('decline')}>
+            {busy === 'decline' ? <Loader2 className="animate-spin" aria-hidden /> : <X aria-hidden />}
+            Decline
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

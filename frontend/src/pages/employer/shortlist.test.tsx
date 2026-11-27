@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react'
 
 import { api, ApiError } from '@/lib/api'
 import type { Shortlist } from '@/lib/types'
-import { job, shortlist } from '@/test/fixtures'
+import { job, revealed, shortlist } from '@/test/fixtures'
 import { renderApp } from '@/test/render'
 
 function open(data: Shortlist = shortlist(), summary = job({ approved: true, history: ['extracted', 'rubric'] })) {
@@ -36,7 +36,12 @@ describe('shortlist', () => {
     expect(within(card('Candidate A1A1')).getByLabelText('Rank 1')).toBeInTheDocument()
     // Unknown filters are said, but don't exclude.
     expect(within(card('Candidate A1A1')).getByText(/Not known: work permit/)).toBeInTheDocument()
-    expect(screen.getByText('Reveals: 0 of 10')).toBeInTheDocument()
+    expect(screen.getByText('Reveals used: 0 of 10')).toBeInTheDocument()
+    // How far candidates got, beside the vacancies.
+    const counts = screen.getByRole('group', { name: 'How far candidates got' })
+    expect(counts).toHaveTextContent('1 vacancy')
+    expect(counts).toHaveTextContent('3 connected')
+    expect(counts).toHaveTextContent('0 applications')
   })
 
   it("shows each candidate's own avatar beside the alias", async () => {
@@ -101,9 +106,21 @@ describe('shortlist', () => {
     expect(screen.queryByRole('list', { name: "Don't meet the requirements" })).toBeNull()
   })
 
-  it('explains each criterion with the quotes it cites', async () => {
+  it('explains each criterion, with how many quotes support it but not the quotes, before a reveal', async () => {
     const { user } = open()
-    const first = await screen.findByRole('heading', { name: 'Candidate A1A1' })
+    await user.click(within(await screen.findByRole('heading', { name: 'Candidate A1A1' }).then((h) => h.closest('li') as HTMLElement)).getByRole('button', { name: /Why/ }))
+    const reasons = screen.getByRole('region', { name: 'Reasons for Candidate A1A1' })
+    expect(within(reasons).getByText('python: level used for a1a1.')).toBeInTheDocument()
+    expect(within(reasons).getByText(/1 quote supports this, shown once you reveal the candidate/)).toBeInTheDocument()
+    expect(within(reasons).queryByText(/Built forecasts/)).toBeNull()
+    expect(document.body.textContent).not.toMatch(/Built forecasts|Forecasts demand/)
+  })
+
+  it('explains each criterion with the quotes it cites, once revealed', async () => {
+    const data = shortlist()
+    data.candidates[0] = revealed(data.candidates[0])
+    const { user } = open(data)
+    const first = await screen.findByRole('heading', { name: /Candidate A1A1/ })
     const why = within(first.closest('li') as HTMLElement).getByRole('button', { name: /Why/ })
     expect(why).toHaveAttribute('aria-expanded', 'false')
     await user.click(why)
@@ -112,6 +129,7 @@ describe('shortlist', () => {
     expect(within(reasons).getByText('Strong Python')).toBeInTheDocument()
     expect(within(reasons).getByText('python: level used for a1a1.')).toBeInTheDocument()
     expect(within(reasons).getByText(/Built forecasts in Python \(a1a1\)/)).toBeInTheDocument()
+    expect(within(reasons).queryByText(/shown once you reveal/)).toBeNull()
     expect(within(reasons).getByRole('meter', { name: 'Strong Python: score' })).toHaveAttribute('aria-valuenow', '90')
     // The baseline doesn't read criteria without a skill, and says so.
     expect(within(reasons).getByText(/it names no skill/)).toBeInTheDocument()
@@ -177,43 +195,64 @@ describe('shortlist', () => {
     expect(screen.getByRole('checkbox', { name: 'Compare Candidate D3D3' })).toBeEnabled()
   })
 
-  it('records a reveal and an application request', async () => {
-    const record = vi.spyOn(api, 'recordIntent').mockImplementation(async (_job, profileId, kind) => ({
-      id: kind === 'reveal' ? 1 : 2,
-      job_id: 'job-1',
-      profile_id: profileId,
-      kind,
-      recorded_at: '2026-11-27T10:00:00',
-    }))
-    const { user } = open()
+  it('reveals, then requests an application, through one button', async () => {
+    const reveal = vi.spyOn(api, 'reveal').mockResolvedValue(shortlist().candidates[0].progress)
+    const request = vi.spyOn(api, 'requestApplication').mockResolvedValue(shortlist().candidates[0].progress)
+    const { load, user } = open()
     await screen.findByRole('heading', { name: '3 ranked' })
+    expect(within(card('Candidate A1A1')).queryByRole('button', { name: /Request application/ })).toBeNull()
+    expect(document.body.textContent).not.toMatch(/Kim Berg|@/)
 
-    await user.click(screen.getByRole('button', { name: 'Reveal Candidate A1A1' }))
-    expect(record).toHaveBeenCalledWith('fjord-grocery', 'a1a1', 'reveal')
-    expect(await screen.findByText(/Reveal of Candidate A1A1 recorded\. No payment is taken/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reveal requested Candidate A1A1' })).toBeDisabled()
-    expect(screen.getByText('Reveals: 1 of 10')).toBeInTheDocument()
+    // Reveal: the shortlist is read again, now with who it is.
+    const afterReveal = shortlist({ counts: { connected: 3, revealed: 1, requested: 0, applied: 0 } })
+    afterReveal.candidates[0] = revealed(afterReveal.candidates[0])
+    load.mockResolvedValue(afterReveal)
+    await user.click(screen.getByRole('button', { name: 'Reveal: Candidate A1A1' }))
+    expect(reveal).toHaveBeenCalledWith('fjord-grocery', 'a1a1')
+    expect(await screen.findByText(/Candidate A1A1 is revealed\. No payment is taken/)).toBeInTheDocument()
+    const shown = await screen.findByRole('heading', { name: 'Kim Berg (Candidate A1A1)' })
+    const li = within(shown.closest('li') as HTMLElement)
+    expect(li.getByRole('link', { name: 'kim@example.org' })).toHaveAttribute('href', 'mailto:kim@example.org')
+    expect(li.getByText('+45 11 22 33 44')).toBeInTheDocument()
+    expect(li.getByText('Revealed', { selector: '[data-slot=badge]' })).toBeInTheDocument()
+    expect(screen.getByText('Reveals used: 1 of 10')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Request application from Candidate B0B0' }))
-    expect(record).toHaveBeenCalledWith('fjord-grocery', 'b0b0', 'request_application')
-    expect(await screen.findByText(/Application request to Candidate B0B0 recorded/)).toBeInTheDocument()
-    expect(within(card('Candidate B0B0')).getByText('Application requested', { selector: '[data-slot=badge]' })).toBeInTheDocument()
-    // The candidate's name is never asked for or shown.
-    expect(document.body.textContent).not.toMatch(/john|jane|@/i)
+    // Then the same button asks them to apply.
+    const afterRequest = shortlist({ counts: { connected: 3, revealed: 1, requested: 1, applied: 0 } })
+    afterRequest.candidates[0] = revealed(afterRequest.candidates[0], 'requested')
+    load.mockResolvedValue(afterRequest)
+    await user.click(li.getByRole('button', { name: 'Request application: Kim Berg' }))
+    expect(request).toHaveBeenCalledWith('fjord-grocery', 'a1a1')
+    expect(await screen.findByText('Kim Berg is asked to apply.')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Waiting for application: Kim Berg' })).toBeDisabled()
+    expect(screen.getByRole('group', { name: 'How far candidates got' })).toHaveTextContent('1 asked to apply')
   })
 
-  it('shows earlier requests, and stops reveals at the quota', async () => {
-    const data = shortlist({
-      reveal_quota: 1,
-      intents: [{ id: 1, job_id: 'job-1', profile_id: 'a1a1', kind: 'reveal', recorded_at: '2026-11-27T10:00:00' }],
-    })
+  it('shows an application, a decline, and stops reveals at the quota', async () => {
+    const data = shortlist({ reveal_quota: 2, counts: { connected: 3, revealed: 2, requested: 2, applied: 1 } })
+    data.candidates[0] = revealed(data.candidates[0], 'applied')
+    data.candidates[1] = revealed(data.candidates[1], 'declined', 'Sam Lund')
     open(data)
-    expect(await screen.findByText('Reveals: 1 of 1')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reveal requested Candidate A1A1' })).toBeDisabled()
-    const other = screen.getByRole('button', { name: 'Reveal Candidate B0B0' })
+    expect(await screen.findByText('Reveals used: 2 of 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Applied: Kim Berg' })).toBeDisabled()
+    const application = screen.getByRole('region', { name: 'Application from Kim Berg' })
+    expect(application).toHaveTextContent('Dear Fjord Grocery, I would like to apply.')
+    expect(within(application).getByRole('link', { name: 'cv.pdf' })).toHaveAttribute(
+      'href',
+      '/api/jobs/fjord-grocery/candidates/a1a1/files/7',
+    )
+    expect(screen.getByRole('button', { name: 'Declined: Sam Lund' })).toBeDisabled()
+    expect(screen.queryByRole('region', { name: 'Application from Sam Lund' })).toBeNull()
+    const other = screen.getByRole('button', { name: 'Reveal: Candidate C2C2' })
     expect(other).toBeDisabled()
     expect(other).toHaveAttribute('title', 'All reveals for this job are used')
-    expect(screen.getByRole('button', { name: 'Request application from Candidate B0B0' })).toBeEnabled()
+  })
+
+  it('says why a step was refused', async () => {
+    vi.spyOn(api, 'reveal').mockRejectedValue(new ApiError(409, 'all 10 reveals for this job are used'))
+    const { user } = open()
+    await user.click(await screen.findByRole('button', { name: 'Reveal: Candidate B0B0' }))
+    expect(await screen.findByText('all 10 reveals for this job are used')).toBeInTheDocument()
   })
 
   it('matches when no one is ranked yet, and switches scorers', async () => {

@@ -1,7 +1,6 @@
 // Small synthetic API answers for the component tests, shaped like John Doe's demo
 // and the Fjord Grocery job. No real person's data.
 import type {
-  AnonymousCandidate,
   Board,
   CandidateProfile,
   CandidateSummary,
@@ -14,7 +13,9 @@ import type {
   ReviewForm,
   Rubric,
   Shortlist,
+  ShortlistCandidate,
   SkillLevel,
+  Stage,
 } from '@/lib/types'
 
 export function candidate(patch: Partial<CandidateSummary> = {}): CandidateSummary {
@@ -183,7 +184,8 @@ export function rubric(patch: Partial<Rubric> = {}): Rubric {
 
 const SHORTLIST_SKILLS = ['python', 'sql', 'spark']
 
-function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): AnonymousCandidate {
+/** A shortlisted candidate before a reveal: no quotes, no role summaries, no contact. */
+function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): ShortlistCandidate {
   return {
     profile_id: id,
     alias: `Candidate ${id.slice(0, 4).toUpperCase()}`,
@@ -197,10 +199,10 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): A
         end: null,
         start_precision: 'month',
         end_precision: 'month',
-        summary: 'Forecasts demand.',
+        summary: '',
       },
     ],
-    evidence: [{ id: `${id}-e1`, source: 'cv', quote: `Built forecasts in Python (${id})` }],
+    evidence: [],
     skills: SHORTLIST_SKILLS.map((skill, i) => ({
       skill,
       own_level: levels[i][0],
@@ -208,6 +210,41 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): A
       confidence: levels[i][1] === null ? null : 0.8,
       via: skill === 'sql' && id === 'b0b0' ? 'dbt' : null,
     })),
+    progress: {
+      profile_id: id,
+      stage: 'connected',
+      revealed_at: null,
+      requested_at: null,
+      answered_at: null,
+      letter: '',
+      files: [],
+    },
+    contact: null,
+  }
+}
+
+/** The same candidate once revealed at a stage: their name, quotes and role summaries. */
+export function revealed(
+  c: ShortlistCandidate,
+  stage: Exclude<Stage, 'connected'> = 'revealed',
+  name = 'Kim Berg',
+): ShortlistCandidate {
+  const id = c.profile_id
+  return {
+    ...c,
+    experiences: c.experiences.map((x) => ({ ...x, summary: 'Forecasts demand.' })),
+    evidence: [{ id: `${id}-e1`, source: 'cv', quote: `Built forecasts in Python (${id})` }],
+    contact: { name, email: `${name.split(' ')[0].toLowerCase()}@example.org`, phone: '+45 11 22 33 44' },
+    progress: {
+      ...c.progress,
+      stage,
+      revealed_at: '2026-11-27T11:00:00',
+      requested_at: stage === 'revealed' ? null : '2026-11-27T11:05:00',
+      answered_at: stage === 'applied' || stage === 'declined' ? '2026-11-27T12:00:00' : null,
+      letter: stage === 'applied' ? 'Dear Fjord Grocery, I would like to apply.' : '',
+      files:
+        stage === 'applied' ? [{ id: 7, name: 'cv.pdf', size: 2048, uploaded_at: '2026-11-27T12:00:00' }] : [],
+    },
   }
 }
 
@@ -275,6 +312,8 @@ export function shortlist(patch: Partial<Shortlist> = {}): Shortlist {
     ],
     intents: [],
     reveal_quota: 10,
+    counts: { connected: 3, revealed: 0, requested: 0, applied: 0 },
+    vacancies: 1,
     ...patch,
   }
 }
@@ -302,6 +341,7 @@ export function listing(patch: Partial<Listing> = {}): Listing {
     seniority: 'senior',
     posted_at: '2026-11-27T09:00:00',
     demo: true,
+    counts: { connected: 13, revealed: 2, requested: 1, applied: 0 },
     ...patch,
   }
 }
@@ -328,9 +368,35 @@ export function board(patch: Partial<Board> = {}): Board {
 }
 
 export function connection(patch: Partial<Connection> = {}): Connection {
-  return { job: 'board-fjord-grocery', connected_at: '2026-11-27T10:15:00', listing: listing(), ...patch }
+  return {
+    job: 'board-fjord-grocery',
+    connected_at: '2026-11-27T10:15:00',
+    listing: listing(),
+    stage: 'connected',
+    progress: null,
+    ...patch,
+  }
 }
 
 export function fit(patch: Partial<Fit> = {}): Fit {
   return { job: 'board-fjord-grocery', band: 'strong', missed: [], connected: false, place: null, ...patch }
+}
+
+/** A connection at a later stage, with the candidate's progress. */
+export function progressed(stage: Exclude<Stage, 'connected'>, patch: Partial<Connection> = {}): Connection {
+  return connection({
+    stage,
+    progress: {
+      candidate: 'john-doe-demo',
+      job: 'board-fjord-grocery',
+      stage,
+      revealed_at: '2026-11-27T11:00:00',
+      requested_at: stage === 'revealed' ? null : '2026-11-27T11:05:00',
+      answer: stage === 'applied' || stage === 'declined' ? stage : null,
+      answered_at: stage === 'applied' || stage === 'declined' ? '2026-11-27T12:00:00' : null,
+      letter: stage === 'applied' ? 'I would like to apply.' : '',
+      files: stage === 'applied' ? [{ id: 3, name: 'cv.md', size: 12, uploaded_at: '2026-11-27T12:00:00' }] : [],
+    },
+    ...patch,
+  })
 }

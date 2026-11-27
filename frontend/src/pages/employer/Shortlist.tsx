@@ -3,20 +3,26 @@ import {
   Check,
   ChevronDown,
   CircleHelp,
+  Clock,
+  Download,
   Eye,
+  EyeOff,
   ListOrdered,
   Loader2,
   Mail,
+  Phone,
   Quote,
   RefreshCw,
   Users,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 
 import { CandidateAvatar } from '@/components/CandidateAvatar'
+import { Counts } from '@/components/Counts'
 import { SpiderChart, type Series } from '@/components/SpiderChart'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
@@ -26,15 +32,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { api, describeError } from '@/lib/api'
 import { MAX_COMPARED, type LevelView } from '@/lib/chart'
-import { month } from '@/lib/format'
+import { day, month } from '@/lib/format'
 import type {
-  AnonymousCandidate,
+  Contact,
   Criterion,
   HardFilterCheck,
-  IntentKind,
   RankedCandidate,
   Scorer,
+  ShortlistCandidate,
   Shortlist as ShortlistData,
+  Stage,
 } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
@@ -110,15 +117,15 @@ function ShortlistPage() {
           </ToggleGroup>
         }
       >
-        Candidates who approved their profile, ranked against rubric version {summary.rubric_version}. They are
-        anonymised: you see an alias and a pattern, never a name or a photo, until you reveal them.
+        Candidates who connected their approved profile, ranked against rubric version {summary.rubric_version}. They
+        are anonymised: you see an alias and a pattern, never a name, a photo or their quotes, until you reveal them.
+        Then you can ask them to apply.
       </PageHeader>
       {loaded.data ? (
         <ShortlistView
           data={loaded.data}
           scorer={scorer}
           reload={loaded.reload}
-          set={loaded.set}
           compared={compared}
           setCompared={setCompared}
           view={view}
@@ -143,19 +150,18 @@ interface ViewProps {
   data: ShortlistData
   scorer: Scorer
   reload: () => Promise<void>
-  set: (data: ShortlistData) => void
   compared: Compared[]
   setCompared: (compared: Compared[]) => void
   view: LevelView
   setView: (view: LevelView) => void
 }
 
-function ShortlistView({ data, scorer, reload, set, compared, setCompared, view, setView }: ViewProps) {
+function ShortlistView({ data, scorer, reload, compared, setCompared, view, setView }: ViewProps) {
   const { name, summary } = useJob()
   const [matching, setMatching] = useState(false)
   const people = new Map(data.candidates.map((c) => [c.profile_id, c]))
   const criteria = new Map(data.rubric.criteria.map((c) => [c.id, c]))
-  const reveals = data.intents.filter((i) => i.kind === 'reveal').length
+  const reveals = data.counts.revealed
 
   async function match() {
     setMatching(true)
@@ -180,15 +186,18 @@ function ShortlistView({ data, scorer, reload, set, compared, setCompared, view,
     if (slot !== undefined) setCompared([...compared, { id, slot }])
   }
 
-  async function ask(candidate: AnonymousCandidate, kind: IntentKind) {
+  /** The employer's next step on a candidate: reveal, then request an application. */
+  async function next(candidate: ShortlistCandidate) {
+    const stage = candidate.progress.stage
     try {
-      const intent = await api.recordIntent(name, candidate.profile_id, kind)
-      if (!data.intents.some((i) => i.id === intent.id)) set({ ...data, intents: [...data.intents, intent] })
-      toast.success(
-        kind === 'reveal'
-          ? `Reveal of ${candidate.alias} recorded. No payment is taken yet, and who they are stays hidden until revealing is built.`
-          : `Application request to ${candidate.alias} recorded. They aren't contacted yet.`,
-      )
+      if (stage === 'connected') {
+        await api.reveal(name, candidate.profile_id)
+        toast.success(`${candidate.alias} is revealed. No payment is taken in this version.`)
+      } else if (stage === 'revealed') {
+        await api.requestApplication(name, candidate.profile_id)
+        toast.success(`${candidate.contact?.name ?? candidate.alias} is asked to apply.`)
+      }
+      await reload()
     } catch (e) {
       toast.error(describeError(e))
     }
@@ -229,9 +238,8 @@ function ShortlistView({ data, scorer, reload, set, compared, setCompared, view,
         compared={slot !== undefined}
         canCompare={slot !== undefined || compared.length < MAX_COMPARED}
         onCompare={() => toggle(c.profile_id)}
-        intents={new Set(data.intents.filter((i) => i.profile_id === c.profile_id).map((i) => i.kind))}
         revealsLeft={reveals < data.reveal_quota}
-        onAsk={(kind) => ask(c, kind)}
+        onNext={() => next(c)}
       />
     )
   }
@@ -252,11 +260,12 @@ function ShortlistView({ data, scorer, reload, set, compared, setCompared, view,
           </h2>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
-              Reveals: {reveals} of {data.reveal_quota}
+              Reveals used: {reveals} of {data.reveal_quota}
             </span>
             {matchButton}
           </div>
         </div>
+        <Counts counts={data.counts} vacancies={data.vacancies} />
         <ScoreKey scorer={scorer} />
         <ol className="space-y-3" aria-label="Meet the requirements">
           {passing.map(card)}
@@ -322,15 +331,31 @@ function ShortlistView({ data, scorer, reload, set, compared, setCompared, view,
 
 interface CardProps {
   ranked: RankedCandidate
-  candidate: AnonymousCandidate
+  candidate: ShortlistCandidate
   criteria: Map<string, Criterion>
   scorer: Scorer
   compared: boolean
   canCompare: boolean
   onCompare: () => void
-  intents: Set<IntentKind>
   revealsLeft: boolean
-  onAsk: (kind: IntentKind) => Promise<void>
+  onNext: () => Promise<void>
+}
+
+/** The one action button at each stage; only the first two are actions. */
+const NEXT: Record<Stage, { label: string; icon: LucideIcon; action: boolean }> = {
+  connected: { label: 'Reveal', icon: Eye, action: true },
+  revealed: { label: 'Request application', icon: Mail, action: true },
+  requested: { label: 'Waiting for application', icon: Clock, action: false },
+  applied: { label: 'Applied', icon: Check, action: false },
+  declined: { label: 'Declined', icon: X, action: false },
+}
+
+const STAGE_BADGE: Record<Stage, string | null> = {
+  connected: null,
+  revealed: 'Revealed',
+  requested: 'Asked to apply',
+  applied: 'Applied',
+  declined: 'Declined',
 }
 
 function CandidateCard({
@@ -341,22 +366,26 @@ function CandidateCard({
   compared,
   canCompare,
   onCompare,
-  intents,
   revealsLeft,
-  onAsk,
+  onNext,
 }: CardProps) {
   const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState<IntentKind | null>(null)
+  const [busy, setBusy] = useState(false)
+  const stage = candidate.progress.stage
+  const step = NEXT[stage]
+  const revealed = stage !== 'connected'
+  const quotaUsed = stage === 'connected' && !revealsLeft
   const failed = (ranked.hard_filters ?? []).filter((f) => f.outcome === 'fail')
   const unknown = (ranked.hard_filters ?? []).filter((f) => f.outcome === 'unknown')
   const detailsId = `details-${candidate.profile_id}`
   const compareId = `compare-${candidate.profile_id}`
 
-  async function ask(kind: IntentKind) {
-    setBusy(kind)
-    await onAsk(kind)
-    setBusy(null)
+  async function act() {
+    setBusy(true)
+    await onNext()
+    setBusy(false)
   }
+  const StepIcon = busy ? Loader2 : step.icon
 
   return (
     <li>
@@ -377,18 +406,19 @@ function CandidateCard({
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <CandidateAvatar avatar={candidate.avatar} className="size-8" />
-              <h3 className="font-medium">{candidate.alias}</h3>
-              {intents.has('reveal') && (
-                <Badge variant="secondary">
-                  <Eye aria-hidden /> Reveal requested
-                </Badge>
+              {candidate.contact ? (
+                <h3 className="font-medium">
+                  {candidate.contact.name}{' '}
+                  <span className="text-sm font-normal text-muted-foreground">({candidate.alias})</span>
+                </h3>
+              ) : (
+                <h3 className="font-medium">{candidate.alias}</h3>
               )}
-              {intents.has('request_application') && (
-                <Badge variant="secondary">
-                  <Mail aria-hidden /> Application requested
-                </Badge>
+              {STAGE_BADGE[stage] && (
+                <Badge variant={stage === 'declined' ? 'outline' : 'secondary'}>{STAGE_BADGE[stage]}</Badge>
               )}
             </div>
+            {candidate.contact && <ContactLine contact={candidate.contact} />}
             <p className="text-sm text-muted-foreground">{candidate.headline}</p>
             {failed.map((f) => (
               <p key={f.name} className="flex items-start gap-1.5 text-sm">
@@ -434,36 +464,23 @@ function CandidateCard({
           </Button>
           <span className="flex-1" />
           <Button
-            variant="outline"
             size="sm"
-            disabled={busy !== null || intents.has('reveal') || !revealsLeft}
-            title={!revealsLeft && !intents.has('reveal') ? 'All reveals for this job are used' : undefined}
-            aria-label={`${intents.has('reveal') ? 'Reveal requested' : 'Reveal'} ${candidate.alias}`}
-            onClick={() => ask('reveal')}
+            variant={step.action ? 'default' : 'ghost'}
+            disabled={busy || !step.action || quotaUsed}
+            title={quotaUsed ? 'All reveals for this job are used' : undefined}
+            aria-label={`${step.label}: ${candidate.contact?.name ?? candidate.alias}`}
+            onClick={act}
           >
-            {busy === 'reveal' ? <Loader2 className="animate-spin" aria-hidden /> : intents.has('reveal') ? <Check aria-hidden /> : <Eye aria-hidden />}
-            {intents.has('reveal') ? 'Reveal requested' : 'Reveal'}
-          </Button>
-          <Button
-            size="sm"
-            disabled={busy !== null || intents.has('request_application')}
-            aria-label={`${intents.has('request_application') ? 'Application requested' : 'Request application'} from ${candidate.alias}`}
-            onClick={() => ask('request_application')}
-          >
-            {busy === 'request_application' ? (
-              <Loader2 className="animate-spin" aria-hidden />
-            ) : intents.has('request_application') ? (
-              <Check aria-hidden />
-            ) : (
-              <Mail aria-hidden />
-            )}
-            {intents.has('request_application') ? 'Application requested' : 'Request application'}
+            <StepIcon className={cn(busy && 'animate-spin')} aria-hidden />
+            {step.label}
           </Button>
         </div>
 
+        {stage === 'applied' && <Application candidate={candidate} />}
+
         {open && (
           <div id={detailsId} className="space-y-6 border-t px-5 py-5">
-            <Reasons ranked={ranked} candidate={candidate} criteria={criteria} scorer={scorer} />
+            <Reasons ranked={ranked} candidate={candidate} criteria={criteria} scorer={scorer} revealed={revealed} />
             {ranked.hard_filters && ranked.hard_filters.length > 0 && <Filters checks={ranked.hard_filters} />}
             <Roles candidate={candidate} />
           </div>
@@ -542,11 +559,13 @@ function Reasons({
   candidate,
   criteria,
   scorer,
+  revealed,
 }: {
   ranked: RankedCandidate
-  candidate: AnonymousCandidate
+  candidate: ShortlistCandidate
   criteria: Map<string, Criterion>
   scorer: Scorer
+  revealed: boolean
 }) {
   const quotes = new Map(candidate.evidence.map((e) => [e.id, e]))
   const scores = new Map(ranked.criterion_scores.map((s) => [s.criterion_id, s]))
@@ -569,6 +588,12 @@ function Reasons({
                 <>
                   <ScoreBar value={s.score} label={`${c.description}: score`} small />
                   <p className="text-sm text-muted-foreground">{s.rationale}</p>
+                  {!revealed && s.evidence_ids.length > 0 && (
+                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <EyeOff className="size-3.5" aria-hidden />
+                      {quoteCount(s.evidence_ids.length)}, shown once you reveal the candidate
+                    </p>
+                  )}
                   {s.evidence_ids.map((id) => {
                     const q = quotes.get(id)
                     return q ? (
@@ -630,7 +655,7 @@ function Filters({ checks }: { checks: HardFilterCheck[] }) {
   )
 }
 
-function Roles({ candidate }: { candidate: AnonymousCandidate }) {
+function Roles({ candidate }: { candidate: ShortlistCandidate }) {
   if (!candidate.experiences.length) return null
   return (
     <section className="space-y-2" aria-label="Experience">
@@ -648,6 +673,66 @@ function Roles({ candidate }: { candidate: AnonymousCandidate }) {
           </li>
         ))}
       </ul>
+    </section>
+  )
+}
+
+/** "1 quote supports this", "3 quotes support this". */
+function quoteCount(n: number): string {
+  return n === 1 ? '1 quote supports this' : `${n} quotes support this`
+}
+
+/** A revealed candidate's contact details. */
+function ContactLine({ contact }: { contact: Contact }) {
+  if (!contact.email && !contact.phone) return null
+  return (
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" aria-label="Contact details">
+      {contact.email && (
+        <a
+          href={`mailto:${contact.email}`}
+          className="inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline"
+        >
+          <Mail className="size-3.5" aria-hidden />
+          {contact.email}
+        </a>
+      )}
+      {contact.phone && (
+        <span className="inline-flex items-center gap-1.5">
+          <Phone className="size-3.5" aria-hidden />
+          {contact.phone}
+        </span>
+      )}
+    </p>
+  )
+}
+
+/** What the candidate sent when they applied: their letter and files. */
+function Application({ candidate }: { candidate: ShortlistCandidate }) {
+  const { name } = useJob()
+  const p = candidate.progress
+  return (
+    <section
+      aria-label={`Application from ${candidate.contact?.name ?? candidate.alias}`}
+      className="space-y-3 border-t bg-accent/40 px-5 py-4"
+    >
+      <h4 className="text-sm font-medium">
+        Application
+        {p.answered_at && <span className="font-normal text-muted-foreground"> · {day(p.answered_at)}</span>}
+      </h4>
+      {p.letter && <p className="text-sm whitespace-pre-wrap">{p.letter}</p>}
+      {p.files.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label="Files">
+          {p.files.map((f) => (
+            <li key={f.id}>
+              <Button variant="outline" size="sm" asChild>
+                <a href={api.applicationFileUrl(name, candidate.profile_id, f.id)} download={f.name}>
+                  <Download aria-hidden /> {f.name}
+                </a>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }

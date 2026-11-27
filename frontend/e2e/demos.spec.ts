@@ -100,7 +100,7 @@ test('the Fjord Grocery demo: job ad and rubric', async ({ page }) => {
   await nice.getByPlaceholder('What is asked for').last().fill('Speaks a Scandinavian language')
   await page.getByLabel(/I approve this rubric/).check()
   await page.getByRole('button', { name: 'Save and approve' }).click()
-  await expect(page.getByText('Version 2')).toBeVisible()
+  await expect(page.getByText('Version 2', { exact: true })).toBeVisible()
   await expect(page.getByText('Approved', { exact: true })).toBeVisible()
   await expect(nice.getByPlaceholder('What is asked for').last()).toHaveValue('Speaks a Scandinavian language')
   await expect(nice.getByText('Added by you: no quote from the ad.').last()).toBeVisible()
@@ -149,12 +149,14 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await shot(page, '15-shortlist-failed', { fullPage: false })
   await page.getByRole('heading', { name: 'Shortlist', exact: true }).scrollIntoViewIfNeeded()
 
-  // Why the first is first: a score per criterion, with the quotes it cites.
+  // Why the first is first: a score per criterion, and how many quotes support it.
+  // The quotes themselves stay hidden until the candidate is revealed.
   const first = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 1') }).first()
   await first.getByRole('button', { name: /^Why for/ }).click()
   const reasons = page.getByRole('region', { name: /^Reasons for/ })
   await expect(reasons.getByRole('meter').first()).toBeVisible()
-  await expect(reasons.locator('blockquote').first()).toBeVisible()
+  await expect(reasons.getByText(/quotes? supports? this, shown once you reveal the candidate/).first()).toBeVisible()
+  await expect(reasons.locator('blockquote')).toHaveCount(0)
   await reasons.scrollIntoViewIfNeeded()
   await shot(page, '12-shortlist-reasons', { fullPage: false })
   await first.getByRole('button', { name: /^Hide for/ }).click()
@@ -172,15 +174,33 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(page.getByTestId('shape-own-0')).toHaveCount(0)
   await expect(page.getByTestId('shape-estimated-0')).toBeVisible()
 
-  // Reveal the first and ask the second to apply: recorded, no payment, no name.
-  await first.getByRole('button', { name: /^Reveal [A-Z][a-z]+ [A-Z][a-z]+$/ }).click()
-  await expect(page.getByText(/recorded\. No payment is taken yet/)).toBeVisible()
-  await expect(page.getByText('Reveals: 1 of 10')).toBeVisible()
-  await expect(first.getByRole('button', { name: /^Reveal requested/ })).toBeDisabled()
-  const second = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 2') }).first()
-  await second.getByRole('button', { name: /^Request application/ }).click()
-  await expect(second.getByRole('button', { name: /^Application requested/ })).toBeDisabled()
+  // No one is named before a reveal, and asking to apply comes only after one.
   expect(await page.locator('main').textContent()).not.toMatch(POOL_NAMES)
+  const second = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 2') }).first()
+  await expect(second.getByRole('button', { name: /^Request application/ })).toHaveCount(0)
+
+  // Reveal the first: their name, contact details and quotes; no payment is taken.
+  await first.getByRole('button', { name: /^Reveal: [A-Z][a-z]+ [A-Z][a-z]+$/ }).click()
+  await expect(page.getByText(/is revealed\. No payment is taken/)).toBeVisible()
+  await expect(page.getByText('Reveals used: 1 of 10')).toBeVisible()
+  await expect(first.getByRole('heading', { level: 3 })).toHaveText(POOL_NAMES)
+  await expect(first.getByRole('link', { name: /@example\.com$/ })).toBeVisible()
+  await first.getByRole('button', { name: /^Why for/ }).click()
+  await expect(first.locator('blockquote').first()).toBeVisible()
+  await expect(first.getByText(/shown once you reveal/)).toHaveCount(0)
+  // Only the one revealed is named.
+  const named = (await page.locator('main').textContent())!.match(new RegExp(POOL_NAMES.source, 'g')) ?? []
+  expect(new Set(named.map((n) => n.toLowerCase())).size).toBe(1)
+  // The card's top below the fixed header, so the name shows with the quotes.
+  await first.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await page.mouse.wheel(0, -72)
+  await shot(page, '21-shortlist-revealed', { fullPage: false })
+  await first.getByRole('button', { name: /^Hide for/ }).click()
+
+  // The same button now asks them to apply, then waits for their answer.
+  await first.getByRole('button', { name: /^Request application: / }).click()
+  await expect(first.getByRole('button', { name: /^Waiting for application: / })).toBeDisabled()
+  await expect(page.getByRole('group', { name: 'How far candidates got' })).toContainText('1 asked to apply')
 
   // The LLM scorer replays recorded answers in the demo, so it is free too.
   await page.getByRole('radio', { name: 'LLM' }).click()
@@ -190,9 +210,8 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(page.getByRole('meter', { name: /^Total for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
   // The comparison stays: the same people, scored another way.
   await expect(chart).toBeVisible()
-  // The requests are the job's, whichever scorer ranks.
-  await expect(page.getByText('Reveals: 1 of 10')).toBeVisible()
-  expect(await page.locator('main').textContent()).not.toMatch(POOL_NAMES)
+  // Reveals are the job's, whichever scorer ranks.
+  await expect(page.getByText('Reveals used: 1 of 10')).toBeVisible()
   await shot(page, '14-shortlist-llm', { fullPage: false })
 })
 
@@ -286,7 +305,7 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   // Back on the board, the job is marked as connected.
   await page.getByRole('link', { name: 'All jobs' }).click()
   const card = jobs.getByRole('listitem').filter({ hasText: 'Lynfjord Power' })
-  await expect(card.getByText('Connected')).toBeVisible()
+  await expect(card.getByText('Connected', { exact: true })).toBeVisible()
 
   // Withdraw: out of the job's next ranking.
   await expect(card.getByRole('group', { name: 'Your fit' })).toContainText(`You're #${john!.rank} of 13`)
@@ -298,6 +317,119 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   const without = (await ranked()).map((c) => c.profile_id)
   expect(without).toHaveLength(12)
   expect(without).not.toContain(profile.id)
+})
+
+test('reveal, request and apply: John Doe applies to one job and declines another', async ({ page }) => {
+  // John approves his profile and connects to two demo jobs.
+  await page.goto('/candidates')
+  await page.getByRole('button', { name: 'Try the John Doe demo' }).click()
+  await expect(page).toHaveURL(/\/material$/)
+  const candidate = page.url().match(/\/candidates\/([^/]+)\//)![1]
+  await page.getByRole('button', { name: 'Build my profile' }).click()
+  await page.getByRole('button', { name: "Fill in John's review" }).click()
+  await page.getByRole('button', { name: 'Save and approve' }).click()
+  await expect(page).toHaveURL(/\/questions$/)
+  expect((await page.request.post('/api/demos/board')).ok()).toBe(true)
+  const jobs = ['board-fjord-grocery', 'board-lynfjord-power']
+  for (const job of jobs) {
+    await page.goto(`/candidates/${candidate}/jobs/${job}`)
+    await page.getByRole('button', { name: 'Connect my profile' }).click()
+    await expect(page.getByRole('region', { name: 'Your connection' })).toContainText('Connected on')
+  }
+  const glance = page.getByRole('group', { name: 'How far candidates got' })
+  const profile = await (await page.request.get(`/api/candidates/${candidate}/profile`)).json()
+
+  // The employer matches each job, and finds John only by his alias.
+  const aliasOn = async (job: string) => {
+    const shortlist = await (await page.request.get(`/api/jobs/${job}/shortlist`)).json()
+    const card = shortlist.candidates.find((c: { profile_id: string }) => c.profile_id === profile.id)
+    expect(card.contact).toBeNull()
+    expect(card.evidence).toEqual([])
+    expect(JSON.stringify(shortlist)).not.toMatch(/John Doe|john\.doe@example\.com/)
+    return card.alias as string
+  }
+  const employer = async (job: string) => {
+    await page.goto(`/jobs/${job}/shortlist`)
+    await page.getByRole('button', { name: /^(Match candidates|Match again)$/ }).click()
+    await expect(page.getByText(/^Ranked \d+ candidates\.$/)).toBeVisible()
+    const alias = await aliasOn(job)
+    const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3, name: alias }) })
+    await expect(card).toBeVisible()
+    expect(await page.locator('main').textContent()).not.toMatch(/John Doe|john\.doe@example\.com/)
+    return card
+  }
+
+  // Fjord Grocery: reveal John, then ask him to apply.
+  let card = await employer(jobs[0])
+  const counts = page.getByRole('group', { name: 'How far candidates got' })
+  await expect(counts).toContainText('13 connected')
+  await expect(counts).toContainText('0 revealed')
+  await card.getByRole('button', { name: /^Reveal: / }).click()
+  await expect(card.getByRole('heading', { level: 3 })).toContainText('John Doe')
+  await expect(card.getByRole('link', { name: 'john.doe@example.com' })).toBeVisible()
+  await expect(counts).toContainText('1 revealed')
+  await card.getByRole('button', { name: 'Request application: John Doe' }).click()
+  await expect(card.getByRole('button', { name: 'Waiting for application: John Doe' })).toBeDisabled()
+  await expect(counts).toContainText('1 asked to apply')
+  await expect(counts).toContainText('0 applications')
+
+  // John sees the request on the board and on the listing, and can't withdraw now.
+  await page.goto(`/candidates/${candidate}/jobs`)
+  const requests = page.getByRole('region', { name: 'Asked to apply' })
+  await expect(requests).toContainText('Fjord Grocery ApS asked you to apply for Senior Data Scientist')
+  const board = page.getByRole('list', { name: 'Jobs' })
+  await expect(board.getByText('Asked to apply', { exact: true })).toHaveCount(1)
+  await shot(page, '22-job-board-asked-to-apply', { fullPage: false })
+  await requests.getByRole('link', { name: 'Answer' }).click()
+  await expect(page).toHaveURL(new RegExp(`/jobs/${jobs[0]}$`))
+  await expect(page.getByRole('region', { name: 'Your connection' })).toContainText('Revealed on')
+  await expect(page.getByRole('button', { name: 'Withdraw' })).toHaveCount(0)
+  await expect(glance).toContainText('1 revealed')
+  await expect(glance).toContainText('1 asked to apply')
+  const asked = page.getByRole('region', { name: 'Asked to apply' })
+  await expect(asked).toContainText('Fjord Grocery ApS asks you to apply')
+  await expect(asked.getByRole('button', { name: 'Apply' })).toBeDisabled()
+  await asked.getByLabel('Cover letter').fill('Dear Fjord Grocery, I would love to build your demand forecasts.')
+  await asked.getByLabel('Files').setInputFiles({
+    name: 'john-doe-cv.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('# John Doe\n\nData scientist in Copenhagen.\n'),
+  })
+  await asked.scrollIntoViewIfNeeded()
+  await shot(page, '23-job-listing-apply', { fullPage: false })
+  await asked.getByRole('button', { name: 'Apply' }).click()
+  const sent = page.getByRole('region', { name: 'Your application' })
+  await expect(sent).toContainText('You applied')
+  await expect(sent.getByRole('link', { name: 'john-doe-cv.md' })).toBeVisible()
+  await expect(glance).toContainText('1 application')
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+
+  // The employer sees the application, and can download its file.
+  card = page.getByRole('listitem').filter({ hasText: 'John Doe' })
+  await page.goto(`/jobs/${jobs[0]}/shortlist`)
+  await expect(card.getByRole('button', { name: 'Applied: John Doe' })).toBeDisabled()
+  const application = page.getByRole('region', { name: 'Application from John Doe' })
+  await expect(application).toContainText('I would love to build your demand forecasts.')
+  const download = page.waitForEvent('download')
+  await application.getByRole('link', { name: 'john-doe-cv.md' }).click()
+  expect((await download).suggestedFilename()).toBe('john-doe-cv.md')
+  await expect(counts).toContainText('1 application')
+  await application.scrollIntoViewIfNeeded()
+  await shot(page, '24-shortlist-application', { fullPage: false })
+
+  // Lynfjord Power: revealed and asked, John declines.
+  card = await employer(jobs[1])
+  await card.getByRole('button', { name: /^Reveal: / }).click()
+  await card.getByRole('button', { name: 'Request application: John Doe' }).click()
+  await expect(card.getByRole('button', { name: 'Waiting for application: John Doe' })).toBeDisabled()
+  await page.goto(`/candidates/${candidate}/jobs/${jobs[1]}`)
+  await page.getByRole('region', { name: 'Asked to apply' }).getByRole('button', { name: 'Decline' }).click()
+  await expect(page.getByRole('region', { name: 'Your application' })).toContainText('You declined')
+  await expect(glance).toContainText('1 asked to apply')
+  await expect(glance).toContainText('0 applications')
+  await page.goto(`/jobs/${jobs[1]}/shortlist`)
+  await expect(page.getByRole('button', { name: 'Declined: John Doe' })).toBeDisabled()
+  await expect(page.getByRole('region', { name: 'Application from John Doe' })).toHaveCount(0)
 })
 
 test('a real candidate is refused paid calls, and told about the demo', async ({ page }) => {
