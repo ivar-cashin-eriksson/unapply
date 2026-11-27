@@ -131,8 +131,19 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   table, reveals limited to the job's `reveal_quota`. The shortlist demo stores the
   synthetic pool. Revealing shows no identity yet: that needs payment and consent.
 
+- Decided flow (2026-11-27, tasks 14 and 16 of `docs/autonomous-plan.md`): a
+  candidate gets in with one click, **Connect my profile**, which is their consent to
+  be ranked anonymously and revealed. The employer pays to reveal anyone connected,
+  then can ask anyone revealed to apply properly with written material. One button
+  steps through Reveal, then Request application; a request needs a reveal first.
+  Quotes stay hidden until reveal. A job has a number of vacancies.
+
 ### M6: Candidate view
 - "You're #4 of 37 for this role." The profile, without the assessment.
+- A job board to search listings and connect, with a fit indicator for each (a band
+  from own levels before connecting, the place among connected candidates after) and
+  each listing's vacancies and counts: connected, revealed, asked to apply,
+  applications.
 
 ## The key experiment (run alongside M1–M4)
 
