@@ -5,6 +5,7 @@ import type {
   CandidateProfile,
   CandidateSummary,
   Connection,
+  Dashboard,
   Fit,
   JobSummary,
   Listing,
@@ -430,6 +431,42 @@ export function overview(patch: Partial<Overview> = {}): Overview {
     ],
     counts: { connected: 4, revealed: 2, requested: 1, applied: 1 },
     vacancies: 1,
+    ...patch,
+  }
+}
+
+/** John's dashboard (`GET /candidates/<name>/dashboard`): own levels and quote counts only. */
+export function dashboard(patch: Partial<Dashboard> = {}): Dashboard {
+  return {
+    candidate: 'john-doe',
+    approved: true,
+    skills: 3,
+    rated: 2,
+    documents: 7,
+    statements: 1,
+    areas: [
+      {
+        category: 'technology',
+        skills: [
+          {
+            name: 'python',
+            self_level: 4,
+            documents: 4,
+            statements: 0,
+            comparison: { candidates: 9, levels: [0, 1, 2, 4, 2], median: 4 },
+          },
+          { name: 'lightgbm', self_level: 3, documents: 2, statements: 1, comparison: null },
+        ],
+      },
+      {
+        category: 'domain',
+        skills: [{ name: 'retail analytics', self_level: null, documents: 1, statements: 0, comparison: null }],
+      },
+    ],
+    compared_with: 12,
+    min_group: 5,
+    in_demand: ['excel', 'databricks'],
+    following: [{ skill: 'gradient boosting', because: ['lightgbm'] }],
     ...patch,
   }
 }

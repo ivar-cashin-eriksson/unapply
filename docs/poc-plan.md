@@ -189,6 +189,12 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   candidates in aggregate (counts, failed hard filters, score histograms, skills
   against the rubric's, and the funnel against the vacancies). No quotes or
   identities.
+- Done (task 19, `src/unapply/dashboard.py`,
+  `frontend/src/pages/candidate/Dashboard.tsx`): the candidate's Dashboard step:
+  skills by area with own levels and quote counts, own levels compared with other
+  candidates' (groups of at least five), and tips from the board's skills and the
+  taxonomy. Built from candidate views of the profiles, so no estimate or claim
+  support can reach it.
 
 ## The key experiment (run alongside M1–M4)
 

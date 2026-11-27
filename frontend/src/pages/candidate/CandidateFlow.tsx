@@ -32,7 +32,7 @@ export function CandidateList() {
   )
 }
 
-/** A candidate's steps: material, review, questions, profile and the job board. */
+/** A candidate's steps: material, review, questions, profile, dashboard and the job board. */
 export function CandidateFlow() {
   const { name = '' } = useParams()
   const summary = useResource(() => api.candidate(name), name)
@@ -50,6 +50,7 @@ export function CandidateFlow() {
     { to: 'review', label: 'Review', done: s.approved, locked: !s.has_profile },
     { to: 'questions', label: 'Questions', done: interviewed(s), locked: !s.approved },
     { to: 'profile', label: 'Profile', done: s.approved, locked: !s.has_profile },
+    { to: 'dashboard', label: 'Dashboard', done: false, locked: !s.has_profile },
     // Anyone can read the board; connecting to a job needs an approved profile.
     { to: 'jobs', label: 'Jobs', done: false },
   ]

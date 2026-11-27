@@ -33,6 +33,7 @@ from unapply.api.models import (
     SkillEdit,
 )
 from unapply.app import demo, forms
+from unapply.dashboard import Dashboard, dashboard
 from unapply.estimation.claims import claim_support
 from unapply.estimation.skills import estimate_skills, skills_without_estimate
 from unapply.ingest.documents import load_path
@@ -310,6 +311,23 @@ def get_profile(name: str, ctx: Ctx) -> CandidateProfile:
     if profile is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No profile yet.")
     return CandidateProfile.of(profile)
+
+
+@router.get("/{name}/dashboard")
+def get_dashboard(name: str, ctx: Ctx) -> Dashboard:
+    """Sum up the candidate's own profile: skills by area, comparisons and tips.
+
+    Own levels and counts of quotes from the candidate's material only, never the
+    assessment. Other candidates' own levels are shown in aggregate, over at
+    least five of them. Tips name skills the jobs on the board ask for and skills
+    that follow from the candidate's, never a job's rubric. No model is called.
+    """
+    try:
+        return dashboard(ctx.repo, name)
+    except ValueError as e:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Extract a profile from your material first."
+        ) from e
 
 
 @router.get("/{name}/demo/review")

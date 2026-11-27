@@ -164,3 +164,11 @@ export const FILTERS: Record<HardFilterCheck['name'], string> = {
   work_permit: 'Work permit',
   min_years_experience: 'Years of experience',
 }
+
+/** "2 lower, 3 the same and 4 higher": where the candidate's level falls among the others'. */
+export function placeAmong(levels: number[], own: SkillLevel): string {
+  const lower = levels.slice(0, own - 1).reduce((a, b) => a + b, 0)
+  const same = levels[own - 1] ?? 0
+  const higher = levels.slice(own).reduce((a, b) => a + b, 0)
+  return `${lower} lower, ${same} the same, ${higher} higher`
+}
