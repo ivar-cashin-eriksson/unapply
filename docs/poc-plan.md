@@ -184,6 +184,11 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   applications) on the board, the listing and the shortlist; requests to apply on
   top of the board and on the listing, with the application form; once revealed,
   the listing says so and the connection can't be withdrawn.
+- Done (task 17, `src/unapply/matching/overview.py`,
+  `frontend/src/pages/employer/Overview.tsx`): the job's Overview step, with the
+  candidates in aggregate (counts, failed hard filters, score histograms, skills
+  against the rubric's, and the funnel against the vacancies). No quotes or
+  identities.
 
 ## The key experiment (run alongside M1–M4)
 

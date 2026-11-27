@@ -109,6 +109,11 @@ npm run dev                   # http://localhost:5173
   application**, then waits, then shows **Applied** with the application (letter
   and files to download) or **Declined**. Until a reveal, no quotes and no role
   summaries are shown. The job's counts sit above the list, beside its vacancies.
+  The **overview** sums up the job's candidates in aggregate, never one of them:
+  how many connected, were matched and meet every hard filter (and which filters
+  fail most), histograms of the totals and of the own and estimated scores with
+  their medians, the rubric's skills and other common skills among candidates,
+  and how far candidates got against the vacancies.
 - **Demos:** "Try the John Doe demo", "Try the Fjord Grocery demo" and "Try the
   shortlist demo" (Fjord Grocery with its rubric approved and the 12 synthetic
   candidates of `tests/fixtures/pool`) replay recorded answers, so they cost
@@ -207,6 +212,10 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   role summaries only once revealed, with the candidate's name and contact details.
   `/jobs/<name>/intents` lists the early reveal and application requests, which
   only recorded intent, as history.
+- **Overview** (`/jobs/<name>/overview?scorer=`): the job's candidates in
+  aggregate on the current rubric version, from stored matches: counts per hard
+  filter, scores per tenth with medians, skill counts and the job's counts. No
+  quote, name, alias or profile id; nothing is recorded and no model is called.
 - **Hiring** (`/jobs/<name>/candidates/<profile id>/reveal`,
   `.../request-application`, `.../files/<id>`; `/candidates/<name>/applications/<job>`,
   `.../decline`, `/candidates/<name>/contact`): reveal a connected candidate (quota,

@@ -8,6 +8,7 @@ import type {
   Fit,
   JobSummary,
   Listing,
+  Overview,
   Questions,
   RankedCandidate,
   ReviewForm,
@@ -399,4 +400,36 @@ export function progressed(stage: Exclude<Stage, 'connected'>, patch: Partial<Co
     },
     ...patch,
   })
+}
+
+/** A job's candidates in aggregate (`GET /jobs/<name>/overview`): counts only. */
+export function overview(patch: Partial<Overview> = {}): Overview {
+  const bins = (filled: Record<number, number>) => Array.from({ length: 10 }, (_, i) => filled[i] ?? 0)
+  return {
+    job: 'fjord-grocery',
+    rubric_version: 1,
+    scorer: 'baseline',
+    connected: 4,
+    matched: 3,
+    passed_hard_filters: 2,
+    filters: [
+      { name: 'work_permit', passed: 2, failed: 1, unknown: 0 },
+      { name: 'location', passed: 2, failed: 0, unknown: 1 },
+    ],
+    totals: { bins: bins({ 6: 1, 9: 2 }), median: 0.9 },
+    own: { bins: bins({ 7: 1, 8: 2 }), median: 0.85 },
+    estimated: { bins: bins({ 5: 1, 7: 2 }), median: 0.72 },
+    rubric_skills: [
+      { skill: 'spark', candidates: 1, related: 0 },
+      { skill: 'python', candidates: 3, related: 0 },
+      { skill: 'sql', candidates: 2, related: 1 },
+    ],
+    other_skills: [
+      { skill: 'docker', candidates: 2 },
+      { skill: 'git', candidates: 1 },
+    ],
+    counts: { connected: 4, revealed: 2, requested: 1, applied: 1 },
+    vacancies: 1,
+    ...patch,
+  }
 }

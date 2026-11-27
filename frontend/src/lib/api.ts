@@ -20,6 +20,7 @@ import type {
   JobSummary,
   Listing,
   MaterialFile,
+  Overview,
   Questions,
   Ranking,
   ReviewForm,
@@ -159,6 +160,8 @@ export const api = {
     json<Ranking>('POST', `${j(name)}/match?scorer=${scorer}`),
   shortlist: (name: string, scorer: Scorer) =>
     json<Shortlist>('GET', `${j(name)}/shortlist?scorer=${scorer}`),
+  overview: (name: string, scorer: Scorer) =>
+    json<Overview>('GET', `${j(name)}/overview?scorer=${scorer}`),
   // The employer's steps on a candidate: reveal, then request an application
   reveal: (name: string, profileId: string) =>
     json<EmployerProgress>('POST', `${j(name)}/candidates/${encodeURIComponent(profileId)}/reveal`),

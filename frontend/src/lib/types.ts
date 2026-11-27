@@ -479,3 +479,52 @@ export interface BoardDemo {
   /** The demo jobs on the board, newest first. */
   jobs: string[]
 }
+
+/** How the matched candidates did on one hard filter (`GET /jobs/<name>/overview`). */
+export interface FilterCount {
+  name: HardFilterCheck['name']
+  passed: number
+  failed: number
+  /** The profile doesn't say: not excluded. */
+  unknown: number
+}
+
+/** Candidates per tenth of a score from 0 to 1; the last bin includes 1. */
+export interface Distribution {
+  bins: number[]
+  median: number | null
+}
+
+export interface RubricSkillCount {
+  skill: string
+  /** Candidates with the skill itself. */
+  candidates: number
+  /** Candidates without it, but with a skill that counts for it ("dbt" for "sql"). */
+  related: number
+}
+
+export interface SkillCount {
+  skill: string
+  candidates: number
+}
+
+/** A job's candidates in aggregate: counts only, never one candidate. */
+export interface Overview {
+  job: string
+  rubric_version: number
+  scorer: Scorer
+  connected: number
+  matched: number
+  passed_hard_filters: number
+  /** Those failed most first. */
+  filters: FilterCount[]
+  totals: Distribution
+  own: Distribution
+  estimated: Distribution
+  /** In rubric order. */
+  rubric_skills: RubricSkillCount[]
+  /** Skills outside the rubric, most common first. */
+  other_skills: SkillCount[]
+  counts: ListingCounts
+  vacancies: number
+}

@@ -213,6 +213,28 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   // Reveals are the job's, whichever scorer ranks.
   await expect(page.getByText('Reveals used: 1 of 10')).toBeVisible()
   await shot(page, '14-shortlist-llm', { fullPage: false })
+
+  // The overview: the same pool in aggregate, with no one named or aliased.
+  await page.getByRole('navigation', { name: 'Job steps' }).getByRole('link', { name: /Overview/ }).click()
+  await expect(page).toHaveURL(/\/overview$/)
+  const stats = page.getByLabel('Candidates', { exact: true })
+  await expect(stats).toContainText('Connected12')
+  await expect(stats).toContainText('Matched12')
+  await expect(stats).toContainText('Meet every requirement9')
+  const funnel = page.getByRole('list', { name: 'How far candidates got' })
+  await expect(funnel.getByRole('meter', { name: 'Revealed' })).toHaveAttribute('aria-valuenow', '1')
+  await expect(funnel.getByRole('meter', { name: 'Asked to apply' })).toHaveAttribute('aria-valuenow', '1')
+  await expect(page.getByRole('img', { name: /^Baseline total: .* median \d\.\d\d/ })).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Requirements not met' }).getByRole('meter').first()).toBeVisible()
+  await expect(page.getByRole('list', { name: "The rubric's skills" }).getByRole('meter').first()).toBeVisible()
+  const main = (await page.locator('main').textContent())!
+  expect(main).not.toMatch(POOL_NAMES)
+  for (const alias of aliases) expect(main).not.toContain(alias)
+  await shot(page, '25-overview')
+  // The LLM scorer's totals, from the matches just replayed.
+  await page.getByRole('radio', { name: 'LLM' }).click()
+  await expect(page.getByRole('img', { name: /^LLM total: .* median \d\.\d\d/ })).toBeVisible()
+  await expect(stats).toContainText('Matched12')
 })
 
 test('the job board in John Doe\'s demo: search, read, connect and withdraw', async ({ page }) => {
