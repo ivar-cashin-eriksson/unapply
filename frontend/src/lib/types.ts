@@ -44,13 +44,19 @@ export interface Evidence {
   locator: string | null
 }
 
+/** How much of a date is known (`unapply.schemas.DatePrecision`). */
+export type DatePrecision = 'year' | 'month'
+
 export interface Experience {
   id: string
   title: string
   organisation: string
-  /** ISO date, "YYYY-MM-DD". */
+  /** ISO date, "YYYY-MM-DD": the first day of the month, or of the year. */
   start: string | null
   end: string | null
+  /** Whether `start` is known to the month or only to the year. */
+  start_precision: DatePrecision
+  end_precision: DatePrecision
   summary: string
   skills: string[]
   evidence_ids: string[]
@@ -285,6 +291,8 @@ export interface AnonymousExperience {
   organisation: string
   start: string | null
   end: string | null
+  start_precision: DatePrecision
+  end_precision: DatePrecision
   summary: string
 }
 

@@ -21,9 +21,13 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   (`unapply review export` / `apply`): own levels, removals, corrections, added skills.
 - Result on the author's own material (CV, resume-builder profile, LinkedIn, GitHub):
   48 of the 50 skills in their hand-written list extracted, no invented quotes.
-- Known gaps: dates are year precision when the source gives only years. Synonyms
-  ("radiotherapy planning" vs "radiation therapy planning") are now merged through
-  the skill taxonomy (below).
+- Dates keep their precision: a date the source gives only as a year is stored and
+  shown as a year ("2019"), one with a month as a month ("2019-08"), so January is
+  no longer mistaken for a year. Synonyms ("radiotherapy planning" vs "radiation
+  therapy planning") are merged through the skill taxonomy (below).
+- Folders skip files that describe the folder rather than the candidate (READMEs,
+  JSON or YAML schemas); `unapply ingest --exclude` leaves out more. Uploads in the
+  API and the frontend are each read; a candidate removes a file to leave it out.
 
 ### M2a: Skill estimation and claim support (done)
 - `unapply estimate`: one model call estimates every skill's level, confidence and a

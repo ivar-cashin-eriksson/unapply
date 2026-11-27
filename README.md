@@ -270,6 +270,7 @@ comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ran
 | `uv add <package>` | Add a runtime dependency. Use `uv add --dev <package>` for a local-only tool |
 | `uv run unapply ingest data/me/ --github <user> --out data/me/profile.json` | Extract a draft profile (calls the Claude API; needs `ANTHROPIC_API_KEY` in `.env`) |
 | `uv run unapply ingest ... --record answer.json` / `--replay answer.json` | Save the model's answer, or reuse a saved one without calling the API |
+| `uv run unapply ingest data/me/ --exclude old_cv.pdf --exclude "drafts/*" ...` | Leave files out. In a folder, README files and JSON or YAML schemas are always left out (they describe the folder, not you); every skipped file is listed with the reason |
 | `uv run unapply job extract ad.md --out data/jobs/acme.json` | Extract a rubric from a job ad (calls the Claude API: add `--allow-api`) |
 | `uv run unapply job export data/jobs/acme.json --sheet data/jobs/acme.yaml` | Write a rubric sheet to edit and approve |
 | `uv run unapply job apply data/jobs/acme.json data/jobs/acme.yaml --out data/jobs/acme.json` | Apply the edited rubric sheet |

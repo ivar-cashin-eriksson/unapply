@@ -93,8 +93,8 @@ export function Profile() {
                     <p className="font-medium">
                       {x.title} <span className="font-normal text-muted-foreground">· {x.organisation}</span>
                     </p>
-                    {period(x.start, x.end) && (
-                      <p className="text-sm text-muted-foreground">{period(x.start, x.end)}</p>
+                    {period(x.start, x.end, x.start_precision, x.end_precision) && (
+                      <p className="text-sm text-muted-foreground">{period(x.start, x.end, x.start_precision, x.end_precision)}</p>
                     )}
                     {x.summary && <p className="mt-1.5 text-sm leading-relaxed">{x.summary}</p>}
                   </li>

@@ -16,9 +16,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from unapply.dates import parse_partial_date
 from unapply.ingest.documents import SourceDocument
 from unapply.llm import StructuredLLM
 from unapply.schemas import (
+    DatePrecision,
     Evidence,
     Experience,
     Preferences,
@@ -218,12 +220,16 @@ def build_profile(
         if not ev:
             result.unsupported.append(f"experience: {x.title} at {x.organisation}")
             continue
+        start, start_precision = _parse_date(x.start)
+        end, end_precision = _parse_date(x.end)
         experiences.append(
             Experience(
                 title=x.title,
                 organisation=x.organisation,
-                start=_parse_date(x.start),
-                end=_parse_date(x.end),
+                start=start,
+                end=end,
+                start_precision=start_precision,
+                end_precision=end_precision,
                 summary=x.summary,
                 skills=sorted({canonical_skill(s) for s in x.skills}),
                 evidence_ids=[e.id for e in ev],
@@ -291,12 +297,14 @@ def normalise_quote(text: str) -> str:
     return " ".join(text.split())
 
 
-def _parse_date(value: str | None) -> date | None:
-    """Parse 'YYYY-MM' or 'YYYY' to the first day of that month or year."""
-    if not value:
-        return None
-    m = re.fullmatch(r"\s*(\d{4})(?:-(\d{1,2}))?\s*", value)
-    if not m:
-        return None
-    month = int(m.group(2)) if m.group(2) else 1
-    return date(int(m.group(1)), month if 1 <= month <= 12 else 1, 1)
+def _parse_date(value: str | None) -> tuple[date | None, DatePrecision]:
+    """Parse the model's 'YYYY-MM' or 'YYYY' to a date and its precision.
+
+    Unreadable dates are unknown; a month out of range keeps only the year.
+    """
+    try:
+        parsed = parse_partial_date(value)
+    except ValueError:
+        m = re.match(r"\s*(\d{4})", value or "")
+        parsed = (date(int(m.group(1)), 1, 1), DatePrecision.YEAR) if m else None
+    return parsed or (None, DatePrecision.MONTH)

@@ -16,6 +16,7 @@ from xml.sax.saxutils import escape, quoteattr
 
 from pydantic import BaseModel, Field
 
+from unapply.dates import format_partial_date
 from unapply.llm import StructuredLLM
 from unapply.matching.anonymise import redact
 from unapply.matching.scoring import ScoringResult
@@ -145,8 +146,8 @@ def render_match_prompt(
     lines.append(f"<headline>{text(profile.headline)}</headline>")
     lines.append("<roles>")
     for x in profile.experiences:
-        start = f"{x.start:%Y-%m}" if x.start else "?"
-        end = f"{x.end:%Y-%m}" if x.end else "present"
+        start = format_partial_date(x.start, x.start_precision) or "?"
+        end = format_partial_date(x.end, x.end_precision) or "present"
         lines.append(
             f"<role from={quoteattr(start)} to={quoteattr(end)} "
             f"evidence={quoteattr(cited(x.evidence_ids))}>"

@@ -1,6 +1,6 @@
 // Labels and formats shared by the pages, matching the Streamlit app's wording.
 
-import type { CriterionKind, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
+import type { CriterionKind, DatePrecision, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
 
 /** The shared skill scale, 1 to 5 (`unapply.schemas.SkillLevel`). */
 export const LEVELS: { value: SkillLevel; name: string; meaning: string }[] = [
@@ -49,20 +49,25 @@ export function fileSize(bytes: number): string {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * An ISO date ("2022-03-01") as "Mar 2022", or just the year for January: dates
- * known only to the year are stored as 1 January, so a month would be made up.
+ * An ISO date ("2022-03-01") as "Mar 2022", or just the year when it is known only
+ * to the year (it is then stored as 1 January, so a month would be made up).
  */
-export function month(iso: string | null): string {
+export function month(iso: string | null, precision: DatePrecision = 'month'): string {
   if (!iso) return ''
   const [year, m] = iso.split('-')
   const n = Number(m)
-  return !n || n === 1 ? year : `${MONTHS[n - 1]} ${year}`
+  return precision === 'year' || !n ? year : `${MONTHS[n - 1]} ${year}`
 }
 
 /** When something happened, such as "Mar 2022 – now"; empty if unknown. */
-export function period(start: string | null, end: string | null): string {
+export function period(
+  start: string | null,
+  end: string | null,
+  startPrecision: DatePrecision = 'month',
+  endPrecision: DatePrecision = 'month',
+): string {
   if (!start && !end) return ''
-  return `${month(start) || '?'} – ${month(end) || 'now'}`
+  return `${month(start, startPrecision) || '?'} – ${month(end, endPrecision) || 'now'}`
 }
 
 /** A comma-separated list as typed, as a clean list. */

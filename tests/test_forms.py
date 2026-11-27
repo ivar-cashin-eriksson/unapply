@@ -208,3 +208,19 @@ def test_edited_rubric_table_makes_a_valid_sheet():
     assert r.criteria[0].source_quote == "Strong Python."
     assert (r.criteria[1].skill, r.criteria[1].weight) == ("kubernetes", 3.0)
     assert r.version == 2 and r.approved_at is not None
+
+
+def test_evidence_details_give_each_quote_in_full_with_its_source():
+    from unapply.app.forms import evidence_details
+
+    cv = Source(kind=SourceKind.CV, uri="C:/uploads/jane/cv.pdf")
+    said = Source(kind=SourceKind.INTERVIEW)
+    long_quote = "Led the migration of 40 dbt models;\n" + "tested every one. " * 20
+    paged = Evidence(source_id=cv.id, quote=f"  {long_quote}  ", locator="page 2")
+    own = Evidence(source_id=said.id, quote="I used it every day.")
+    profile = Profile(sources=[cv, said], evidence=[paged, own])
+    assert evidence_details(profile, [paged.id, own.id]) == [
+        {"source": "cv · cv.pdf · page 2", "quote": long_quote.strip()},
+        {"source": "your statement", "quote": "I used it every day."},
+    ]
+    assert evidence_details(profile, []) == []

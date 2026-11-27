@@ -88,6 +88,8 @@ export function profile(patch: Partial<CandidateProfile> = {}): CandidateProfile
         organisation: 'Nordic Retail Group',
         start: '2020-03-01',
         end: null,
+        start_precision: 'month',
+        end_precision: 'month',
         summary: 'Demand forecasting for 400 stores.',
         skills: ['forecasting'],
         evidence_ids: ['ev-1'],
@@ -182,7 +184,15 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): A
     alias: `Candidate ${id.slice(0, 4).toUpperCase()}`,
     headline: `Data scientist ${id}`,
     experiences: [
-      { title: 'Data Scientist', organisation: 'Example Retail', start: '2019-03-01', end: null, summary: 'Forecasts demand.' },
+      {
+        title: 'Data Scientist',
+        organisation: 'Example Retail',
+        start: '2019-03-01',
+        end: null,
+        start_precision: 'month',
+        end_precision: 'month',
+        summary: 'Forecasts demand.',
+      },
     ],
     evidence: [{ id: `${id}-e1`, source: 'cv', quote: `Built forecasts in Python (${id})` }],
     skills: SHORTLIST_SKILLS.map((skill, i) => ({

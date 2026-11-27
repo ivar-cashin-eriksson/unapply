@@ -138,6 +138,13 @@ class ExperienceRow(Base):
     organisation: Mapped[str] = mapped_column(Text)
     start: Mapped[date | None] = mapped_column(Date)
     end: Mapped[date | None] = mapped_column(Date)
+    # "year" or "month" (`DatePrecision`): how much of `start` and `end` is known.
+    start_precision: Mapped[str] = mapped_column(
+        String(8), default="month", server_default="month"
+    )
+    end_precision: Mapped[str] = mapped_column(
+        String(8), default="month", server_default="month"
+    )
     summary: Mapped[str] = mapped_column(Text, default="")
     skills: Mapped[list[str]] = mapped_column(default=list)
     evidence_ids: Mapped[list[str]] = mapped_column(default=list)

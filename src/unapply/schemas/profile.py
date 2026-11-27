@@ -155,6 +155,18 @@ class Skill(BaseModel):
         return int(self.self_level) - int(self.estimate.level)
 
 
+class DatePrecision(StrEnum):
+    """How much of a date is known.
+
+    A date known only to the year is stored as 1 January of that year, and one known
+    to the month as the first of that month; the precision says which, so the date
+    is shown as written ("2019" or "2019-08") and a month is never made up.
+    """
+
+    YEAR = "year"
+    MONTH = "month"
+
+
 class Experience(BaseModel):
     """A job, project or education entry.
 
@@ -170,6 +182,10 @@ class Experience(BaseModel):
         First day, if known.
     end : date or None
         Last day. None means it is current or unknown.
+    start_precision : DatePrecision
+        Whether `start` is known to the month (the default) or only to the year.
+    end_precision : DatePrecision
+        The same for `end`.
     summary : str
         What the candidate did.
     skills : list of str
@@ -180,7 +196,8 @@ class Experience(BaseModel):
     Raises
     ------
     ValueError
-        If `end` is before `start`.
+        If `end` is before `start`. When either is known only to the year, only
+        the years are compared, so "2019-08" to "2019" is in order.
     """
 
     id: UUID = Field(default_factory=uuid4)
@@ -188,14 +205,21 @@ class Experience(BaseModel):
     organisation: str
     start: date | None = None
     end: date | None = None
+    start_precision: DatePrecision = DatePrecision.MONTH
+    end_precision: DatePrecision = DatePrecision.MONTH
     summary: str = ""
     skills: list[str] = Field(default_factory=list)
     evidence_ids: list[UUID] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _dates_in_order(self) -> Experience:
-        if self.start and self.end and self.end < self.start:
-            raise ValueError("experience ends before it starts")
+        if self.start and self.end:
+            if DatePrecision.YEAR in (self.start_precision, self.end_precision):
+                in_order = self.end.year >= self.start.year
+            else:
+                in_order = self.end >= self.start
+            if not in_order:
+                raise ValueError("experience ends before it starts")
         return self
 
 

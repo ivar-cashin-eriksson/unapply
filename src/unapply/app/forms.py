@@ -8,14 +8,15 @@ input the same way.
 from __future__ import annotations
 
 import math
-from datetime import date
+from pathlib import PurePosixPath
 from typing import Any
 
 import yaml
 
+from unapply.dates import format_partial_date
 from unapply.interview.questions import Question, Reason
 from unapply.interview.sheet import export_interview_sheet
-from unapply.schemas import Job, Profile, SourceKind
+from unapply.schemas import Experience, Job, Profile, SourceKind
 
 LEVEL_NAMES = {1: "aware", 2: "basic", 3: "working", 4: "advanced", 5: "expert"}
 # How levels are shown and chosen in the app, such as "4 · advanced".
@@ -91,6 +92,41 @@ def evidence_lines(profile: Profile, ids: list) -> list[str]:
     return lines
 
 
+def evidence_details(profile: Profile, ids: list) -> list[dict[str, str]]:
+    """Describe evidence in full, for a detail view the review table can't fit.
+
+    Parameters
+    ----------
+    profile : Profile
+        The profile the evidence belongs to.
+    ids : list of UUID
+        Evidence ids.
+
+    Returns
+    -------
+    list of dict
+        One per piece of evidence, in order: "source", such as "cv · cv.md · page
+        2" or "your statement", and "quote", the quote exactly as written, line
+        breaks included.
+    """
+    sources = {s.id: s for s in profile.sources}
+    evidence = {e.id: e for e in profile.evidence}
+    details = []
+    for i in ids:
+        e = evidence[i]
+        source = sources[e.source_id]
+        if source.kind == SourceKind.INTERVIEW:
+            parts = ["your statement"]
+        else:
+            parts = [source.kind.value]
+            if source.uri:
+                parts.append(PurePosixPath(source.uri.rstrip("/")).name)
+        if e.locator:
+            parts.append(e.locator)
+        details.append({"source": " · ".join(parts), "quote": e.quote.strip()})
+    return details
+
+
 def skill_rows(profile: Profile) -> list[dict[str, Any]]:
     """Rows for the review table of skills.
 
@@ -135,8 +171,8 @@ def experience_rows(profile: Profile) -> list[dict[str, Any]]:
             "keep": True,
             "title": x.title,
             "organisation": x.organisation,
-            "start": month(x.start),
-            "end": month(x.end),
+            "start": format_partial_date(x.start, x.start_precision),
+            "end": format_partial_date(x.end, x.end_precision),
             "summary": x.summary,
         }
         for x in profile.experiences
@@ -280,31 +316,27 @@ def interview_sheet(
     return yaml.safe_dump(sheet, allow_unicode=True, sort_keys=False)
 
 
-def period(start: date | None, end: date | None) -> str:
+def period(experience: Experience) -> str:
     """Describe when something happened, such as "2019-08 to now"; empty if unknown.
+
+    Each date is written as precisely as it is known: "2019" or "2019-08".
 
     Parameters
     ----------
-    start : date or None
-        First day.
-    end : date or None
-        Last day; None means now (when there is a start).
+    experience : Experience
+        The entry; its `end` None means now (when there is a start).
 
     Returns
     -------
     str
         The period, or "" when neither date is known.
     """
-    if start is None and end is None:
+    x = experience
+    if x.start is None and x.end is None:
         return ""
-    return f"{month(start) or '?'} to {month(end) or 'now'}"
-
-
-def month(value: date | None) -> str:
-    """Write a date as YYYY, or YYYY-MM when it isn't January; empty for None."""
-    if value is None:
-        return ""
-    return str(value.year) if value.month == 1 else f"{value:%Y-%m}"
+    start = format_partial_date(x.start, x.start_precision) or "?"
+    end = format_partial_date(x.end, x.end_precision) or "now"
+    return f"{start} to {end}"
 
 
 def _missing(value: Any) -> bool:  # noqa: ANN401

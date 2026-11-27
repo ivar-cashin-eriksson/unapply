@@ -7,6 +7,7 @@ import yaml
 
 from unapply.review import ReviewError, apply_review_sheet, export_review_sheet
 from unapply.schemas import (
+    DatePrecision,
     Evidence,
     Experience,
     Profile,
@@ -34,6 +35,7 @@ def profile():
                 organisation="Acme",
                 start=date(2021, 3, 1),
                 end=date(2024, 1, 1),
+                end_precision=DatePrecision.YEAR,
                 summary='Pipelines with "quotes": and colons',
                 evidence_ids=[kafka.id],
             )

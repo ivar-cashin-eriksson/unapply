@@ -11,6 +11,7 @@ from unapply.schemas.job import (
 )
 from unapply.schemas.profile import (
     ClaimSupport,
+    DatePrecision,
     Evidence,
     Experience,
     Preferences,
@@ -29,6 +30,7 @@ __all__ = [
     "Criterion",
     "CriterionKind",
     "CriterionScore",
+    "DatePrecision",
     "Evidence",
     "Experience",
     "HardFilters",

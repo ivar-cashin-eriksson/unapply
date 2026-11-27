@@ -10,14 +10,15 @@ of kind `interview`, so they stay distinguishable from evidence found in documen
 from __future__ import annotations
 
 import json
-import re
 from datetime import date, datetime
 from typing import Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from unapply.dates import format_partial_date, parse_partial_date
 from unapply.schemas import (
+    DatePrecision,
     Evidence,
     Preferences,
     Profile,
@@ -125,8 +126,8 @@ def export_review_sheet(profile: Profile) -> str:
             "    keep: true",
             f"    title: {_s(x.title)}",
             f"    organisation: {_s(x.organisation)}",
-            f"    start: {_d(x.start)}",
-            f"    end: {_d(x.end)}",
+            f"    start: {_d(x.start, x.start_precision)}",
+            f"    end: {_d(x.end, x.end_precision)}",
             f"    summary: {_s(x.summary)}",
         ]
         out += [f"    # {q}" for q in _evidence_lines(x.evidence_ids, quotes)]
@@ -194,13 +195,17 @@ def apply_review_sheet(profile: Profile, sheet_text: str) -> Profile:
         if not row.keep:
             continue
         x = experiences[row.id]
+        start, start_precision = _parse_date(row.start, f"start of {row.title}")
+        end, end_precision = _parse_date(row.end, f"end of {row.title}")
         new_experiences.append(
             x.model_copy(
                 update={
                     "title": row.title,
                     "organisation": row.organisation,
-                    "start": _parse_date(row.start, f"start of {row.title}"),
-                    "end": _parse_date(row.end, f"end of {row.title}"),
+                    "start": start,
+                    "end": end,
+                    "start_precision": start_precision,
+                    "end_precision": end_precision,
                     "summary": row.summary,
                     "skills": sorted({canonical_skill(s) for s in x.skills}),
                 }
@@ -358,17 +363,18 @@ def _s(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _d(value: date | None) -> str:
-    """Write a date as 'YYYY', or 'YYYY-MM' when it isn't January."""
-    if value is None:
-        return ""
-    return str(value.year) if value.month == 1 else f'"{value:%Y-%m}"'
+def _d(value: date | None, precision: DatePrecision) -> str:
+    """Write a date as 'YYYY' or as a quoted 'YYYY-MM', as precise as it is known."""
+    text = format_partial_date(value, precision)
+    return f'"{text}"' if "-" in text else text
 
 
-def _parse_date(value: str | int | None, what: str) -> date | None:
-    if value in (None, ""):
-        return None
-    m = re.fullmatch(r"(\d{4})(?:-(\d{1,2}))?", str(value).strip())
-    if not m or not 1 <= int(m.group(2) or 1) <= 12:
-        raise ReviewError(f"{what}: {value!r} isn't YYYY or YYYY-MM")
-    return date(int(m.group(1)), int(m.group(2) or 1), 1)
+def _parse_date(
+    value: str | int | None, what: str
+) -> tuple[date | None, DatePrecision]:
+    """Read a sheet date and its precision; an empty date is unknown."""
+    try:
+        parsed = parse_partial_date(value)
+    except ValueError:
+        raise ReviewError(f"{what}: {value!r} isn't YYYY or YYYY-MM") from None
+    return parsed or (None, DatePrecision.MONTH)
