@@ -30,10 +30,14 @@ end-to-end tests start their own servers and stop them; don't leave others runni
 
 ## Autonomous runs
 
-When working through `docs/autonomous-plan.md`, the user has given permission to
-commit, push, change branches and merge into `dev` (or `user/claude`), exactly as its
-ground rules describe. That permission covers nothing else: never `main`, never
-force-push, and still no paid API calls.
+When working through the `autonomous` GitHub issues as `docs/autonomous.md`
+describes, the user has given permission to commit, push, change branches, merge
+into `dev` (or `user/claude`), and comment on, label, open and close issues, exactly
+as its ground rules describe. That permission covers nothing else: never `main`,
+never force-push, and still no paid API calls.
+
+Lasting product decisions are in [docs/decisions.md](docs/decisions.md); tasks and
+their history are GitHub issues.
 
 ## Never, without explicit permission from the user
 

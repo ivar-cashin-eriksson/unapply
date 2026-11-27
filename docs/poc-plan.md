@@ -96,8 +96,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - Deterministic hard filters first: work mode, location, work permit (EU and member
   states) and minimum years of work (month precision, overlapping roles counted
   once, education left out by a title heuristic). Missing information is "unknown",
-  not a failure. Candidates who fail a filter are scored too (since task 12 of
-  `docs/autonomous-plan.md`), and rank after everyone who passes.
+  not a failure. Candidates who fail a filter are scored too (since issue #12), and rank after everyone who passes.
 - Two scorers, each giving a score from 0 to 1 per criterion with a reason and
   evidence ids: a **baseline** in plain code (level against `min_level`, blending
   own and estimated levels by confidence, times an evidence factor; related skills
@@ -140,7 +139,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   scorers and shown below a "Don't meet the requirements" divider, on a light red
   card naming the failed filters.
 
-- Decided flow (2026-11-27, tasks 14 and 16 of `docs/autonomous-plan.md`): a
+- Decided flow (2026-11-27, issues #14 and #16): a
   candidate gets in with one click, **Connect my profile**, which is their consent to
   be ranked anonymously and revealed. The employer pays to reveal anyone connected,
   then can ask anyone revealed to apply properly with written material. One button
