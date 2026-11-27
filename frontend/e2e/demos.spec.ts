@@ -28,6 +28,10 @@ test('the John Doe demo: material, review, questions, profile and dashboard', as
   await expect(page.getByText('This is the John Doe demo')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Upload files' })).toHaveCount(0)
   await shot(page, '02-candidate-material')
+  // John's own files can be downloaded as uploaded, even in the demo.
+  const cv = page.waitForEvent('download')
+  await page.getByRole('link', { name: 'Download cv.md' }).click()
+  expect((await cv).suggestedFilename()).toBe('cv.md')
 
   // Step 1: build the draft profile from John's material.
   await page.getByRole('button', { name: 'Build my profile' }).click()
@@ -47,6 +51,19 @@ test('the John Doe demo: material, review, questions, profile and dashboard', as
   await page.getByRole('tab', { name: /Skills/ }).click()
   await page.getByRole('button', { name: "Fill in John's review" }).click()
   await expect(page.getByLabel(/I approve this profile/)).toBeChecked()
+  // A skill the material misses is added in the Skills tab, with a level and why:
+  // John's Looker, taken out of his filled-in review and added again by hand.
+  const missing = page.getByRole('region', { name: 'Missing a skill?' })
+  await missing.getByRole('button', { name: 'Remove looker' }).click()
+  await expect(missing.getByRole('button', { name: 'Remove looker' })).toHaveCount(0)
+  await missing.getByRole('button', { name: 'Add a skill' }).click()
+  await missing.getByLabel('Skill', { exact: true }).last().fill('looker')
+  await missing.getByRole('radiogroup', { name: 'Your level in looker' }).getByRole('radio', { name: /^3 / }).click()
+  await missing
+    .getByLabel('Where you used it')
+    .last()
+    .fill('Used Looker daily for two years before Nordlys Retail moved to Tableau.')
+  await shot(page, '04b-candidate-review-add-skill')
   expect(await page.locator('main').textContent()).not.toMatch(ASSESSMENT)
   await page.getByRole('button', { name: 'Save and approve' }).click()
 
@@ -66,6 +83,7 @@ test('the John Doe demo: material, review, questions, profile and dashboard', as
   await expect(page).toHaveURL(/\/profile$/)
   await expect(page.getByText(/Approved on/)).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Skills' })).toBeVisible()
+  await expect(page.getByText('looker', { exact: true })).toBeVisible()
   await expect(steps.getByRole('link', { name: /Questions/ })).toContainText('(done)')
   expect(await page.locator('main').textContent()).not.toMatch(ASSESSMENT)
   await shot(page, '06-candidate-profile')

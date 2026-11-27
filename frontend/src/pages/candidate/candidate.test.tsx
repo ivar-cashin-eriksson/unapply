@@ -61,6 +61,10 @@ describe('material', () => {
     expect(screen.queryByRole('button', { name: 'Upload files' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Remove cv.md' })).toBeNull()
     expect(screen.getByText('cv.md')).toBeInTheDocument()
+    // The demo's files can't change, but they can still be downloaded.
+    const download = screen.getByRole('link', { name: 'Download cv.md' })
+    expect(download).toHaveAttribute('href', '/api/candidates/john-doe/material/cv.md')
+    expect(download).toHaveAttribute('download', 'cv.md')
     expect(screen.getByLabelText('GitHub username')).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Build my profile' }))
@@ -159,9 +163,13 @@ describe('review', () => {
     await user.clear(locations)
     await user.type(locations, 'Copenhagen, Aarhus')
     await user.click(screen.getByRole('button', { name: 'Remote' }))
-    await user.click(screen.getByRole('tab', { name: /Add skills/ }))
+    // Skills are added in the Skills tab, next to the ones found; there is no other tab.
+    expect(screen.queryByRole('tab', { name: /Add skills/ })).toBeNull()
+    await user.click(screen.getByRole('tab', { name: /Skills/ }))
     await user.click(screen.getByRole('button', { name: 'Add a skill' }))
     await user.type(screen.getByLabelText('Skill'), 'matlab')
+    const level = screen.getByRole('radiogroup', { name: 'Your level in matlab' })
+    await user.click(within(level).getByRole('radio', { name: /^3 / }))
     await user.type(screen.getByLabelText('Where you used it'), 'Thesis, 2018')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -170,7 +178,7 @@ describe('review', () => {
     expect(sent.experiences[0].end).toBe('2024-06')
     expect(sent.preferences.locations).toEqual(['Copenhagen', 'Aarhus'])
     expect(sent.preferences.work_modes).toEqual(['hybrid', 'remote'])
-    expect(sent.add_skills).toEqual([{ name: 'matlab', category: 'technology', level: null, note: 'Thesis, 2018' }])
+    expect(sent.add_skills).toEqual([{ name: 'matlab', category: 'technology', level: 3, note: 'Thesis, 2018' }])
   })
 
   it("fills in John's review in the demo", async () => {

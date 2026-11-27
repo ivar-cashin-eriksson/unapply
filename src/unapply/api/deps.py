@@ -11,8 +11,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import quote
 
-from fastapi import Depends, HTTPException, Query, Request, status
+from fastapi import Depends, HTTPException, Query, Request, Response, status
 
 from unapply.app import demo
 from unapply.db.repository import Repository
@@ -182,3 +183,32 @@ AllowAPI = Annotated[
         )
     ),
 ]
+
+
+def download(filename: str, content: bytes) -> Response:
+    """Send a stored file as a download, never shown inline.
+
+    Parameters
+    ----------
+    filename : str
+        The name to save it as; only its last part is used.
+    content : bytes
+        The file.
+
+    Returns
+    -------
+    Response
+        An attachment, typed as plain bytes so a browser never runs it.
+    """
+    name = Path(filename).name
+    plain = name.encode("ascii", "replace").decode().replace('"', "").replace("?", "_")
+    return Response(
+        content,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename=\"{plain}\"; filename*=UTF-8''{quote(name)}"
+            ),
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
