@@ -74,8 +74,14 @@ def create_candidate(body: NewCandidate, ctx: Ctx) -> CandidateSummary:
 
 @router.get("")
 def list_candidates(ctx: Ctx) -> list[str]:
-    """List the candidates' names."""
-    return ctx.repo.candidate_names()
+    """List the candidates' names.
+
+    The synthetic pool's candidates, stored for the shortlist demo, aren't listed:
+    their profiles are finished fixtures, not journeys to continue.
+    """
+    return [
+        n for n in ctx.repo.candidate_names() if not ctx.repo.settings(n).get("pool")
+    ]
 
 
 @router.get("/{name}")

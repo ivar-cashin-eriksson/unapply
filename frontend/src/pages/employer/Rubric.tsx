@@ -1,4 +1,4 @@
-import { BadgeCheck, FileText, Plus, Quote, RotateCcw, Trash2 } from 'lucide-react'
+import { BadgeCheck, FileText, ListOrdered, Plus, Quote, RotateCcw, Trash2 } from 'lucide-react'
 import { useId, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -87,6 +87,13 @@ function RubricEditor({ rubric }: { rubric: RubricData }) {
           <div className="flex items-center gap-2">
             <Badge variant="outline">Version {rubric.version}</Badge>
             {rubric.approved_at ? <Badge>Approved</Badge> : <Badge variant="secondary">Draft</Badge>}
+            {rubric.approved_at && (
+              <Button asChild size="sm" variant="outline">
+                <Link to="../shortlist">
+                  <ListOrdered aria-hidden /> Shortlist
+                </Link>
+              </Button>
+            )}
           </div>
         }
       >

@@ -4,7 +4,8 @@
 and jobs by name, their current `Profile` or `Job`, a history of every step, and
 interview questions waiting for answers. It adds what folders can't do well: rubric
 versions that can't change once a match uses them, matches, an append-only audit log
-of matches and rankings, and a copy of the skill taxonomy.
+of matches and rankings, employers' intents (reveals and application requests), and
+a copy of the skill taxonomy.
 
 Every method runs in its own transaction, so a failed call changes nothing.
 """
@@ -31,6 +32,7 @@ from unapply.db.models import (
     CriterionScoreRow,
     EvidenceRow,
     ExperienceRow,
+    IntentRow,
     InterviewQuestionRow,
     JobHistoryRow,
     JobRow,
@@ -42,6 +44,7 @@ from unapply.db.models import (
     TaxonomySkillRow,
 )
 from unapply.matching.audit import AuditEntry, AuditKind
+from unapply.matching.shortlist import Intent, IntentKind
 from unapply.schemas import Job, Match, Profile, Rubric
 from unapply.taxonomy import Taxonomy, TaxonomySkill
 from unapply.workspace import NAME
@@ -198,6 +201,23 @@ class Repository:
         """
         with self.transaction() as s:
             return _load_profile(s, _candidate(s, name))
+
+    def candidate_of(self, profile_id: UUID) -> str | None:
+        """Find whose current profile has a given `Profile.id`.
+
+        Parameters
+        ----------
+        profile_id : UUID
+            The profile's id, such as `Match.profile_id`.
+
+        Returns
+        -------
+        str or None
+            The candidate's name, or None if no current profile has that id. Not
+            for employers, who see candidates anonymised.
+        """
+        with self.transaction() as s:
+            return s.scalar(select(CandidateRow.name).filter_by(profile_id=profile_id))
 
     def profile_by_id(self, profile_id: UUID) -> Profile | None:
         """Read the current profile with a given `Profile.id`.
@@ -750,6 +770,72 @@ class Repository:
                 query = query.where(AuditEntryRow.kind == kind.value)
             return [_load_audit(row) for row in s.scalars(query)]
 
+    # Employers' intents
+
+    def record_intent(self, intent: Intent) -> tuple[Intent, bool]:
+        """Record what an employer asks for about a candidate, once.
+
+        Parameters
+        ----------
+        intent : Intent
+            The request; its `id` must be None.
+
+        Returns
+        -------
+        Intent
+            The intent as stored, with its `id`: the earlier one if the same job,
+            candidate and kind were recorded before.
+        bool
+            True if it was new.
+
+        Raises
+        ------
+        ValueError
+            If the intent has an id already.
+        """
+        if intent.id is not None:
+            raise ValueError(f"intent {intent.id} is already stored")
+        with self.transaction() as s:
+            row = s.scalar(
+                select(IntentRow).filter_by(
+                    job_id=intent.job_id,
+                    profile_id=intent.profile_id,
+                    kind=intent.kind.value,
+                )
+            )
+            if row is not None:
+                return _load_intent(row), False
+            row = IntentRow(
+                job_id=intent.job_id,
+                profile_id=intent.profile_id,
+                kind=intent.kind.value,
+                recorded_at=intent.recorded_at,
+            )
+            s.add(row)
+            s.flush()
+            return _load_intent(row), True
+
+    def intents(self, job_id: UUID, kind: IntentKind | None = None) -> list[Intent]:
+        """Read a job's intents, oldest first.
+
+        Parameters
+        ----------
+        job_id : UUID
+            The `Job.id`.
+        kind : IntentKind or None, optional
+            Only reveals or only application requests. By default both.
+
+        Returns
+        -------
+        list of Intent
+            In the order they were recorded.
+        """
+        with self.transaction() as s:
+            query = select(IntentRow).filter_by(job_id=job_id).order_by(IntentRow.id)
+            if kind is not None:
+                query = query.where(IntentRow.kind == kind.value)
+            return [_load_intent(row) for row in s.scalars(query)]
+
     # Skill taxonomy
 
     def save_taxonomy(self, taxonomy: Taxonomy) -> None:
@@ -1221,4 +1307,14 @@ def _store_audit(s: Session, entry: AuditEntry) -> AuditEntry:
 def _load_audit(row: AuditEntryRow) -> AuditEntry:
     return AuditEntry.model_validate(
         {"id": row.id, **{f: getattr(row, f) for f in _AUDIT_FIELDS}}
+    )
+
+
+def _load_intent(row: IntentRow) -> Intent:
+    return Intent(
+        id=row.id,
+        job_id=row.job_id,
+        profile_id=row.profile_id,
+        kind=IntentKind(row.kind),
+        recorded_at=row.recorded_at,
     )

@@ -14,6 +14,7 @@ import { Home } from '@/pages/Home'
 import { JobAd } from '@/pages/employer/JobAd'
 import { JobFlow, JobList } from '@/pages/employer/JobFlow'
 import { Rubric } from '@/pages/employer/Rubric'
+import { Shortlist } from '@/pages/employer/Shortlist'
 
 /** The app's pages. A router around it (BrowserRouter, or MemoryRouter in tests) is needed. */
 export function AppRoutes() {
@@ -35,6 +36,7 @@ export function AppRoutes() {
             <Route index element={<Navigate to="ad" replace />} />
             <Route path="ad" element={<JobAd />} />
             <Route path="rubric" element={<Rubric />} />
+            <Route path="shortlist" element={<Shortlist />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>

@@ -12,7 +12,8 @@ A pool is a folder with a `pool.yaml` and one folder per candidate::
 
 Loading a pool replays each candidate's journey: extract, review and approve,
 estimate. The job's rubric is extracted from its recording and approved. Nothing
-is stored in the database, so evaluating a pool changes nothing.
+is stored in the database, so evaluating a pool changes nothing. `store_pool` puts a
+loaded pool in the database as a demo, for the employer's shortlist.
 """
 
 from __future__ import annotations
@@ -21,7 +22,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
+from uuid import uuid4
 
 import yaml
 from pydantic import BaseModel
@@ -52,6 +54,9 @@ from unapply.matching import (
 from unapply.review import apply_review_sheet, export_review_sheet
 from unapply.schemas import Job, Profile
 
+if TYPE_CHECKING:
+    from unapply.db.repository import Repository
+
 T = TypeVar("T", bound=BaseModel)
 
 # The synthetic pool for Fjord Grocery, in a checkout of the repo.
@@ -59,6 +64,8 @@ DEFAULT_POOL = FIXTURES / "pool"
 # The top-k overlaps reported by default.
 DEFAULT_KS = (3, 5)
 SCORERS = ("baseline", "llm")
+# Pool candidates stored as demos are named with this in front of their folder name.
+DEMO_PREFIX = "pool-"
 
 # Makes the model for one recorded step, given the recording's path: a replay of
 # it by default, or a real model that records its answer there.
@@ -365,3 +372,78 @@ def evaluate_pool(
         top_k=top_k,
         tau=tau,
     )
+
+
+def match_recording(candidate: str, folder: Path = DEFAULT_POOL) -> Path:
+    """Where a pool candidate's recorded LLM scorer answer is, without loading the pool.
+
+    Parameters
+    ----------
+    candidate : str
+        The candidate's folder name in the pool, such as "astrid-holm".
+    folder : Path, optional
+        The pool folder, by default the Fjord Grocery pool.
+
+    Returns
+    -------
+    Path
+        The file; it only exists for candidates who pass the hard filters.
+    """
+    spec = yaml.safe_load((folder / "pool.yaml").read_text(encoding="utf-8")) or {}
+    return folder / candidate / spec.get("match_file", "match.json")
+
+
+def store_pool(repo: Repository, pool: Pool, job_name: str) -> list[str]:
+    """Store a pool in the database as a demo: its job and its candidates.
+
+    The job is created with its approved rubric, marked as a demo, and with the
+    pool's `today`, so matching it gives the pool's results on any day. Each
+    candidate is stored with their approved, estimated profile as a demo
+    candidate named "pool-<folder name>", with `pool` in their settings so the LLM
+    scorer replays their recording. Candidates stored by an earlier call are kept
+    as they are, so every pool job ranks the same people.
+
+    Parameters
+    ----------
+    repo : Repository
+        The database.
+    pool : Pool
+        The loaded pool.
+    job_name : str
+        Name for the new job; must be free.
+
+    Returns
+    -------
+    list of str
+        The candidates' names in the database, sorted.
+
+    Raises
+    ------
+    ValueError
+        If the job name is taken, or a candidate name is taken by someone who
+        isn't from the pool.
+    """
+    repo.create_job(
+        job_name,
+        demo=True,
+        pool=True,
+        today=pool.today.isoformat(),
+        ad=pool.job.ad_text,
+        company=None,
+        title=None,
+    )
+    # A new id, so a second pool job doesn't clash with the first.
+    job = pool.job.model_copy(update={"id": uuid4()})
+    repo.save_job(job_name, job, "rubric")
+    taken = set(repo.candidate_names())
+    names = []
+    for folder_name, candidate in pool.candidates.items():
+        name = DEMO_PREFIX + folder_name
+        names.append(name)
+        if name in taken:
+            if repo.settings(name).get("pool") != folder_name:
+                raise ValueError(f"{name!r} is taken by a candidate not from the pool")
+            continue
+        repo.create_candidate(name, demo=True, pool=folder_name)
+        repo.save_profile(name, candidate.profile, "assessed")
+    return sorted(names)

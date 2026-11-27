@@ -119,6 +119,13 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - **Spider chart comparing selected candidates** on the rubric's skills, toggling between
   self-reported and estimated levels (and an overlay of both).
 - "Reveal" button (no payment yet; logs intent) and "Request application" button.
+- Done: the Shortlist step in the frontend (`frontend/src/pages/employer/Shortlist.tsx`)
+  over `GET /jobs/<name>/shortlist` (`src/unapply/matching/shortlist.py`): candidates
+  by alias, with each criterion's score, reason and cited quotes, and hard filter
+  outcomes; a spider chart of up to three candidates (estimated, own or both, with a
+  table); "Reveal" and "Request application" recorded once each in the `intents`
+  table, reveals limited to the job's `reveal_quota`. The shortlist demo stores the
+  synthetic pool. Revealing shows no identity yet: that needs payment and consent.
 
 ### M6: Candidate view
 - "You're #4 of 37 for this role." The profile, without the assessment.
@@ -196,4 +203,4 @@ TypeScript, Tailwind CSS, shadcn/ui), and Streamlit as the internal developer to
   starts and stops the API and the dev server itself); CI runs lint, build and both.
   Screenshots in `docs/screenshots/`.
 - Streamlit stays as the internal developer tool. The recruiter's shortlist and
-  spider chart (M5) come next, in the same frontend.
+  spider chart (M5) are in the same frontend.

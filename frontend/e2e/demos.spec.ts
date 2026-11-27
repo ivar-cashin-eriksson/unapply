@@ -103,6 +103,74 @@ test('the Fjord Grocery demo: job ad and rubric', async ({ page }) => {
   await expect(nice.getByPlaceholder('What is asked for').last()).toHaveValue('Speaks a Scandinavian language')
   await expect(nice.getByText('Added by you: no quote from the ad.').last()).toBeVisible()
   await shot(page, '09-job-rubric-approved', { fullPage: false })
+  const steps = page.getByRole('navigation', { name: 'Job steps' })
+  await expect(steps.getByRole('link', { name: /Shortlist/ })).toBeVisible()
+})
+
+// The pool's candidates by first name: none may appear on the employer's shortlist.
+const POOL_NAMES = /astrid|clara|emil|freja|henrik|ida |jonas|lars|mikkel|nadia|priya|sofie|john doe/i
+
+test('the shortlist demo: ranked, explained, compared, revealed', async ({ page }) => {
+  await page.goto('/jobs')
+  await page.getByRole('button', { name: 'Try the shortlist demo' }).click()
+  await expect(page).toHaveURL(/\/jobs\/fjord-grocery-shortlist[-\d]*\/shortlist$/)
+  await expect(page.getByText('No one is ranked yet')).toBeVisible()
+
+  // Match the synthetic pool with the free baseline.
+  await page.getByRole('button', { name: 'Match candidates' }).click()
+  const ranked = page.getByRole('heading', { name: /^\d+ ranked$/ })
+  await expect(ranked).toBeVisible()
+  // The 12 of the pool, and the John Doe demo if an earlier test approved him.
+  expect(Number((await ranked.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(12)
+  await expect(page.getByText('Fails a hard filter:')).toHaveCount(3)
+  await expect(page.getByRole('meter', { name: /^Total for Candidate/ }).first()).toBeVisible()
+  await shot(page, '11-shortlist', { fullPage: false })
+
+  // Why the first is first: a score per criterion, with the quotes it cites.
+  const first = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 1') }).first()
+  await first.getByRole('button', { name: /^Why for/ }).click()
+  const reasons = page.getByRole('region', { name: /^Reasons for/ })
+  await expect(reasons.getByRole('meter').first()).toBeVisible()
+  await expect(reasons.locator('blockquote').first()).toBeVisible()
+  await reasons.scrollIntoViewIfNeeded()
+  await shot(page, '12-shortlist-reasons', { fullPage: false })
+  await first.getByRole('button', { name: /^Hide for/ }).click()
+
+  // Compare the top three on the rubric's skills, own and estimated levels.
+  const boxes = page.getByRole('checkbox', { name: /^Compare Candidate/ })
+  for (const i of [0, 1, 2]) await boxes.nth(i).click()
+  await expect(boxes.nth(3)).toBeDisabled()
+  const chart = page.getByRole('img', { name: /^Levels in \d+ skills/ })
+  await expect(chart).toBeVisible()
+  await expect(page.getByRole('table')).toContainText('estimated / own')
+  await page.getByRole('heading', { name: 'Shortlist', exact: true }).scrollIntoViewIfNeeded()
+  await shot(page, '13-shortlist-compare', { fullPage: false })
+  await page.getByRole('radio', { name: 'Estimated' }).click()
+  await expect(page.getByTestId('shape-own-0')).toHaveCount(0)
+  await expect(page.getByTestId('shape-estimated-0')).toBeVisible()
+
+  // Reveal the first and ask the second to apply: recorded, no payment, no name.
+  await first.getByRole('button', { name: /^Reveal Candidate/ }).click()
+  await expect(page.getByText(/recorded\. No payment is taken yet/)).toBeVisible()
+  await expect(page.getByText('Reveals: 1 of 10')).toBeVisible()
+  await expect(first.getByRole('button', { name: /^Reveal requested/ })).toBeDisabled()
+  const second = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 2') }).first()
+  await second.getByRole('button', { name: /^Request application/ }).click()
+  await expect(second.getByRole('button', { name: /^Application requested/ })).toBeDisabled()
+  expect(await page.locator('main').textContent()).not.toMatch(POOL_NAMES)
+
+  // The LLM scorer replays recorded answers in the demo, so it is free too.
+  await page.getByRole('radio', { name: 'LLM' }).click()
+  await expect(page.getByText(/replays recorded answers/)).toBeVisible()
+  await page.getByRole('button', { name: 'Match candidates' }).click()
+  await expect(ranked).toBeVisible()
+  await expect(page.getByRole('meter', { name: /^Total for Candidate/ }).first()).toBeVisible()
+  // The comparison stays: the same people, scored another way.
+  await expect(chart).toBeVisible()
+  // The requests are the job's, whichever scorer ranks.
+  await expect(page.getByText('Reveals: 1 of 10')).toBeVisible()
+  expect(await page.locator('main').textContent()).not.toMatch(POOL_NAMES)
+  await shot(page, '14-shortlist-llm', { fullPage: false })
 })
 
 test('a real candidate is refused paid calls, and told about the demo', async ({ page }) => {

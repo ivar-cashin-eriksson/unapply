@@ -12,6 +12,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from unapply.matching.shortlist import AnonymousCandidate, Intent, IntentKind
 from unapply.schemas import (
     CriterionKind,
     CriterionScore,
@@ -20,6 +21,7 @@ from unapply.schemas import (
     Job,
     Preferences,
     Profile,
+    Rubric,
     SkillCategory,
     SkillLevel,
     Source,
@@ -641,3 +643,63 @@ class Ranking(BaseModel):
     rubric_version: int
     scorer: str
     candidates: list[RankedCandidate]
+
+
+class Shortlist(BaseModel):
+    """A job's anonymised shortlist: the ranking and who is on it.
+
+    Parameters
+    ----------
+    ranking : Ranking
+        The candidates, best first, with their criterion scores.
+    rubric : Rubric
+        The rubric version they were ranked against, for the criteria's words.
+    skills : list of str
+        The skills the rubric asks for, canonical and in rubric order: what
+        candidates are compared on.
+    candidates : list of AnonymousCandidate
+        Each ranked candidate's alias, roles, quotes and levels, in ranking order.
+        A candidate whose profile was replaced since the match is left out.
+    intents : list of Intent
+        What the employer asked for on this job so far, oldest first.
+    reveal_quota : int
+        How many candidates the employer may reveal for this job.
+    """
+
+    ranking: Ranking
+    rubric: Rubric
+    skills: list[str]
+    candidates: list[AnonymousCandidate]
+    intents: list[Intent]
+    reveal_quota: int
+
+
+class NewIntent(BaseModel):
+    """What an employer asks for about a shortlisted candidate.
+
+    Parameters
+    ----------
+    profile_id : UUID
+        The candidate, as the shortlist shows them.
+    kind : IntentKind
+        "reveal" to see who they are, or "request_application" to ask them for
+        their application material. Only recorded for now.
+    """
+
+    profile_id: UUID
+    kind: IntentKind
+
+
+class ShortlistDemo(BaseModel):
+    """The demo job made for the shortlist, with the synthetic pool.
+
+    Parameters
+    ----------
+    name : str
+        The job's name.
+    candidates : int
+        How many pool candidates are in the database, ready to match.
+    """
+
+    name: str
+    candidates: int

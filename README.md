@@ -84,9 +84,18 @@ npm run dev                   # http://localhost:5173
   answer a few questions, and see the profile as employers will. The assessment is
   never shown.
 - **Employers:** paste a job ad, draft a rubric from it, and edit and approve the
-  hard filters and weighted criteria. Any change makes a new version.
-- **Demos:** "Try the John Doe demo" and "Try the Fjord Grocery demo" replay recorded
-  answers, so they cost nothing. A real candidate or job needs paid model calls,
+  hard filters and weighted criteria. Any change makes a new version. Then the
+  **shortlist**: match the candidates with either scorer and see them ranked and
+  anonymised (an alias such as "Candidate 3F2A", never a name), with a score per
+  criterion, its reason and the quotes it cites, and the hard filter outcomes. A
+  **spider chart** compares up to three candidates on the rubric's skills, with
+  estimated levels, own levels or both, and a table of every value. "Reveal" and
+  "Request application" only record the intent (no payment, nobody contacted);
+  reveals are limited to the job's reveal quota (10).
+- **Demos:** "Try the John Doe demo", "Try the Fjord Grocery demo" and "Try the
+  shortlist demo" (Fjord Grocery with its rubric approved and the 12 synthetic
+  candidates of `tests/fixtures/pool`) replay recorded answers, so they cost
+  nothing. A real candidate or job needs paid model calls,
   which the frontend never asks for: they work only if the API runs with
   `UNAPPLY_ALLOW_API_CALLS=1`.
 
@@ -98,9 +107,9 @@ Requests to `/api` go to the API at `UNAPPLY_API_URL` (by default
 | `npm run lint` | Lint (oxlint) |
 | `npm run build` | Type-check and build into `dist/` |
 | `npm test` | Component tests (Vitest, Testing Library) |
-| `npm run e2e` | Both demos end to end in Chromium (Playwright). Starts the API and the dev server on ports 8766 and 5174 with an empty data folder in the temporary folder, stops them afterwards, and saves screenshots in `e2e/screenshots/`. Needs `npx playwright install chromium` once |
+| `npm run e2e` | The demos end to end in Chromium (Playwright). Starts the API and the dev server on ports 8766 and 5174 with an empty data folder in the temporary folder, stops them afterwards, and saves screenshots in `e2e/screenshots/`. Needs `npx playwright install chromium` once |
 
-Screenshots of both demos are in [docs/screenshots/](docs/screenshots/).
+Screenshots of the demos are in [docs/screenshots/](docs/screenshots/).
 
 ## The Streamlit app (internal)
 
@@ -161,8 +170,14 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   candidate with an approved profile to a job with an approved rubric, with the
   baseline or the LLM scorer, and read the anonymised ranking (profile ids, never
   names).
-- **Demos** (`/demos/candidate`, `/demos/job`): John Doe and Fjord Grocery, which
-  replay recorded answers for free.
+- **Shortlist** (`/jobs/<name>/shortlist`, `/jobs/<name>/intents`): the ranking
+  with each candidate anonymised (an alias, their roles and quotes with names and
+  contact details removed, their own and estimated levels in the rubric's skills),
+  and the employer's reveals and application requests, which are only recorded.
+- **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`): John Doe, Fjord
+  Grocery, and Fjord Grocery with the synthetic pool, which replay recorded answers
+  for free. The pool's candidates are stored once and aren't listed under
+  `/candidates`.
 
 **Paid model calls are refused** (403) unless the request adds `?allow_api=true` or
 `UNAPPLY_ALLOW_API_CALLS=1` is set, just like `--allow-api`. `unapply api --internal`
