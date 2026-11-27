@@ -220,7 +220,7 @@ widen it.
 - Done when: tested (stable for a profile id, unique on the pool, no clashes with
   candidate names) and visible in the shortlist screenshots.
 
-### 14. [ ] More demo jobs, vacancies and a job board
+### 14. [x] More demo jobs, vacancies and a job board
 
 - About ten more fictional job listings beside Fjord Grocery, under
   `tests/fixtures/jobs/<name>/` in the same layout (`ad.md`, a hand-written stand-in

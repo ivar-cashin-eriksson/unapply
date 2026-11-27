@@ -1,0 +1,77 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Ravnekær Mobility",
+    "title": "Senior Machine Learning Engineer",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": 5
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Excellent Python and good engineering habits",
+        "skill": "python",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Excellent Python and good engineering habits"
+      },
+      {
+        "kind": "must_have",
+        "description": "Hands-on PyTorch",
+        "skill": "pytorch",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Hands-on PyTorch"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience putting deep learning models into production",
+        "skill": "deep learning",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Experience putting deep learning models into production"
+      },
+      {
+        "kind": "must_have",
+        "description": "Docker and containerised deployments",
+        "skill": "docker",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Docker and containerised deployments"
+      },
+      {
+        "kind": "must_have",
+        "description": "Has built model APIs, ideally with FastAPI",
+        "skill": "fastapi",
+        "min_level": null,
+        "weight": 3,
+        "quote": "You have built model APIs, ideally with FastAPI"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Databricks or another Spark platform",
+        "skill": "databricks",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Databricks or another Spark platform"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "PySpark for large feature pipelines",
+        "skill": "pyspark",
+        "min_level": null,
+        "weight": 2,
+        "quote": "PySpark for large feature pipelines"
+      }
+    ]
+  }
+}

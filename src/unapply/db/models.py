@@ -248,6 +248,8 @@ class JobRow(Base):
     title: Mapped[str | None] = mapped_column(Text)
     ad_text: Mapped[str | None] = mapped_column(Text)
     reveal_quota: Mapped[int | None] = mapped_column(Integer)
+    # How many people are hired (`Job.vacancies`); 1 for jobs stored before.
+    vacancies: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     created_at: Mapped[datetime | None] = mapped_column(DateTime)
     # The `Rubric.version` the job uses now. None before the job is first saved.
     rubric_version: Mapped[int | None] = mapped_column(Integer)

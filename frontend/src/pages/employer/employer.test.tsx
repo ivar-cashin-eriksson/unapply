@@ -19,6 +19,7 @@ describe('job ad', () => {
         ad_text: '',
         rubric: rubric(),
         reveal_quota: 5,
+        vacancies: 1,
         created_at: '2026-11-01T10:00:00Z',
       },
       dropped: [],
@@ -37,7 +38,7 @@ describe('job ad', () => {
   })
 
   it('saves an edited ad before drafting', async () => {
-    const empty = job({ name: 'analyst', demo: false, ad: { ad: '', company: null, title: null }, has_rubric: false, history: [] })
+    const empty = job({ name: 'analyst', demo: false, ad: { ad: '', company: null, title: null, vacancies: 1 }, has_rubric: false, history: [] })
     vi.spyOn(api, 'job').mockResolvedValue(empty)
     const setAd = vi.spyOn(api, 'setAd').mockResolvedValue(empty)
     vi.spyOn(api, 'extractRubric').mockRejectedValue(new ApiError(403, 'Paid API calls are disabled.'))
@@ -48,9 +49,28 @@ describe('job ad', () => {
     await user.type(screen.getByLabelText('Ad'), 'Analyst wanted in Oslo.')
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.click(draft)
-    expect(setAd).toHaveBeenCalledWith('analyst', { ad: 'Analyst wanted in Oslo.', company: 'Acme', title: null })
+    expect(setAd).toHaveBeenCalledWith('analyst', { ad: 'Analyst wanted in Oslo.', company: 'Acme', title: null, vacancies: 1 })
     expect(await screen.findByText("Couldn't draft the rubric")).toBeInTheDocument()
     expect(screen.getByText(/paid calls are off on this server/)).toBeInTheDocument()
+  })
+
+  it('saves the vacancies of a job that has a rubric, also for the demo', async () => {
+    vi.spyOn(api, 'job').mockResolvedValue(job())
+    const setAd = vi.spyOn(api, 'setAd').mockResolvedValue(job())
+    const { user } = renderApp('/jobs/fjord-grocery/ad')
+
+    const field = await screen.findByLabelText('Vacancies')
+    expect(field).toHaveValue(1)
+    expect(field).toBeEnabled()
+    expect(screen.queryByRole('button', { name: 'Save vacancies' })).toBeNull()
+    await user.clear(field)
+    await user.type(field, '3')
+    await user.click(screen.getByRole('button', { name: 'Save vacancies' }))
+    expect(setAd).toHaveBeenCalledWith('fjord-grocery', { ...job().ad, vacancies: 3 })
+
+    await user.clear(field)
+    expect(field).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('button', { name: 'Draft the rubric again' })).toBeDisabled()
   })
 
   it('locks the rubric step until there is one', async () => {

@@ -1,0 +1,85 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Kaveri Retail Pvt Ltd",
+    "title": "Senior Data Scientist, Demand Forecasting",
+    "hard_filters": {
+      "locations": [
+        "Bengaluru"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "IN"
+      ],
+      "min_years_experience": 6
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Strong Python",
+        "skill": "python",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Strong Python"
+      },
+      {
+        "kind": "must_have",
+        "description": "Deep experience with demand forecasting at scale",
+        "skill": "demand forecasting",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Deep experience with demand forecasting at scale"
+      },
+      {
+        "kind": "must_have",
+        "description": "Good SQL",
+        "skill": "sql",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Good SQL"
+      },
+      {
+        "kind": "must_have",
+        "description": "Solid statistics",
+        "skill": "statistics",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Solid statistics"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience running A/B tests or other experiments",
+        "skill": "a/b testing",
+        "min_level": 3,
+        "weight": 3,
+        "quote": "Experience running A/B tests or other experiments"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "LightGBM or other gradient boosting libraries",
+        "skill": "lightgbm",
+        "min_level": null,
+        "weight": 2,
+        "quote": "LightGBM or other gradient boosting libraries"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "AWS",
+        "skill": "aws",
+        "min_level": null,
+        "weight": 1,
+        "quote": "AWS"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Retail analytics experience",
+        "skill": "retail analytics",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Retail analytics experience"
+      }
+    ]
+  }
+}

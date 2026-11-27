@@ -1,0 +1,77 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Bogreol Online ApS",
+    "title": "Experimentation Analyst",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": 2
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Strong A/B testing",
+        "skill": "a/b testing",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Strong A/B testing: design, power, analysis and pitfalls"
+      },
+      {
+        "kind": "must_have",
+        "description": "Solid statistics",
+        "skill": "statistics",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Solid statistics"
+      },
+      {
+        "kind": "must_have",
+        "description": "Good SQL",
+        "skill": "sql",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Good SQL"
+      },
+      {
+        "kind": "must_have",
+        "description": "Python for analysis",
+        "skill": "python",
+        "min_level": 3,
+        "weight": 3,
+        "quote": "Python for analysis"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Sequential testing",
+        "skill": "sequential testing",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Sequential testing or other ways to stop experiments early"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "E-commerce experience",
+        "skill": "e-commerce",
+        "min_level": null,
+        "weight": 2,
+        "quote": "E-commerce experience"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Presents results clearly to non-technical colleagues",
+        "skill": "stakeholder communication",
+        "min_level": null,
+        "weight": 1,
+        "quote": "You present results clearly to non-technical colleagues"
+      }
+    ]
+  }
+}

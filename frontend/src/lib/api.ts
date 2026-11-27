@@ -6,13 +6,18 @@
 
 import type {
   Answers,
+  Board,
+  BoardDemo,
+  BoardQuery,
   CandidateProfile,
   CandidateSummary,
+  Connection,
   Extraction,
   Intent,
   IntentKind,
   JobAd,
   JobSummary,
+  Listing,
   MaterialFile,
   Questions,
   Ranking,
@@ -155,6 +160,21 @@ export const api = {
     json<Shortlist>('GET', `${j(name)}/shortlist?scorer=${scorer}`),
   recordIntent: (name: string, profileId: string, kind: IntentKind) =>
     json<Intent>('POST', `${j(name)}/intents`, { profile_id: profileId, kind }),
+
+  // The job board: listings (never the rubric), and the candidate's connections
+  board: (query: BoardQuery = {}) => {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(query)) if (value) params.set(key, value)
+    const qs = params.toString()
+    return json<Board>('GET', qs ? `/board?${qs}` : '/board')
+  },
+  listing: (job: string) => json<Listing>('GET', `/board/${encodeURIComponent(job)}`),
+  createBoardDemo: () => json<BoardDemo>('POST', '/demos/board'),
+  connections: (name: string) => json<Connection[]>('GET', `${c(name)}/connections`),
+  connect: (name: string, job: string) =>
+    json<Connection>('PUT', `${c(name)}/connections/${encodeURIComponent(job)}`),
+  withdraw: (name: string, job: string) =>
+    json<void>('DELETE', `${c(name)}/connections/${encodeURIComponent(job)}`),
 }
 
 /** A message for an error, saying what to do about a refused paid call. */

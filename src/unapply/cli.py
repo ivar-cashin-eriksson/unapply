@@ -158,13 +158,14 @@ def main(argv: list[str] | None = None) -> int:
 
     match = commands.add_parser(
         "match",
-        help="Match the candidates in the database to a job, save and rank them.",
+        help="Match the candidates connected to a job, save and rank them.",
     )
     match.add_argument("job", help="The job's name in the database.")
     match.add_argument(
         "--candidates",
         nargs="+",
-        help="Only these candidates; by default all with an approved profile.",
+        help="Only these connected candidates; by default all with an approved "
+        "profile.",
     )
     match.add_argument(
         "--scorer",
@@ -547,7 +548,7 @@ def _match(args: argparse.Namespace) -> int:
             for p in result.problems:
                 print(f"    {p}")
     if not matching.results:
-        print("No candidate has an approved profile yet.")
+        print("No connected candidate has an approved profile yet.")
     return 0
 
 

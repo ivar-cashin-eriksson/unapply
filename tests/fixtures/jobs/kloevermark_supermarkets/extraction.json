@@ -1,0 +1,85 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Kløvermark Supermarkeder",
+    "title": "Category Manager, Fresh Produce",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": 5
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Grocery retail buying or category management",
+        "skill": "grocery retail",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "At least 5 years in grocery retail buying or category management"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience negotiating with suppliers",
+        "skill": "supplier negotiation",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Experience negotiating with suppliers"
+      },
+      {
+        "kind": "must_have",
+        "description": "Plans and evaluates promotions",
+        "skill": "promotion analysis",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "You plan and evaluate promotions"
+      },
+      {
+        "kind": "must_have",
+        "description": "Strong Excel",
+        "skill": "excel",
+        "min_level": 4,
+        "weight": 3,
+        "quote": "Strong Excel"
+      },
+      {
+        "kind": "must_have",
+        "description": "Fluent Danish, spoken and written",
+        "skill": "danish",
+        "min_level": 4,
+        "weight": 4,
+        "quote": "Fluent Danish, spoken and written"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Experience with demand forecasting",
+        "skill": "demand forecasting",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Experience with demand forecasting or ordering systems"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Some SQL",
+        "skill": "sql",
+        "min_level": null,
+        "weight": 1,
+        "quote": "Some SQL"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Works well with store managers and colleagues",
+        "skill": "stakeholder communication",
+        "min_level": null,
+        "weight": 1,
+        "quote": "You enjoy working with store managers and colleagues across the business"
+      }
+    ]
+  }
+}

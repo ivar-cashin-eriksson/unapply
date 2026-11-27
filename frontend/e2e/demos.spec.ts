@@ -8,6 +8,8 @@ import { expect, test, type Page } from '@playwright/test'
 const SHOTS = path.join(import.meta.dirname, 'screenshots')
 // Words for the assessment, which a candidate never sees.
 const ASSESSMENT = /estimat|confidence|claim support|overclaim/i
+// The assessment and the rubric: neither is ever shown on a candidate page.
+const HIDDEN_FROM_CANDIDATES = /estimat|confidence|claim support|overclaim|rubric|criteri|weight|min.?level/i
 
 /** A screenshot of the whole page; of the window only where a bar is fixed at the bottom. */
 async function shot(page: Page, name: string, { fullPage = true } = {}) {
@@ -120,8 +122,9 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await page.getByRole('button', { name: 'Match candidates' }).click()
   const ranked = page.getByRole('heading', { name: /^\d+ ranked$/ })
   await expect(ranked).toBeVisible()
-  // The 12 of the pool, and the John Doe demo if an earlier test approved him.
-  expect(Number((await ranked.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(12)
+  // The 12 of the pool, connected to every demo job. The John Doe demo approved by
+  // an earlier test isn't: only candidates who connect to a job are ranked.
+  await expect(ranked).toHaveText('12 ranked')
   await expect(page.getByRole('meter', { name: /^Total for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
   // Each card: the scorer's total, and the baseline on own and on estimated levels.
   await expect(page.getByRole('meter', { name: /^Own rating for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
@@ -191,6 +194,86 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(page.getByText('Reveals: 1 of 10')).toBeVisible()
   expect(await page.locator('main').textContent()).not.toMatch(POOL_NAMES)
   await shot(page, '14-shortlist-llm', { fullPage: false })
+})
+
+test('the job board in John Doe\'s demo: search, read, connect and withdraw', async ({ page }) => {
+  // John approves his profile first: only approved profiles connect.
+  await page.goto('/candidates')
+  await page.getByRole('button', { name: 'Try the John Doe demo' }).click()
+  await expect(page).toHaveURL(/\/material$/)
+  const candidate = page.url().match(/\/candidates\/([^/]+)\//)![1]
+  await page.getByRole('button', { name: 'Build my profile' }).click()
+  await page.getByRole('button', { name: "Fill in John's review" }).click()
+  await page.getByRole('button', { name: 'Save and approve' }).click()
+  await expect(page).toHaveURL(/\/questions$/)
+
+  const steps = page.getByRole('navigation', { name: 'Your steps' })
+  await steps.getByRole('link', { name: /Jobs/ }).click()
+  await expect(page.getByRole('heading', { name: 'Find jobs' })).toBeVisible()
+  // Demo candidates can add the demo jobs. The board may already list the Fjord
+  // Grocery demo jobs that earlier tests approved; adding twice changes nothing.
+  await page.getByRole('button', { name: 'Add the demo jobs' }).click()
+  await expect(page.getByText('11 demo jobs are on the board.')).toBeVisible()
+  const jobs = page.getByRole('list', { name: 'Jobs' })
+  await expect(jobs.getByRole('link', { name: 'Senior Machine Learning Engineer' })).toBeVisible()
+  const total = await jobs.getByRole('listitem').count()
+  expect(total).toBeGreaterThanOrEqual(11)
+  await expect(page.getByText(`${total} jobs`, { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Add the demo jobs' }).click()
+  await expect(jobs.getByRole('listitem')).toHaveCount(total)
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await shot(page, '16-job-board')
+
+  // Search: words, then filters.
+  await page.getByLabel('Search').fill('forecasting')
+  await expect(page.getByText(new RegExp(`^[0-9]+ of ${total} jobs$`))).toBeVisible()
+  await page.getByLabel('Seniority').selectOption('junior')
+  await expect(jobs.getByRole('listitem')).toHaveCount(1)
+  await expect(jobs.getByRole('link', { name: 'Junior Data Scientist' })).toBeVisible()
+  await page.getByRole('button', { name: 'Clear filters' }).first().click()
+  await page.getByLabel('Work mode').selectOption('remote')
+  await expect(jobs.getByRole('listitem')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Clear filters' }).first().click()
+  await page.getByLabel('Search').fill('energy')
+  await expect(jobs.getByRole('listitem')).toHaveCount(1)
+  await shot(page, '17-job-board-search')
+
+  // Read a listing in full: the ad and the vacancies, not the rubric.
+  await jobs.getByRole('link', { name: 'Data Scientist, Energy Demand Forecasting' }).click()
+  await expect(page).toHaveURL(/\/jobs\/board-lynfjord-power$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Data Scientist, Energy Demand Forecasting')
+  await expect(page.getByText('2 vacancies')).toBeVisible()
+  await expect(page.getByText('Strong experience with time series forecasting.')).toBeVisible()
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+
+  // Connect: John is now matched and ranked by the job, anonymously.
+  await page.getByRole('button', { name: 'Connect my profile' }).click()
+  await expect(page.getByRole('region', { name: 'Your connection' })).toContainText('Connected on')
+  await shot(page, '18-job-listing-connected')
+  const profile = await (await page.request.get(`/api/candidates/${candidate}/profile`)).json()
+  const ranked = async () => {
+    const response = await page.request.post('/api/jobs/board-lynfjord-power/match')
+    expect(response.ok()).toBe(true)
+    const body = await response.json()
+    return body.candidates.map((c: { profile_id: string }) => c.profile_id) as string[]
+  }
+  const withJohn = await ranked()
+  expect(withJohn).toHaveLength(13)
+  expect(withJohn).toContain(profile.id)
+
+  // Back on the board, the job is marked as connected.
+  await page.getByRole('link', { name: 'All jobs' }).click()
+  const card = jobs.getByRole('listitem').filter({ hasText: 'Lynfjord Power' })
+  await expect(card.getByText('Connected')).toBeVisible()
+
+  // Withdraw: out of the job's next ranking.
+  await card.getByRole('link').first().click()
+  await page.getByRole('button', { name: 'Withdraw' }).click()
+  await expect(page.getByRole('button', { name: 'Connect my profile' })).toBeEnabled()
+  await shot(page, '19-job-listing-withdrawn')
+  const without = await ranked()
+  expect(without).toHaveLength(12)
+  expect(without).not.toContain(profile.id)
 })
 
 test('a real candidate is refused paid calls, and told about the demo', async ({ page }) => {

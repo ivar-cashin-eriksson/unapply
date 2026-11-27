@@ -12,6 +12,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from unapply.jobs.board import Listing
 from unapply.matching.shortlist import AnonymousCandidate, Intent, IntentKind
 from unapply.schemas import (
     CriterionKind,
@@ -416,11 +417,14 @@ class JobAd(BaseModel):
         Company name; read from the ad if None.
     title : str or None
         Job title; read from the ad if None.
+    vacancies : int
+        How many people the job hires, 1 or more; shown to candidates.
     """
 
     ad: str
     company: str | None = None
     title: str | None = None
+    vacancies: int = Field(default=1, ge=1, le=1000)
 
 
 class JobSummary(BaseModel):
@@ -712,3 +716,33 @@ class ShortlistDemo(BaseModel):
 
     name: str
     candidates: int
+
+
+class BoardDemo(BaseModel):
+    """The demo jobs put on the job board.
+
+    Parameters
+    ----------
+    jobs : list of str
+        Their names, newest first.
+    """
+
+    jobs: list[str]
+
+
+class Connection(BaseModel):
+    """A job a candidate connected their profile to.
+
+    Parameters
+    ----------
+    job : str
+        The job's name.
+    connected_at : datetime
+        When the candidate connected, local time: their consent for this job.
+    listing : Listing or None
+        The job's listing, or None if it is no longer on the board.
+    """
+
+    job: str
+    connected_at: datetime
+    listing: Listing | None

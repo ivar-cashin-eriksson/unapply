@@ -1,0 +1,77 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Lynfjord Power A/S",
+    "title": "Data Scientist, Energy Demand Forecasting",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": 3
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Solid Python for data work and modelling",
+        "skill": "python",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Solid Python for data work and modelling"
+      },
+      {
+        "kind": "must_have",
+        "description": "Strong experience with time series forecasting",
+        "skill": "time series forecasting",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Strong experience with time series forecasting"
+      },
+      {
+        "kind": "must_have",
+        "description": "A good grasp of statistics, including uncertainty",
+        "skill": "statistics",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "A good grasp of statistics, including uncertainty and prediction intervals"
+      },
+      {
+        "kind": "must_have",
+        "description": "Working SQL",
+        "skill": "sql",
+        "min_level": 3,
+        "weight": 3,
+        "quote": "Working SQL"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Bayesian statistics or probabilistic forecasting",
+        "skill": "bayesian statistics",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Bayesian statistics or probabilistic forecasting"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Gradient boosting models",
+        "skill": "gradient boosting",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Gradient boosting models such as LightGBM or XGBoost"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Experience from energy, utilities or weather data",
+        "skill": null,
+        "min_level": null,
+        "weight": 1,
+        "quote": "Experience from energy, utilities or weather data"
+      }
+    ]
+  }
+}

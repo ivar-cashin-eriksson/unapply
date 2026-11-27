@@ -1,0 +1,77 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Smørblomst Mejeri",
+    "title": "Junior Data Scientist",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": null
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Python for data analysis",
+        "skill": "python",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Python for data analysis"
+      },
+      {
+        "kind": "must_have",
+        "description": "Some SQL",
+        "skill": "sql",
+        "min_level": 2,
+        "weight": 4,
+        "quote": "Some SQL"
+      },
+      {
+        "kind": "must_have",
+        "description": "Some experience with forecasting",
+        "skill": "time series forecasting",
+        "min_level": 2,
+        "weight": 4,
+        "quote": "Some experience with forecasting, from work, a thesis or projects"
+      },
+      {
+        "kind": "must_have",
+        "description": "A basic understanding of statistics",
+        "skill": "statistics",
+        "min_level": 2,
+        "weight": 3,
+        "quote": "A basic understanding of statistics"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Demand forecasting for food or retail",
+        "skill": "demand forecasting",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Experience with demand forecasting for food or retail"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Deep learning",
+        "skill": "deep learning",
+        "min_level": null,
+        "weight": 1,
+        "quote": "Deep learning, from work or studies"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Danish",
+        "skill": "danish",
+        "min_level": null,
+        "weight": 1,
+        "quote": "Danish."
+      }
+    ]
+  }
+}

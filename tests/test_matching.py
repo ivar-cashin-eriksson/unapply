@@ -730,7 +730,10 @@ def test_match_total_uses_the_scored_criteria_only(john, fjord):
 
 @pytest.fixture
 def db(john, fjord):
-    """A database with John (approved) and Fjord Grocery (approved rubric)."""
+    """A database with John (approved) and Fjord Grocery (approved rubric).
+
+    Both candidates are connected to the job; only John is matched.
+    """
     init_db()
     repo = Repository.from_url(database_url())
     repo.create_candidate("john", demo=True)
@@ -738,6 +741,8 @@ def db(john, fjord):
     repo.create_candidate("draft")  # No profile yet: not matched.
     repo.create_job("fjord")
     repo.save_job("fjord", fjord, "rubric")
+    for name in ("john", "draft"):
+        repo.grant_consent(name, "fjord")
     yield repo
     repo.engine.dispose()
 
@@ -794,6 +799,9 @@ def test_match_command_needs_an_approved_rubric_and_profiles(db, fjord, capsys):
     assert main(["match", "nothing"]) == 2
     assert main(["match", "fjord", "--candidates", "draft"]) == 2
     assert "no approved profile" in capsys.readouterr().err
+    db.withdraw_consent("john", "fjord")
+    assert main(["match", "fjord", "--candidates", "john"]) == 2
+    assert "isn't connected to job 'fjord'" in capsys.readouterr().err
     assert db.matches(draft.id) == db.matches(fjord.id) == []
 
 
@@ -829,6 +837,7 @@ def pool(db, john):
     for name, profile in (("weaker", weaker), ("abroad", abroad)):
         db.create_candidate(name)
         db.save_profile(name, profile, "assessed")
+        db.grant_consent(name, "fjord")
     return db
 
 

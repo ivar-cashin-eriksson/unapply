@@ -1,0 +1,36 @@
+# The demo job board: the synthetic jobs stored by `POST /demos/board`, each with its
+# rubric approved and the synthetic pool (tests/fixtures/pool) connected to it.
+# Read by unapply.jobs.board; see the README in each job's folder.
+#
+# today      the date current roles run to, so years of experience stay fixed (the
+#            pool's date)
+# jobs       one entry per job, in the order they are posted:
+#   folder     the job's folder here (its ad and recorded rubric extraction)
+#   vacancies  how many people the job hires, as the employer would set it
+#   llm        whether the pool has recorded LLM scorer answers for the job; only
+#              Fjord Grocery does, so the other jobs are matched with the baseline
+today: '2026-11-26'
+jobs:
+- folder: fjord_grocery
+  vacancies: 1
+  llm: true
+- folder: lynfjord_power
+  vacancies: 2
+- folder: havnelys_logistics
+  vacancies: 3
+- folder: ravnekaer_mobility
+  vacancies: 1
+- folder: kornmod_foods
+  vacancies: 2
+- folder: tidevand_software
+  vacancies: 2
+- folder: kloevermark_supermarkets
+  vacancies: 1
+- folder: oresund_academy
+  vacancies: 1
+- folder: kaveri_retail
+  vacancies: 2
+- folder: bogreol_online
+  vacancies: 1
+- folder: smoerblomst_dairy
+  vacancies: 2

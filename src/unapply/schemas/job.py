@@ -114,6 +114,9 @@ class Job(BaseModel):
         What candidates are scored on.
     reveal_quota : int
         How many of the top candidates the company pays to reveal.
+    vacancies : int
+        How many people the company hires for the job, 1 or more. Set by the
+        employer with the ad and shown to candidates on the job board.
     created_at : datetime
         When the job was posted, local time.
     """
@@ -124,6 +127,7 @@ class Job(BaseModel):
     ad_text: str
     rubric: Rubric = Field(default_factory=Rubric)
     reveal_quota: int = Field(default=10, ge=1)
+    vacancies: int = Field(default=1, ge=1)
     created_at: datetime = Field(default_factory=datetime.now)
 
 

@@ -153,6 +153,19 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   from own levels before connecting, the place among connected candidates after) and
   each listing's vacancies and counts: connected, revealed, asked to apply,
   applications.
+- Done (task 14): the **job board**, the candidate's Jobs step in the frontend
+  (`frontend/src/pages/candidate/Jobs.tsx`) over `GET /board` and `GET /board/<job>`
+  (`src/unapply/jobs/board.py`): jobs with an approved rubric, searched by words in
+  the title, company and ad and filtered by location (remote jobs too), work mode
+  and seniority (read from the title); a listing shows the ad and its vacancies,
+  never the rubric. **Connect my profile** grants the job consent with its time
+  (only approved profiles); only connected candidates are matched and ranked, and
+  withdrawing takes the candidate out of the next ranking (earlier audit entries
+  stay), refused once they are revealed. A job has `vacancies` (default 1), set
+  with the ad. Ten more invented demo jobs (`tests/fixtures/jobs`, listed in
+  `board.yaml`, with hand-written stand-in rubrics) sit beside Fjord Grocery, with
+  the synthetic pool connected to each. Still to do: the fit band and the place
+  (task 15) and the counts (task 16).
 
 ## The key experiment (run alongside M1–M4)
 

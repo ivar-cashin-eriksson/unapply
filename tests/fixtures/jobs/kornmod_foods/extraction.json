@@ -1,0 +1,70 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Kornmod Foods A/S",
+    "title": "Data Engineer",
+    "hard_filters": {
+      "locations": [
+        "Aarhus"
+      ],
+      "work_modes": [
+        "remote",
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": 3
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Strong SQL and data modelling",
+        "skill": "sql",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Strong SQL and data modelling"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience with dbt",
+        "skill": "dbt",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Experience with dbt"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience with Snowflake or a similar cloud warehouse",
+        "skill": "snowflake",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Experience with Snowflake or a similar cloud warehouse"
+      },
+      {
+        "kind": "must_have",
+        "description": "Python for scripts and pipelines",
+        "skill": "python",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Python for scripts and pipelines"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Airflow or another orchestrator",
+        "skill": "airflow",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Airflow or another orchestrator"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Spark for larger jobs",
+        "skill": "spark",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Spark for larger jobs"
+      }
+    ]
+  }
+}

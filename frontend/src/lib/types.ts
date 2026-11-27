@@ -157,6 +157,8 @@ export interface JobAd {
   ad: string
   company: string | null
   title: string | null
+  /** How many people the job hires, 1 or more; shown to candidates. */
+  vacancies: number
 }
 
 export interface JobSummary {
@@ -200,6 +202,7 @@ export interface Job {
   ad_text: string
   rubric: Rubric
   reveal_quota: number
+  vacancies: number
   created_at: string
 }
 
@@ -334,4 +337,50 @@ export interface Shortlist {
 export interface ShortlistDemo {
   name: string
   candidates: number
+}
+
+// The job board
+
+export type Seniority = 'junior' | 'mid' | 'senior' | 'lead'
+
+/** A job as candidates see it: the ad and its vacancies, never the rubric. */
+export interface Listing {
+  name: string
+  company: string
+  title: string
+  ad: string
+  vacancies: number
+  locations: string[]
+  work_modes: WorkMode[]
+  seniority: Seniority
+  posted_at: string
+  demo: boolean
+}
+
+export interface Board {
+  listings: Listing[]
+  /** Listings on the board before filtering. */
+  total: number
+  locations: string[]
+  work_modes: WorkMode[]
+  seniorities: Seniority[]
+}
+
+export interface BoardQuery {
+  q?: string
+  location?: string
+  work_mode?: WorkMode
+  seniority?: Seniority
+}
+
+/** A job the candidate connected their profile to: their consent for it. */
+export interface Connection {
+  job: string
+  connected_at: string
+  listing: Listing | null
+}
+
+export interface BoardDemo {
+  /** The demo jobs on the board, newest first. */
+  jobs: string[]
 }

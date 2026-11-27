@@ -2,9 +2,12 @@
 // and the Fjord Grocery job. No real person's data.
 import type {
   AnonymousCandidate,
+  Board,
   CandidateProfile,
   CandidateSummary,
+  Connection,
   JobSummary,
+  Listing,
   Questions,
   RankedCandidate,
   ReviewForm,
@@ -133,6 +136,7 @@ export function job(patch: Partial<JobSummary> = {}): JobSummary {
       ad: 'Senior Data Scientist at Fjord Grocery, Copenhagen. Python and SQL required.',
       company: 'Fjord Grocery',
       title: 'Senior Data Scientist',
+      vacancies: 1,
     },
     has_rubric: true,
     rubric_version: 1,
@@ -272,4 +276,56 @@ export function shortlist(patch: Partial<Shortlist> = {}): Shortlist {
     reveal_quota: 10,
     ...patch,
   }
+}
+
+export function listing(patch: Partial<Listing> = {}): Listing {
+  return {
+    name: 'board-fjord-grocery',
+    company: 'Fjord Grocery ApS',
+    title: 'Senior Data Scientist, Pricing and Forecasting',
+    ad: [
+      '# Senior Data Scientist, Pricing and Forecasting',
+      '',
+      '**Fjord Grocery ApS** · Copenhagen (hybrid)',
+      '',
+      'Fjord Grocery runs 85 grocery stores across Denmark.',
+      '',
+      '## What we are looking for',
+      '',
+      '- Strong Python and SQL.',
+      '- Hands-on experience with time series forecasting in production.',
+    ].join('\n'),
+    vacancies: 1,
+    locations: ['Copenhagen'],
+    work_modes: ['hybrid'],
+    seniority: 'senior',
+    posted_at: '2026-11-27T09:00:00',
+    demo: true,
+    ...patch,
+  }
+}
+
+export const DAIRY = listing({
+  name: 'board-smoerblomst-dairy',
+  company: 'Smørblomst Mejeri',
+  title: 'Junior Data Scientist',
+  ad: '# Junior Data Scientist\n\nWe forecast how much milk our customers will order.',
+  vacancies: 2,
+  seniority: 'junior',
+  posted_at: '2026-11-27T08:50:00',
+})
+
+export function board(patch: Partial<Board> = {}): Board {
+  return {
+    listings: [listing(), DAIRY],
+    total: 2,
+    locations: ['Copenhagen'],
+    work_modes: ['hybrid'],
+    seniorities: ['junior', 'senior'],
+    ...patch,
+  }
+}
+
+export function connection(patch: Partial<Connection> = {}): Connection {
+  return { job: 'board-fjord-grocery', connected_at: '2026-11-27T10:15:00', listing: listing(), ...patch }
 }
