@@ -380,6 +380,35 @@ export interface Connection {
   listing: Listing | null
 }
 
+/** How well the candidate fits a job, from their own levels only. */
+export type FitBand = 'strong' | 'good' | 'partial' | 'low'
+
+/** A hard filter the candidate doesn't meet, named as the ad states it. */
+export interface MissedFilter {
+  filter: string
+  /** Such as "Work permit: EU required". */
+  label: string
+}
+
+/** The candidate's place in the job's latest ranking. */
+export interface Place {
+  rank: number
+  /** How many connected candidates were ranked. */
+  of: number
+  ranked_at: string
+}
+
+/** How well the candidate fits a job: never a score, criterion or weight. */
+export interface Fit {
+  job: string
+  /** Null if the candidate has no profile yet. */
+  band: FitBand | null
+  missed: MissedFilter[]
+  connected: boolean
+  /** Once connected and ranked; null before. */
+  place: Place | null
+}
+
 export interface BoardDemo {
   /** The demo jobs on the board, newest first. */
   jobs: string[]

@@ -266,6 +266,33 @@ def own_and_estimated(
     )
 
 
+def own_total(
+    profile: Profile, rubric: Rubric, taxonomy: Taxonomy | None = None
+) -> float:
+    """Score a candidate with the baseline on their own levels only.
+
+    Free and deterministic: the candidate's fit for a job as they rated
+    themselves, for the job board's fit band (`unapply.jobs.fit`).
+
+    Parameters
+    ----------
+    profile : Profile
+        The candidate's profile. Estimates aren't used.
+    rubric : Rubric
+        The rubric to score against.
+    taxonomy : Taxonomy or None, optional
+        By default `default_taxonomy()`.
+
+    Returns
+    -------
+    float
+        The own total, from 0 to 1 and rounded to 4 places, weighted as
+        `Match.total` is.
+    """
+    scorer = BaselineScorer(taxonomy or default_taxonomy(), "own")
+    return _total(scorer.score(profile, rubric), rubric)
+
+
 def _total(result: ScoringResult, rubric: Rubric) -> float:
     weights = {c.id: c.weight for c in rubric.criteria}
     scored = [(weights[s.criterion_id], s.score) for s in result.scores]

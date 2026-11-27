@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { AdText } from '@/components/AdText'
+import { FitBadge, FitSummary, MissedFilters } from '@/components/FitBadge'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -12,8 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
-import { adSummary, day, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
-import type { BoardQuery, Connection, Listing, Seniority, WorkMode } from '@/lib/types'
+import { adSummary, day, placeText, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
+import type { BoardQuery, Connection, Fit, Listing, Seniority, WorkMode } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
 import { useCandidate } from '@/pages/candidate/context'
@@ -46,6 +47,9 @@ export function JobBoard() {
   const board = useResource(() => api.board(query), JSON.stringify(query))
   const connections = useResource(() => api.connections(name), name)
   const connected = new Set((connections.data ?? []).map((c) => c.job))
+  // How well you fit each job; the board works without it if it can't load.
+  const fits = useResource(() => api.fits(name), `${name}:${board.data?.total ?? 0}`)
+  const fitOf = new Map((fits.data ?? []).map((f) => [f.job, f]))
   const filtered = Boolean(q || location || workMode || seniority)
 
   function clear() {
@@ -193,7 +197,7 @@ export function JobBoard() {
         <ul className="space-y-3" aria-label="Jobs">
           {b.listings.map((x) => (
             <li key={x.name}>
-              <ListingCard listing={x} connected={connected.has(x.name)} />
+              <ListingCard listing={x} connected={connected.has(x.name)} fit={fitOf.get(x.name)} />
             </li>
           ))}
         </ul>
@@ -233,7 +237,7 @@ function Filter({
   )
 }
 
-function ListingCard({ listing: x, connected }: { listing: Listing; connected: boolean }) {
+function ListingCard({ listing: x, connected, fit }: { listing: Listing; connected: boolean; fit?: Fit }) {
   return (
     <Card className={cn('transition-colors hover:border-primary/40', connected && 'border-primary/40')}>
       <CardHeader className="gap-1">
@@ -264,6 +268,7 @@ function ListingCard({ listing: x, connected }: { listing: Listing; connected: b
             <Users aria-hidden /> {vacancies(x.vacancies)}
           </Badge>
         </div>
+        {fit && <FitSummary fit={fit} />}
       </CardContent>
     </Card>
   )
@@ -291,6 +296,7 @@ export function JobListing() {
   const { job = '' } = useParams()
   const listing = useResource(() => api.listing(job), job)
   const connections = useResource(() => api.connections(name), `${name}:${job}`)
+  const fit = useResource(() => api.fit(name, job), `${name}:${job}`)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
 
@@ -323,7 +329,7 @@ export function JobListing() {
         await api.withdraw(name, job)
         toast.success(`You withdrew from ${x.company}.`)
       }
-      await connections.reload()
+      await Promise.all([connections.reload(), fit.reload()])
     } catch (e) {
       setError(e)
     } finally {
@@ -364,6 +370,7 @@ export function JobListing() {
               )}
             </CardContent>
           </Card>
+          {fit.data && <FitCard fit={fit.data} />}
           <ConnectCard
             company={x.company}
             approved={summary.approved}
@@ -430,6 +437,52 @@ function ConnectCard({
           <p className="text-xs text-muted-foreground">
             Approve your profile first: <Link to="../../review" className="text-primary underline-offset-4 hover:underline">go to your review</Link>.
           </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** How well you fit the job: the band, requirements you miss, and your place once connected. */
+function FitCard({ fit }: { fit: Fit }) {
+  return (
+    <Card role="region" aria-label="How well you fit">
+      <CardHeader>
+        <CardTitle className="text-base">How well you fit</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        {fit.band ? (
+          <div className="space-y-1.5">
+            <FitBadge band={fit.band} />
+            <p className="text-muted-foreground">From your own levels, compared with what the job asks for.</p>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Your fit shows once you have a profile.</p>
+        )}
+        {fit.missed.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="font-medium">You don't meet</p>
+            <MissedFilters fit={fit} />
+            <p className="text-muted-foreground">
+              You can still connect, but you'll rank after everyone who meets every requirement.
+            </p>
+          </div>
+        )}
+        {fit.connected ? (
+          fit.place ? (
+            <p>
+              <span className="font-medium">{placeText(fit.place)}</span>{' '}
+              <span className="text-muted-foreground">
+                connected candidates, in the latest ranking on {day(fit.place.ranked_at)}.
+              </span>
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Not ranked yet: your place shows once the employer ranks the connected candidates.
+            </p>
+          )
+        ) : (
+          <p className="text-muted-foreground">Connect to see your place among the connected candidates.</p>
         )}
       </CardContent>
     </Card>

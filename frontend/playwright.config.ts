@@ -58,7 +58,8 @@ export default defineConfig({
     },
     {
       name: 'Web',
-      command: `npx vite --port ${WEB_PORT} --strictPort --host 127.0.0.1`,
+      // Its own port and process: --bypass-lock lets it run beside a developer's dev server.
+      command: `npx vite --port ${WEB_PORT} --strictPort --host 127.0.0.1 --bypass-lock`,
       url: `http://127.0.0.1:${WEB_PORT}`,
       env: { UNAPPLY_API_URL: `http://127.0.0.1:${API_PORT}` },
       reuseExistingServer: false,

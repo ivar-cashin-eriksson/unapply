@@ -164,8 +164,13 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   stay), refused once they are revealed. A job has `vacancies` (default 1), set
   with the ad. Ten more invented demo jobs (`tests/fixtures/jobs`, listed in
   `board.yaml`, with hand-written stand-in rubrics) sit beside Fjord Grocery, with
-  the synthetic pool connected to each. Still to do: the fit band and the place
-  (task 15) and the counts (task 16).
+  the synthetic pool connected to each.
+- Done (task 15): the **fit** on each board card and listing
+  (`src/unapply/jobs/fit.py`, `GET /candidates/<name>/fit[/<job>]`): a band from
+  the baseline on the candidate's own levels only (on the profile without estimates
+  or claim support; strong from 0.8, good from 0.6, partial from 0.3, else low), the
+  hard filters they miss named as in the ad, and after connecting their place in
+  the job's latest ranking in the audit log. Still to do: the counts (task 16).
 
 ## The key experiment (run alongside M1–M4)
 

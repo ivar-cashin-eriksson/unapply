@@ -249,7 +249,7 @@ widen it.
   withdraw), each job matches the pool sensibly with the baseline scorer, and it is
   tested with pytest, Vitest and Playwright, with screenshots.
 
-### 15. [ ] How well you fit, for candidates
+### 15. [x] How well you fit, for candidates
 
 - On the job board and on each listing, the candidate sees how well they fit the
   role: before connecting, a coarse band ("Strong fit", "Good fit", "Partial fit")

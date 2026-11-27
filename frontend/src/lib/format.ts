@@ -1,6 +1,6 @@
 // Labels and formats shared by the pages, matching the Streamlit app's wording.
 
-import type { CriterionKind, DatePrecision, Seniority, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
+import type { CriterionKind, DatePrecision, FitBand, Place, Seniority, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
 
 /** The shared skill scale, 1 to 5 (`unapply.schemas.SkillLevel`). */
 export const LEVELS: { value: SkillLevel; name: string; meaning: string }[] = [
@@ -48,6 +48,23 @@ export const SENIORITIES: { value: Seniority; label: string }[] = [
 
 export function seniorityLabel(seniority: Seniority): string {
   return SENIORITIES.find((s) => s.value === seniority)?.label ?? seniority
+}
+
+export const FIT_BANDS: { value: FitBand; label: string }[] = [
+  { value: 'strong', label: 'Strong fit' },
+  { value: 'good', label: 'Good fit' },
+  { value: 'partial', label: 'Partial fit' },
+  { value: 'low', label: 'Low fit' },
+]
+
+/** "Strong fit", "Good fit", "Partial fit" or "Low fit". */
+export function fitLabel(band: FitBand): string {
+  return FIT_BANDS.find((b) => b.value === band)?.label ?? band
+}
+
+/** "You're #4 of 37". */
+export function placeText(place: Place): string {
+  return `You're #${place.rank} of ${place.of}`
 }
 
 /** "1 vacancy", "3 vacancies". */

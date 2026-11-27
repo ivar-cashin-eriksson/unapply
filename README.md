@@ -181,6 +181,12 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   and seniority, read one (the ad and vacancies, never the rubric), and connect an
   approved profile to a job (`PUT`), list the connections and withdraw (`DELETE`,
   refused once the employer revealed the candidate).
+- **Fit** (`/candidates/<name>/fit`, `/candidates/<name>/fit/<job>`): how well the
+  candidate fits each job on the board: a band ("Strong", "Good", "Partial" or "Low
+  fit") from the baseline on their own levels only, the hard filters they don't meet
+  as the ad names them ("Work permit: EU required"), and once connected their place
+  in the job's latest ranking ("You're #4 of 37"). Never a score, criterion, weight
+  or minimum level; free, and nothing is stored.
 - **Matching** (`/jobs/<name>/match`, `/jobs/<name>/ranking`): match every
   candidate connected to a job, with an approved profile, against its approved
   rubric, with the baseline or the LLM scorer, and read the anonymised ranking

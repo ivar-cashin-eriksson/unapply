@@ -1,7 +1,9 @@
 """Job board routes: browse and read listings, and connect a profile to a job.
 
 Candidate routes. A listing is the ad, its vacancies and what it can be filtered by,
-never the rubric. Connecting is the candidate's consent for that job: it lets the
+never the rubric. A candidate's fit for each job is a coarse band from their own
+levels and the hard filters they miss, and after connecting their place in the
+ranking. Connecting is the candidate's consent for that job: it lets the
 job match and rank their profile anonymously, and the employer reveal it later. It
 can be withdrawn until the employer reveals the candidate.
 """
@@ -29,6 +31,7 @@ from unapply.jobs.board import (
     search,
     withdraw,
 )
+from unapply.jobs.fit import Fit, fit, fits
 from unapply.schemas import WorkMode
 
 router = APIRouter(tags=["job board"])
@@ -74,6 +77,27 @@ def list_connections(name: str, ctx: Ctx) -> list[Connection]:
         if consent is not None:
             found.append(_connection(ctx, consent.job, consent.granted_at))
     return sorted(found, key=lambda c: c.connected_at, reverse=True)
+
+
+@router.get("/candidates/{name}/fit", tags=["candidates"])
+def list_fits(name: str, ctx: Ctx) -> list[Fit]:
+    """How well the candidate fits each job on the board, in board order.
+
+    A coarse band from their own levels only, the hard filters they don't meet as
+    the ad names them, and once connected their place in the job's latest
+    ranking. Never a score, criterion, weight or minimum level, and nothing from
+    the assessment. Free, and nothing is stored.
+    """
+    return fits(ctx.repo, name)
+
+
+@router.get("/candidates/{name}/fit/{job}", tags=["candidates"])
+def read_fit(name: str, job: str, ctx: Ctx) -> Fit:
+    """How well the candidate fits one job on the board (see `GET .../fit`)."""
+    found = fit(ctx.repo, name, job)
+    if found is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No job {job!r} on the board.")
+    return found
 
 
 @router.put("/candidates/{name}/connections/{job}", tags=["candidates"])

@@ -221,6 +221,16 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   await expect(page.getByText(`${total} jobs`, { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Add the demo jobs' }).click()
   await expect(jobs.getByRole('listitem')).toHaveCount(total)
+  // How well John fits each job, from his own levels, and requirements he misses.
+  const lynfjord = jobs.getByRole('listitem').filter({ hasText: 'Lynfjord Power' })
+  await expect(lynfjord.getByRole('group', { name: 'Your fit' })).toContainText('Strong fit')
+  const kaveri = jobs.getByRole('listitem').filter({ hasText: 'Bengaluru' })
+  const missed = kaveri.getByRole('group', { name: "Requirements you don't meet" })
+  await expect(missed).toContainText('Location: Bengaluru')
+  await expect(missed).toContainText('Work permit: IN required')
+  await expect(
+    jobs.getByRole('listitem').filter({ hasText: 'Kløvermark' }).getByRole('group', { name: 'Your fit' }),
+  ).toContainText('Low fit')
   expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
   await shot(page, '16-job-board')
 
@@ -244,22 +254,34 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Data Scientist, Energy Demand Forecasting')
   await expect(page.getByText('2 vacancies')).toBeVisible()
   await expect(page.getByText('Strong experience with time series forecasting.')).toBeVisible()
+  const fit = page.getByRole('region', { name: 'How well you fit' })
+  await expect(fit).toContainText('Strong fit')
+  await expect(fit).toContainText('Connect to see your place among the connected candidates.')
   expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
 
   // Connect: John is now matched and ranked by the job, anonymously.
   await page.getByRole('button', { name: 'Connect my profile' }).click()
   await expect(page.getByRole('region', { name: 'Your connection' })).toContainText('Connected on')
+  await expect(fit).toContainText('Not ranked yet')
   await shot(page, '18-job-listing-connected')
   const profile = await (await page.request.get(`/api/candidates/${candidate}/profile`)).json()
+  type Ranked = { profile_id: string; rank: number }
   const ranked = async () => {
     const response = await page.request.post('/api/jobs/board-lynfjord-power/match')
     expect(response.ok()).toBe(true)
     const body = await response.json()
-    return body.candidates.map((c: { profile_id: string }) => c.profile_id) as string[]
+    return body.candidates as Ranked[]
   }
   const withJohn = await ranked()
   expect(withJohn).toHaveLength(13)
-  expect(withJohn).toContain(profile.id)
+  const john = withJohn.find((c) => c.profile_id === profile.id)
+  expect(john).toBeDefined()
+
+  // Ranked: John sees his place among the connected candidates.
+  await page.reload()
+  await expect(fit).toContainText(`You're #${john!.rank} of 13 connected candidates`)
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await shot(page, '20-job-listing-place')
 
   // Back on the board, the job is marked as connected.
   await page.getByRole('link', { name: 'All jobs' }).click()
@@ -267,11 +289,13 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   await expect(card.getByText('Connected')).toBeVisible()
 
   // Withdraw: out of the job's next ranking.
+  await expect(card.getByRole('group', { name: 'Your fit' })).toContainText(`You're #${john!.rank} of 13`)
   await card.getByRole('link').first().click()
   await page.getByRole('button', { name: 'Withdraw' }).click()
   await expect(page.getByRole('button', { name: 'Connect my profile' })).toBeEnabled()
+  await expect(fit).toContainText('Connect to see your place among the connected candidates.')
   await shot(page, '19-job-listing-withdrawn')
-  const without = await ranked()
+  const without = (await ranked()).map((c) => c.profile_id)
   expect(without).toHaveLength(12)
   expect(without).not.toContain(profile.id)
 })
