@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 
@@ -214,6 +214,29 @@ function ShortlistView({ data, scorer, reload, set, compared, setCompared, view,
     )
   }
 
+  function card(r: RankedCandidate) {
+    const c = people.get(r.profile_id)
+    if (!c) return null
+    const slot = compared.find((x) => x.id === c.profile_id)?.slot
+    return (
+      <CandidateCard
+        key={r.match_id}
+        ranked={r}
+        candidate={c}
+        criteria={criteria}
+        scorer={scorer}
+        compared={slot !== undefined}
+        canCompare={slot !== undefined || compared.length < MAX_COMPARED}
+        onCompare={() => toggle(c.profile_id)}
+        intents={new Set(data.intents.filter((i) => i.profile_id === c.profile_id).map((i) => i.kind))}
+        revealsLeft={reveals < data.reveal_quota}
+        onAsk={(kind) => ask(c, kind)}
+      />
+    )
+  }
+  const passing = data.ranking.candidates.filter((r) => r.passed_hard_filters)
+  const failing = data.ranking.candidates.filter((r) => !r.passed_hard_filters)
+
   const series: Series[] = compared.flatMap(({ id, slot }) => {
     const c = people.get(id)
     return c ? [{ id, label: c.alias, slot, levels: c.skills }] : []
@@ -233,28 +256,28 @@ function ShortlistView({ data, scorer, reload, set, compared, setCompared, view,
             {matchButton}
           </div>
         </div>
-        <ol className="space-y-3">
-          {data.ranking.candidates.map((r) => {
-            const c = people.get(r.profile_id)
-            if (!c) return null
-            const slot = compared.find((x) => x.id === c.profile_id)?.slot
-            return (
-              <CandidateCard
-                key={r.match_id}
-                ranked={r}
-                candidate={c}
-                criteria={criteria}
-                scorer={scorer}
-                compared={slot !== undefined}
-                canCompare={slot !== undefined || compared.length < MAX_COMPARED}
-                onCompare={() => toggle(c.profile_id)}
-                intents={new Set(data.intents.filter((i) => i.profile_id === c.profile_id).map((i) => i.kind))}
-                revealsLeft={reveals < data.reveal_quota}
-                onAsk={(kind) => ask(c, kind)}
-              />
-            )
-          })}
+        <ScoreKey scorer={scorer} />
+        <ol className="space-y-3" aria-label="Meet the requirements">
+          {passing.map(card)}
         </ol>
+        {failing.length > 0 && (
+          <>
+            <div className="flex items-center gap-3 pt-4" role="separator" aria-labelledby="failing">
+              <span className="h-px flex-1 bg-destructive/30" />
+              <span id="failing" className="text-sm font-medium text-destructive">
+                Don't meet the requirements · {failing.length}
+              </span>
+              <span className="h-px flex-1 bg-destructive/30" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Scored like everyone else, but each fails a hard filter, so they rank after everyone who meets them,
+              whatever their score.
+            </p>
+            <ol className="space-y-3" aria-label="Don't meet the requirements">
+              {failing.map(card)}
+            </ol>
+          </>
+        )}
       </section>
 
       <aside className="lg:sticky lg:top-6 lg:self-start">
@@ -336,12 +359,15 @@ function CandidateCard({
 
   return (
     <li>
-      <Card className={cn('gap-0 py-0', !ranked.passed_hard_filters && 'bg-muted/40')}>
+      <Card
+        className={cn('gap-0 py-0', !ranked.passed_hard_filters && 'border-destructive/30 bg-destructive/5')}
+        data-failed={ranked.passed_hard_filters ? undefined : true}
+      >
         <div className="flex flex-wrap items-start gap-4 p-5">
           <span
             className={cn(
               'flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
-              ranked.passed_hard_filters ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground',
+              ranked.passed_hard_filters ? 'bg-accent text-primary' : 'bg-destructive/10 text-destructive',
             )}
             aria-label={`Rank ${ranked.rank}`}
           >
@@ -362,16 +388,15 @@ function CandidateCard({
               )}
             </div>
             <p className="text-sm text-muted-foreground">{candidate.headline}</p>
-            {failed.length > 0 ? (
-              <p className="flex items-start gap-1.5 text-sm">
+            {failed.map((f) => (
+              <p key={f.name} className="flex items-start gap-1.5 text-sm">
                 <X className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
                 <span>
-                  <span className="font-medium">Fails a hard filter:</span> {failed.map((f) => f.reason).join('; ')}
+                  <span className="font-medium">Doesn't meet {FILTERS[f.name].toLowerCase()}:</span> {f.reason}
                 </span>
               </p>
-            ) : (
-              <ScoreBar value={ranked.total} label={`Total for ${candidate.alias}`} />
-            )}
+            ))}
+            <Scores ranked={ranked} scorer={scorer} alias={candidate.alias} />
             {unknown.length > 0 && (
               <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                 <CircleHelp className="mt-0.5 size-3.5 shrink-0" aria-hidden />
@@ -446,6 +471,48 @@ function CandidateCard({
   )
 }
 
+const SCORER_TOTAL: Record<Scorer, string> = { baseline: 'Baseline total', llm: 'LLM total' }
+
+/** Says what the three scores on each card are. */
+function ScoreKey({ scorer }: { scorer: Scorer }) {
+  return (
+    <p className="text-sm text-muted-foreground">
+      <span className="font-medium text-foreground">{SCORER_TOTAL[scorer]}</span> sets the rank.{' '}
+      <span className="font-medium text-foreground">Own rating</span> scores the candidate's own levels and{' '}
+      <span className="font-medium text-foreground">Estimated from evidence</span> the levels their material supports,
+      both with the baseline.
+    </p>
+  )
+}
+
+/** The scorer's total, which sets the rank, and the baseline on own and on estimated levels. */
+function Scores({ ranked, scorer, alias }: { ranked: RankedCandidate; scorer: Scorer; alias: string }) {
+  const rows = [
+    ['Own rating', ranked.own_total],
+    ['Estimated from evidence', ranked.estimated_total],
+  ] as const
+  return (
+    <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-1.5 pt-1">
+      <dt className="text-sm font-medium">{SCORER_TOTAL[scorer]}</dt>
+      <dd>
+        <ScoreBar value={ranked.total} label={`Total for ${alias}`} />
+      </dd>
+      {rows.map(([name, value]) => (
+        <Fragment key={name}>
+          <dt className="text-xs text-muted-foreground">{name}</dt>
+          <dd>
+            {value === null ? (
+              <span className="text-xs text-muted-foreground">Profile changed since matching</span>
+            ) : (
+              <ScoreBar value={value} label={`${name} for ${alias}`} small />
+            )}
+          </dd>
+        </Fragment>
+      ))}
+    </dl>
+  )
+}
+
 /** A score from 0 to 1 as a bar and a percentage. */
 function ScoreBar({ value, label, small }: { value: number; label: string; small?: boolean }) {
   const percent = Math.round(value * 100)
@@ -457,11 +524,11 @@ function ScoreBar({ value, label, small }: { value: number; label: string; small
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className={cn('flex-1 overflow-hidden rounded-full bg-muted', small ? 'h-1.5 max-w-32' : 'h-2 max-w-64')}
+        className={cn('max-w-64 flex-1 overflow-hidden rounded-full bg-muted', small ? 'h-1.5' : 'h-2')}
       >
         <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
       </div>
-      <span className={cn('tabular-nums', small ? 'text-xs text-muted-foreground' : 'text-sm font-medium')}>
+      <span className={cn('w-9 text-right tabular-nums', small ? 'text-xs text-muted-foreground' : 'text-sm font-medium')}>
         {percent}%
       </span>
     </div>
@@ -481,9 +548,6 @@ function Reasons({
 }) {
   const quotes = new Map(candidate.evidence.map((e) => [e.id, e]))
   const scores = new Map(ranked.criterion_scores.map((s) => [s.criterion_id, s]))
-  if (!ranked.passed_hard_filters) {
-    return <p className="text-sm text-muted-foreground">Not scored: candidates who fail a hard filter aren't scored.</p>
-  }
   return (
     <section className="space-y-3" aria-label={`Reasons for ${candidate.alias}`}>
       <h4 className="text-sm font-medium">Per criterion</h4>

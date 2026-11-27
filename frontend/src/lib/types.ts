@@ -250,8 +250,12 @@ export interface HardFilterCheck {
 
 export interface RankedCandidate {
   rank: number
-  /** Weighted mean of the criterion scores, 0 to 1; 0 if a hard filter failed. */
+  /** Weighted mean of the criterion scores, 0 to 1; sets the rank. Failed filters are scored too, and rank last. */
   total: number
+  /** The baseline's total on own levels only; null if the profile changed since the match. */
+  own_total: number | null
+  /** The baseline's total on estimated levels only; null like `own_total`. */
+  estimated_total: number | null
   profile_id: string
   match_id: string
   passed_hard_filters: boolean

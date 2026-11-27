@@ -1,0 +1,90 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.9,
+        "rationale": "Python every day, with LightGBM and a PyTorch forecasting model in production for 30,000 products: strong Python.",
+        "evidence": [
+          "E3",
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.8,
+        "rationale": "SQL every day alongside Python and Spark feature pipelines: strong SQL, with little detail on its depth.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 1.0,
+        "rationale": "Leads demand forecasting for 30,000 products across 300 stores in production: hands-on production forecasting at scale.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.95,
+        "rationale": "An MSc in Statistics and statistical modelling for retail clients (regression, time series, causal inference): a very solid understanding of statistics.",
+        "evidence": [
+          "E6",
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 1.0,
+        "rationale": "Designed the pricing experimentation platform and runs 50 A/B tests a quarter: expert A/B testing on prices.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.85,
+        "rationale": "Presents forecast accuracy and experiment results to category heads: clear communication with non-technical stakeholders.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.9,
+        "rationale": "Spark on AWS EMR for the feature pipelines: experience with Spark on large data.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.8,
+        "rationale": "A deep learning model in PyTorch is part of the production demand forecasting.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 1.0,
+        "rationale": "Ten years in retail, forecasting for 300 stores and pricing experiments: retail experience.",
+        "evidence": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 0.0,
+        "rationale": "Only English is listed; no Danish.",
+        "evidence": [
+          "E7"
+        ]
+      }
+    ]
+  }
+}

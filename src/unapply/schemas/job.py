@@ -192,11 +192,10 @@ class Match(BaseModel):
         Returns
         -------
         float
-            From 0 to 1. 0 if the candidate failed the hard filters or nothing was
-            scored.
+            From 0 to 1; 0 if nothing was scored. Candidates who failed a hard
+            filter are scored too, so this is their score as well; a ranking puts
+            them after everyone who passed, whatever it is.
         """
-        if not self.passed_hard_filters:
-            return 0.0
         weights = {c.id: c.weight for c in rubric.criteria}
         scored = [
             (weights[s.criterion_id], s.score)

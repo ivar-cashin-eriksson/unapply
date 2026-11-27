@@ -96,7 +96,8 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - Deterministic hard filters first: work mode, location, work permit (EU and member
   states) and minimum years of work (month precision, overlapping roles counted
   once, education left out by a title heuristic). Missing information is "unknown",
-  not a failure. Candidates who fail a filter aren't scored.
+  not a failure. Candidates who fail a filter are scored too (since task 12 of
+  `docs/autonomous-plan.md`), and rank after everyone who passes.
 - Two scorers, each giving a score from 0 to 1 per criterion with a reason and
   evidence ids: a **baseline** in plain code (level against `min_level`, blending
   own and estimated levels by confidence, times an evidence factor; related skills
@@ -133,6 +134,11 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   table); "Reveal" and "Request application" recorded once each in the `intents`
   table, reveals limited to the job's `reveal_quota`. The shortlist demo stores the
   synthetic pool. Revealing shows no identity yet: that needs payment and consent.
+- Done (task 12): each card shows the scorer's total, which sets the rank, beside
+  the baseline on own levels only ("Own rating") and on estimated levels only
+  ("Estimated from evidence"). Candidates who fail a hard filter are scored by both
+  scorers and shown below a "Don't meet the requirements" divider, on a light red
+  card naming the failed filters.
 
 - Decided flow (2026-11-27, tasks 14 and 16 of `docs/autonomous-plan.md`): a
   candidate gets in with one click, **Connect my profile**, which is their consent to
@@ -158,7 +164,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   for each scorer against a reference ranking, a YAML file of candidates and ranks
   (`--reference`), and runs on a synthetic pool of 12 candidates for Fjord Grocery
   with an intended ranking (`tests/fixtures/pool/`). On it the baseline scores
-  top-3 1.00, top-5 0.80, tau 0.84; it ranks an overclaimer 4th instead of 8th,
+  top-3 1.00, top-5 0.80, tau 0.82; it ranks an overclaimer 4th instead of 8th,
   because unsure estimates leave room for the candidate's own levels. The LLM
   scorer's answers are hand-written stand-ins until recorded. Still to do: rankings
   from the database (real matches) and agreement between human rankers.

@@ -44,6 +44,7 @@ from unapply.matching import (
     Scorer,
     check_hard_filters,
     latest,
+    own_and_estimated,
     rank,
 )
 from unapply.matching.run import MatchingError, match_job, record_ranking
@@ -75,8 +76,8 @@ def match(
 ) -> Ranking:
     """Match every candidate with an approved profile to the job, and rank them.
 
-    Hard filters first: candidates who fail one aren't scored. The matches are
-    stored, which locks the rubric version. With the LLM scorer, paid calls are
+    Every candidate is scored; those who fail a hard filter are ranked after
+    everyone who passes. The matches are stored, which locks the rubric version. With the LLM scorer, paid calls are
     refused before anyone is scored unless allowed; a demo candidate matched to a
     demo job replays a recording.
     """
@@ -113,8 +114,9 @@ def ranking(
 ) -> Ranking:
     """Read the job's ranking from stored matches: each candidate's latest match.
 
-    No model is called. Hard filter outcomes are worked out again for candidates
-    whose profile hasn't changed since. The ranking shown is recorded in the audit
+    No model is called. Hard filter outcomes, and the baseline's totals on own and
+    on estimated levels only, are worked out again for candidates whose profile
+    hasn't changed since. The ranking shown is recorded in the audit
     log, like every ranking.
     """
     job, ranked = _stored(ctx, name, scorer, version)
@@ -250,10 +252,17 @@ def _ranking(
             if profile is not None
             else None
         )
+        own, estimated = (
+            own_and_estimated(profile, job.rubric)
+            if profile is not None
+            else (None, None)
+        )
         candidates.append(
             RankedCandidate(
                 rank=r.rank,
                 total=r.total,
+                own_total=own,
+                estimated_total=estimated,
                 profile_id=r.match.profile_id,
                 match_id=r.match.id,
                 passed_hard_filters=r.match.passed_hard_filters,
@@ -286,8 +295,8 @@ def _pool_llm(candidate: str) -> StructuredLLM:
 class _NoRecording:
     """Stands in for the model for a pool candidate without a recorded answer.
 
-    Only candidates who pass the hard filters are scored, and each of them has a
-    recording; this fails clearly if that stops being true.
+    Every pool candidate has a recording; this fails clearly if that stops being
+    true.
     """
 
     model = "replay:none"

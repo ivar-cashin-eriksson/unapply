@@ -22,7 +22,8 @@ companies, schools, email addresses and phone numbers.
 | 10 | `emil-dahl` | Too junior: about three years of work, the job asks for four |
 | 10 | `clara-jensen` | Remote only, from Odense: fails the work mode and location filters |
 
-Candidates who fail a hard filter aren't scored, so they share the last place.
+Candidates who fail a hard filter share the last place in the intended ranking. They
+are scored too, and a ranking orders them by score after everyone who passes.
 
 ## Files
 
@@ -36,7 +37,7 @@ ranking. Each candidate's folder has:
 | `extraction.json` | The profile extraction of the CV |
 | `review.yaml` | The candidate's own levels, set in the review sheet; the profile is then approved |
 | `estimation.json` | The estimate of every skill of the reviewed profile |
-| `match_fjord_grocery.json` | The LLM scorer's answer for the job; only for the nine who pass the hard filters |
+| `match_fjord_grocery.json` | The LLM scorer's answer for the job, for every candidate, those who fail a hard filter too |
 
 Every `.json` file is a **hand-written stand-in**, not a model answer (its `model` says
 so): the quotes are copied verbatim from the CV, the levels and scores follow the
@@ -57,8 +58,8 @@ uv run unapply evaluate --reference shortlist.yaml   # a human shortlist instead
 A reference file lists `candidate` and `rank` (and an optional `reason`) under
 `ranking`; it may cover only some candidates.
 
-To record real answers instead (paid, about $1.50: 24 Opus calls for extraction and
-estimation, 9 for scoring), which overwrites the stand-ins:
+To record real answers instead (paid, about $1.60: 24 Opus calls for extraction and
+estimation, 12 for scoring), which overwrites the stand-ins:
 
 ```bash
 uv run unapply evaluate --record --allow-api

@@ -36,6 +36,7 @@ from unapply.matching import (
     check_hard_filters,
     latest,
     match_candidate,
+    own_and_estimated,
     rank,
 )
 from unapply.matching.anonymise import REDACTED, redact
@@ -384,6 +385,32 @@ def test_level_blends_own_and_estimated_by_confidence():
         ("a", 5, 3, 0.5), ("b", None, 3, 0.5), ("c", 4, None, 0.0), ("d", None, None, 0)
     )
     assert [level(s) for s in profile.skills] == [4.0, 3.0, 4.0, 1.0]
+    # Own or estimated only: the other is ignored, and a missing one is aware (1).
+    assert [level(s, "own") for s in profile.skills] == [5.0, 1.0, 4.0, 1.0]
+    assert [level(s, "estimated") for s in profile.skills] == [3.0, 3.0, 1.0, 1.0]
+
+
+def test_the_baseline_on_own_or_estimated_levels_only(john, fjord):
+    profile = _with_skills(("python", 4, 2, 0.9), quotes=("One.", "Two."))
+    criterion = _criterion("python", 4)
+    scores = {
+        levels: BaselineScorer(levels=levels).score_criterion(profile, criterion)
+        for levels in ("blend", "own", "estimated")
+    }
+    assert scores["own"].score == 1.0
+    assert scores["estimated"].score == 0.25  # (2 / 4) ** 2
+    assert scores["estimated"].score < scores["blend"].score < scores["own"].score
+    assert "(own only)" in scores["own"].rationale
+    assert "only" not in scores["blend"].rationale
+    with pytest.raises(ValueError, match="unknown levels"):
+        BaselineScorer(levels="guessed")
+
+    own, estimated = own_and_estimated(john, fjord.rubric)
+    for levels, total in (("own", own), ("estimated", estimated)):
+        match = match_candidate(john, fjord, BaselineScorer(levels=levels), TODAY)
+        assert total == round(match.match.total(fjord.rubric), 4)
+    blend = match_candidate(john, fjord, BaselineScorer(), TODAY).match
+    assert 0 < min(own, estimated) <= blend.total(fjord.rubric) <= max(own, estimated)
 
 
 def test_baseline_level_fit_and_evidence():
@@ -626,24 +653,19 @@ def test_redact_names():
 # Matching and ranking
 
 
-class RefusingScorer:
-    model = "refusing"
-
-    def score(self, profile, rubric):
-        raise AssertionError("a candidate who failed a hard filter was scored")
-
-
-def test_a_candidate_failing_a_hard_filter_isnt_scored(john, fjord):
+def test_a_candidate_failing_a_hard_filter_is_scored_too(john, fjord):
     abroad = john.model_copy(
         update={
             "preferences": john.preferences.model_copy(update={"work_permits": ["US"]})
         }
     )
-    result = match_candidate(abroad, fjord, RefusingScorer(), TODAY)
+    result = match_candidate(abroad, fjord, BaselineScorer(), TODAY)
+    passing = match_candidate(john, fjord, BaselineScorer(), TODAY)
     assert not result.match.passed_hard_filters
-    assert result.match.criterion_scores == []
-    assert result.match.total(fjord.rubric) == 0.0
     assert [c.name for c in result.filters.failed] == ["work_permit"]
+    # The same scores as if they had passed: the filter only sets where they rank.
+    assert result.match.criterion_scores == passing.match.criterion_scores
+    assert result.match.total(fjord.rubric) == pytest.approx(0.81, abs=0.005)
 
 
 def _scored(rubric, score, passed=True, scored_at=None, model="m"):
@@ -671,9 +693,15 @@ def test_rank_orders_by_total_and_shares_ties():
     )
     ranked = rank([low, failed, tie, high], rubric)
     assert [r.rank for r in ranked] == [1, 1, 3, 4]
-    assert [r.total for r in ranked] == [0.9, 0.9, 0.2, 0.0]
+    # A failed hard filter ranks last whatever its score, and keeps the score.
+    assert [r.total for r in ranked] == [0.9, 0.9, 0.2, 1.0]
     assert {r.match.id for r in ranked[:2]} == {high.id, tie.id}
     assert ranked[-1].match is failed
+    # Failed candidates are ordered by score among themselves, sharing ties.
+    worse, same = _scored(rubric, 0.3, passed=False), _scored(rubric, 1.0, passed=False)
+    ranked = rank([worse, failed, high, same], rubric)
+    assert [r.rank for r in ranked] == [1, 2, 2, 4]
+    assert ranked[-1].match is worse
     # Ties are in a reproducible order.
     assert rank([tie, high], rubric) == rank([high, tie], rubric)
 
@@ -849,7 +877,11 @@ def test_matching_records_every_match_and_the_ranking(pool, fjord):
         str(r.match.id) for r in matching.ranking
     ]
     assert [r["rank"] for r in ranked] == [1, 2, 3]
-    assert ranked[0]["total"] > ranked[1]["total"] > ranked[2]["total"] == 0.0
+    assert ranked[0]["total"] > ranked[1]["total"]
+    # The candidate who fails a filter is scored and logged with scores, last.
+    assert ranked[2]["match"]["profile_id"] == str(pool.profile("abroad").id)
+    assert ranked[2]["total"] > 0
+    assert abroad.payload["match"]["criterion_scores"]
     assert log[-1].profile_id is log[-1].profile_hash is None
 
 

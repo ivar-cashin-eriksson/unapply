@@ -7,8 +7,7 @@ A pool is a folder with a `pool.yaml` and one folder per candidate::
     <candidate>/extraction.json    recorded extraction of the material
     <candidate>/review.yaml        the candidate's review edits (own levels)
     <candidate>/estimation.json    recorded estimate of the reviewed profile
-    <candidate>/<match file>       recorded LLM scorer answer for the job (only for
-                                   candidates who pass the hard filters)
+    <candidate>/<match file>       recorded LLM scorer answer for the job
 
 Loading a pool replays each candidate's journey: extract, review and approve,
 estimate. The job's rubric is extracted from its recording and approved. Nothing
@@ -135,7 +134,7 @@ class Pool:
         Returns
         -------
         Path
-            The file; it only exists for candidates who pass the hard filters.
+            The file.
         """
         return self.folder / name / self.match_file
 
@@ -282,8 +281,7 @@ def pool_scorer(
     llm_for : callable, optional
         For "llm": makes the model from the path of the candidate's recorded
         answer; by default it replays it. Candidates without a recording to
-        replay get a model that fails if asked, which only happens if they pass
-        the hard filters.
+        replay get a model that fails when asked.
 
     Returns
     -------
@@ -344,7 +342,7 @@ def evaluate_pool(
     ValueError
         If `kind` is unknown, or the reference has no candidate of the pool.
     LLMError
-        If a candidate who passes the hard filters has no recorded answer.
+        If a candidate has no recorded answer.
     """
     reference = reference if reference is not None else pool.intended
     scorer_for = pool_scorer(pool, kind, llm_for)
@@ -361,9 +359,7 @@ def evaluate_pool(
     tau = kendall_tau(
         {n: r.rank for n, r in ranking}, {e.candidate: e.rank for e in reference}
     )
-    models = sorted(
-        {r.match.model for r in results.values() if r.match.passed_hard_filters}
-    )
+    models = sorted({r.match.model for r in results.values()})
     return Evaluation(
         scorer=kind,
         model=", ".join(models) or "-",
@@ -387,7 +383,7 @@ def match_recording(candidate: str, folder: Path = DEFAULT_POOL) -> Path:
     Returns
     -------
     Path
-        The file; it only exists for candidates who pass the hard filters.
+        The file.
     """
     spec = yaml.safe_load((folder / "pool.yaml").read_text(encoding="utf-8")) or {}
     return folder / candidate / spec.get("match_file", "match.json")

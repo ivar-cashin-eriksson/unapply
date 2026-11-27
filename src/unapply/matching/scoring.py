@@ -1,8 +1,9 @@
 """Matching one candidate to one job, and ranking the candidates.
 
-A match runs the hard filters first (`unapply.matching.filters`); a candidate who
-fails one isn't scored, so their total is 0 and no paid call is spent on them.
-Otherwise a scorer, the baseline or the LLM scorer, scores each criterion.
+A match runs the hard filters (`unapply.matching.filters`) and a scorer, the
+baseline or the LLM scorer, which scores each criterion. Candidates who fail a hard
+filter are scored too, so the employer sees how close they are, but a ranking puts
+them after everyone who passes, whatever their score.
 """
 
 from __future__ import annotations
@@ -102,11 +103,11 @@ def match_candidate(
     Returns
     -------
     MatchResult
-        The match against the job's current rubric version. If a hard filter
-        failed, it has no scores and the scorer isn't called.
+        The match against the job's current rubric version, scored whether or not
+        the hard filters passed.
     """
     filters = check_hard_filters(profile, job.rubric.hard_filters, today)
-    result = scorer.score(profile, job.rubric) if filters.passed else ScoringResult()
+    result = scorer.score(profile, job.rubric)
     match = Match(
         job_id=job.id,
         profile_id=profile.id,

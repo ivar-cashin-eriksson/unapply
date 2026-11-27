@@ -122,9 +122,22 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(ranked).toBeVisible()
   // The 12 of the pool, and the John Doe demo if an earlier test approved him.
   expect(Number((await ranked.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(12)
-  await expect(page.getByText('Fails a hard filter:')).toHaveCount(3)
   await expect(page.getByRole('meter', { name: /^Total for Candidate/ }).first()).toBeVisible()
+  // Each card: the scorer's total, and the baseline on own and on estimated levels.
+  await expect(page.getByRole('meter', { name: /^Own rating for Candidate/ }).first()).toBeVisible()
+  await expect(page.getByRole('meter', { name: /^Estimated from evidence for Candidate/ }).first()).toBeVisible()
   await shot(page, '11-shortlist', { fullPage: false })
+
+  // The three who fail a hard filter: below a divider, scored, with the filter named.
+  const divider = page.getByRole('separator', { name: /Don't meet the requirements/ })
+  await expect(divider).toContainText('3')
+  const failing = page.getByRole('list', { name: "Don't meet the requirements" })
+  await expect(failing.getByRole('listitem')).toHaveCount(3)
+  await expect(failing.getByText(/^Doesn't meet/)).toHaveCount(4) // One fails two filters.
+  await expect(failing.getByRole('meter', { name: /^Total for Candidate/ })).toHaveCount(3)
+  await divider.scrollIntoViewIfNeeded()
+  await shot(page, '15-shortlist-failed', { fullPage: false })
+  await page.getByRole('heading', { name: 'Shortlist', exact: true }).scrollIntoViewIfNeeded()
 
   // Why the first is first: a score per criterion, with the quotes it cites.
   const first = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 1') }).first()

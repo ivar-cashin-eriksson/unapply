@@ -192,7 +192,7 @@ Tasks 12 to 20 come from Ivar's `TODO.md` and requests (2026-11-27). Where a tas
 "decisions to check", take the option written there, note it in the log, and don't
 widen it.
 
-### 12. [ ] Shortlist: own and estimated scores, and failed filters
+### 12. [x] Shortlist: own and estimated scores, and failed filters
 
 - Each ranked candidate shows two scores side by side: one from their own levels and
   one from the estimated levels (the baseline scorer run with only own, then only
