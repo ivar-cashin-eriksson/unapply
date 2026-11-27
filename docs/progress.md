@@ -178,6 +178,37 @@ branch, what was done, what was tested, anything to know.
   The pool imports `edit_review_sheet` from `unapply.app.demo` (no Streamlit
   needed). Nothing listens on ports 8765 or 8599 any more, so the servers left
   running by earlier sessions are gone; this session still used `uv run --no-sync`.
+- 2026-11-27 · Task 8, New frontend (React) · `feat/frontend` · Finished what an
+  earlier session left untracked in `frontend/` (Vite 8, React 19, TypeScript 7,
+  Tailwind CSS 4, shadcn/ui, React Router; all pages were written, with no tests,
+  CI or docs). Candidate steps: material (drag and drop, keyboard-operable, files
+  checked before upload; GitHub), review (headline, skills with level chips, a
+  filter and their quotes, experience, added skills, preferences, approval in a
+  fixed bar), questions, and the profile as employers see it. Employer steps: job
+  ad, and the rubric editor (hard filters, criteria with their quotes, lowest level,
+  weight 1 to 5, kind, approval; each save a new version). Demo buttons for John Doe
+  and Fjord Grocery; the frontend never sends `allow_api`, and a refused paid call
+  says to try the demo. Added: Vitest with Testing Library (63 component tests:
+  formats, file checks, the API client and its errors, level chips, the drop zone,
+  start pages, every candidate and employer step, no assessment words on candidate
+  pages), Playwright (4 end-to-end tests in Chromium: both demos all the way
+  through, a real candidate refused a paid call, keyboard navigation), and a
+  `frontend` CI job (lint, build, component tests, e2e, with the report and
+  screenshots kept as an artifact). Playwright starts the API (port 8766) and the
+  dev server (5174) itself, with an empty data folder at `%TEMP%/unapply-e2e`,
+  emptied at the start of each run, and the database URL set explicitly, then stops
+  both; checked that nothing still listens afterwards and that no call log was
+  written. Screenshots of both demos are in `docs/screenshots/`. Small fixes from
+  the screenshots: toasts moved to the top right (they covered the Save button in
+  the fixed bar), the home page's card footers line up, and the rubric's empty
+  skill field says "No skill" rather than a grey "python" that looked like a value.
+  README (a frontend section; Streamlit is now "internal"), CONTRIBUTING, AGENTS and
+  the POC plan updated. All checks pass: ruff, 257 pytest tests, oxlint, build,
+  Vitest, Playwright. To know: the CI job uses Node 26 and actions/setup-node@v7
+  and upload-artifact@v7 (tags checked to exist; its first GitHub run is on this
+  push and wasn't checked here); `npm run e2e` needs `npx playwright install
+  chromium` once; the build warns that the bundle is over 500 kB (not split yet);
+  there is no matching or ranking page yet, which is task 9.
 
 ## Questions for Ivar
 

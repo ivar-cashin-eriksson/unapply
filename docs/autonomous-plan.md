@@ -149,7 +149,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
   ranking (intended now, human shortlists later), for both scorers.
 - Done when: the evaluation runs offline on the pool and the results are in the log.
 
-### 8. [ ] New frontend (React)
+### 8. [x] New frontend (React)
 
 - `frontend/`: Vite, React, TypeScript, Tailwind CSS and shadcn/ui, talking to the API.
   Modern and easy to use: clear steps, generous spacing, good empty and loading states,

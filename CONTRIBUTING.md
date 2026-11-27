@@ -16,6 +16,11 @@ Conventions for working on this project. Setup is in the [README](README.md).
   then read and fix what it wrote. Use only types that work on both SQLite and
   Postgres; `tests/test_db.py` checks the migrations match the models and render for
   Postgres.
+- **The frontend goes in `frontend/`** and only talks to the API, through
+  `frontend/src/lib/api.ts`; its types in `src/lib/types.ts` mirror the API's models.
+  It never asks for paid calls (`allow_api`). Pages go in `src/pages/`, shared parts
+  in `src/components/`, and shadcn/ui components, added with `npx shadcn add`, in
+  `src/components/ui/`.
 - **Configuration goes in `config/`** as JSON, or YAML where people edit it by hand
   (the skill taxonomy, `config/skills.yaml`): thresholds, model names.
 - **Exploration goes in `scratch/`**, which is gitignored. Move anything worth keeping
@@ -64,6 +69,8 @@ high-risk under the EU AI Act. See the design principles in the README.
   (`uv add --optional mcp mcp`).
 - **Development tools** go in the `dev` dependency group (`uv add --dev <package>`).
 - Always commit `uv.lock` together with `pyproject.toml`.
+- Frontend packages go in `frontend/package.json` (`npm install <package>`, or
+  `npm install -D <package>` for tools), committed with `package-lock.json`.
 
 ## Code style
 
@@ -130,8 +137,12 @@ descriptions are useful, so reviewers check those.
 - Tests must work offline. Fake the model in unit tests. Tests that call a real model
   are opt-in.
 - Use only synthetic data.
+- Frontend tests live next to the code (`frontend/src/**/*.test.tsx`, Vitest) and in
+  `frontend/e2e/` (Playwright, against the real API with the demos). Component tests
+  fake the API by spying on `api` from `src/lib/api.ts`.
 - CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and
-  `pytest` on every push and pull request.
+  `pytest` on every push and pull request, and for the frontend `npm run lint`,
+  `npm run build`, `npm test` and `npm run e2e`.
 
 ## Git workflow
 
@@ -180,4 +191,6 @@ Before opening a PR:
 
 1. `uv run ruff check --fix .` and `uv run ruff format .` pass.
 2. `uv run pytest` passes.
-3. The description says what changed, how you tested it, and whether any schema changed.
+3. If `frontend/` changed: `npm run lint`, `npm run build`, `npm test` and
+   `npm run e2e` pass in `frontend/`.
+4. The description says what changed, how you tested it, and whether any schema changed.
