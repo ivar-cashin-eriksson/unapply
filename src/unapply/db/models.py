@@ -1,6 +1,7 @@
-"""SQLAlchemy tables: candidates, profiles, jobs, rubrics, matches, audit, intents.
+"""SQLAlchemy tables: candidates, profiles, jobs, rubrics, matches, audit and more.
 
-Intents are employers' reveals and application requests.
+The others are intents (employers' reveals and application requests) and consents
+(which jobs a candidate opted in to).
 
 The tables mirror the Pydantic schemas in `unapply.schemas`; `unapply.db.repository`
 converts between the two, so nothing else needs to know about the tables.
@@ -447,3 +448,24 @@ class IntentRow(Base):
     profile_id: Mapped[UUID] = mapped_column(Uuid)
     kind: Mapped[str] = mapped_column(String(32))
     recorded_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ConsentRow(Base):
+    """A candidate's opt-in to one job (`unapply.consent.Consent`).
+
+    Keyed by the candidate's and the job's own row ids, which don't change when a
+    profile or an ad is extracted again, so consent outlives both; it goes with
+    the candidate or the job. Withdrawing consent deletes the row.
+    """
+
+    __tablename__ = "consents"
+
+    candidate_id: Mapped[UUID] = mapped_column(
+        ForeignKey("candidates.id", ondelete=CASCADE), primary_key=True
+    )
+    job_id: Mapped[UUID] = mapped_column(
+        ForeignKey("jobs.id", ondelete=CASCADE), primary_key=True, index=True
+    )
+    # `ConsentSection` values, in that order.
+    sections: Mapped[list[str]] = mapped_column(default=list)
+    granted_at: Mapped[datetime] = mapped_column(DateTime)

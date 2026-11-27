@@ -10,6 +10,7 @@ from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 
+from unapply.consent import ConsentSection
 from unapply.estimation.claims import claim_support, summary
 from unapply.estimation.skills import (
     EstimationResult,
@@ -194,6 +195,46 @@ def main(argv: list[str] | None = None) -> int:
         "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
     )
 
+    consent = commands.add_parser(
+        "consent",
+        help="Opt a candidate in to a job, choosing what its agent may read over MCP.",
+    )
+    consent_steps = consent.add_subparsers(dest="step", required=True)
+    grant = consent_steps.add_parser(
+        "grant", help="Opt a candidate in to a job, or change what they share."
+    )
+    grant.add_argument("candidate", help="The candidate's name in the database.")
+    grant.add_argument("job", help="The job's name in the database.")
+    grant.add_argument(
+        "--sections",
+        nargs="*",
+        choices=[s.value for s in ConsentSection],
+        help="What the job's agent may read; by default everything.",
+    )
+    withdraw = consent_steps.add_parser(
+        "withdraw", help="Opt a candidate out of a job."
+    )
+    withdraw.add_argument("candidate", help="The candidate's name in the database.")
+    withdraw.add_argument("job", help="The job's name in the database.")
+    consents = consent_steps.add_parser(
+        "list", help="List the candidates who opted in to a job."
+    )
+    consents.add_argument("job", help="The job's name in the database.")
+    for command in (grant, withdraw, consents):
+        command.add_argument(
+            "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
+        )
+
+    mcp = commands.add_parser(
+        "mcp",
+        help="Serve a job's matching agent over MCP (stdio): the candidates who "
+        "opted in, anonymised, and only what each shared.",
+    )
+    mcp.add_argument("job", help="The job's name in the database.")
+    mcp.add_argument(
+        "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
+    )
+
     evaluate = commands.add_parser(
         "evaluate",
         help="Rank a synthetic candidate pool with each scorer and compare the "
@@ -292,6 +333,10 @@ def _run(args: argparse.Namespace) -> int:
         return _match(args)
     if args.command == "audit":
         return _audit(args)
+    if args.command == "consent":
+        return _consent(args)
+    if args.command == "mcp":
+        return _mcp(args)
     if args.command == "evaluate":
         return _evaluate(args)
     if args.command == "ingest":
@@ -546,6 +591,67 @@ def _audit(args: argparse.Namespace) -> int:
         for p in problems:
             print(f"    {p}")
     return 1 if failed else 0
+
+
+def _consent(args: argparse.Namespace) -> int:
+    from unapply.db.engine import init_db
+    from unapply.db.repository import NotFound, Repository
+
+    init_db(args.url)
+    repo = Repository.from_url(args.url)
+    try:
+        if args.step == "grant":
+            sections = (
+                None
+                if args.sections is None
+                else [ConsentSection(s) for s in args.sections]
+            )
+            consent = repo.grant_consent(args.candidate, args.job, sections)
+            print(
+                f"{args.candidate} opted in to {args.job}, sharing "
+                f"{', '.join(consent.sections) or 'nothing yet'}."
+            )
+        elif args.step == "withdraw":
+            if repo.withdraw_consent(args.candidate, args.job):
+                print(f"{args.candidate} opted out of {args.job}.")
+            else:
+                print(f"{args.candidate} hadn't opted in to {args.job}.")
+        else:
+            found = repo.consents(args.job)
+            print(f"{len(found)} candidates opted in to {args.job}")
+            for c in found:
+                print(
+                    f"  {c.candidate}  {c.granted_at:%Y-%m-%d %H:%M}  "
+                    f"{', '.join(c.sections) or 'nothing yet'}"
+                )
+    except NotFound as e:
+        print(f"Can't change consent: {e}", file=sys.stderr)
+        return 2
+    finally:
+        repo.engine.dispose()
+    return 0
+
+
+def _mcp(args: argparse.Namespace) -> int:
+    from unapply.db.engine import init_db
+    from unapply.db.repository import NotFound, Repository
+    from unapply.mcp_server import build_server
+
+    init_db(args.url)
+    repo = Repository.from_url(args.url)
+    try:
+        server = build_server(repo, args.job)
+    except NotFound as e:
+        repo.engine.dispose()
+        print(f"Can't serve: {e}", file=sys.stderr)
+        return 2
+    # Stdout carries the protocol, so everything else goes to stderr (logging
+    # does by default).
+    try:
+        server.run("stdio")
+    finally:
+        repo.engine.dispose()
+    return 0
 
 
 def _evaluate(args: argparse.Namespace) -> int:

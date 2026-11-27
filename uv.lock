@@ -2275,6 +2275,7 @@ dependencies = [
     { name = "alembic" },
     { name = "anthropic" },
     { name = "fastapi" },
+    { name = "mcp" },
     { name = "pydantic" },
     { name = "pypdf" },
     { name = "python-dotenv" },
@@ -2290,9 +2291,6 @@ db = [
     { name = "pgvector" },
     { name = "psycopg", extra = ["binary"] },
 ]
-mcp = [
-    { name = "mcp" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -2307,7 +2305,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.13" },
     { name = "anthropic", specifier = ">=2.14.0" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.2" },
+    { name = "mcp", specifier = ">=2.3" },
     { name = "pgvector", marker = "extra == 'db'", specifier = ">=0.3" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'db'", specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.8" },
@@ -2319,7 +2317,7 @@ requires-dist = [
     { name = "streamlit", specifier = ">=1.67.0" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
-provides-extras = ["mcp", "db"]
+provides-extras = ["db"]
 
 [package.metadata.requires-dev]
 dev = [

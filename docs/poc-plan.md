@@ -89,7 +89,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   extraction: Claude found the filters (Copenhagen, hybrid, EU, 4+ years), 6
   must-haves and 4 nice-to-haves, dropped nothing and ignored the injected line.
 
-### M4: Matching (done, except over MCP)
+### M4: Matching (done)
 - `src/unapply/matching/`, `unapply match <job> [--scorer baseline|llm]` and the API's
   `/jobs/<name>/match` and `/ranking`. Only approved profiles, only approved rubrics,
   and matching locks the rubric version.
@@ -114,9 +114,12 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   e-commerce"); places are matched by name, without geography ("Denmark" doesn't
   match "Copenhagen"); hard filter outcomes are kept in the audit log, not with the
   match.
-- Still to do: agent scoring over MCP tools scoped to what the candidate consented
-  to (`get_experiences`, `get_skills`, `search_evidence(query)`, `get_preferences`),
-  with the MCP server.
+- The MCP server (`src/unapply/mcp_server/`, `unapply mcp <job>`): one per job, with
+  read-only tools scoped to the candidates who opted in to it and to the sections
+  each shared (`get_experiences`, `get_skills`, `search_evidence(query)`,
+  `get_preferences`, plus `get_rubric` and `list_candidates`); anonymised as on the
+  shortlist. Consent per job is `unapply consent grant|withdraw|list`. No agent
+  scores over it yet: the LLM scorer still gets the anonymised profile in one call.
 
 ### M5: Recruiter view
 - Anonymised ranked list with explanations.

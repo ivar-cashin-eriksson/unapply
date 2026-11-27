@@ -181,7 +181,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Streamlit review table: show full evidence in a detail view.
 - Done when: each is tested.
 
-### 11. [ ] MCP server
+### 11. [x] MCP server
 
 - Consent-scoped tools over the database for a job's matching agent:
   `get_experiences`, `get_skills`, `search_evidence(query)`, `get_preferences`, only
