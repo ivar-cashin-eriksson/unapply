@@ -1,15 +1,17 @@
-import { FileUp, Lightbulb, Sprout, Users } from 'lucide-react'
+import { Briefcase, FileUp, Lightbulb, Sprout, Users } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { FitBadge } from '@/components/FitBadge'
 import { LevelChip } from '@/components/LevelChips'
 import { LevelDistribution } from '@/components/LevelDistribution'
+import { StageBadge } from '@/components/StageBadge'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { categoryLabel } from '@/lib/format'
-import type { Dashboard as DashboardData, DashboardSkill } from '@/lib/types'
+import type { CandidateJobs, Dashboard as DashboardData, DashboardSkill, JobOutcome } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { TRANSPARENCY, useCandidate } from '@/pages/candidate/context'
 
@@ -41,7 +43,8 @@ function DashboardPage() {
     <div className="space-y-8">
       <PageHeader title="Your dashboard">
         Your skills by area with your own levels and how often your material mentions each, how your levels compare
-        with other candidates&apos; own levels, and skills worth developing.
+        with other candidates&apos; own levels, skills worth developing, and how far you got on the jobs you connected
+        to.
       </PageHeader>
       {loaded.data ? (
         <DashboardView data={loaded.data} />
@@ -50,6 +53,7 @@ function DashboardPage() {
       ) : (
         <Loading label="Loading your dashboard" />
       )}
+      <YourJobs />
       <p className="text-sm text-muted-foreground">{TRANSPARENCY}</p>
     </div>
   )
@@ -190,6 +194,122 @@ function Tips({ data }: { data: DashboardData }) {
       </div>
     </section>
   )
+}
+
+/** The jobs the candidate connected to, how far they got, and their success rate. */
+function YourJobs() {
+  const { name, summary } = useCandidate()
+  const loaded = useResource(() => api.candidateJobs(name), `${name}:${summary.history.length}`)
+  return (
+    <section aria-labelledby="your-jobs-title" className="space-y-4">
+      <h2 id="your-jobs-title" className="text-lg font-semibold">
+        Your jobs
+      </h2>
+      {loaded.data ? (
+        <JobsView data={loaded.data} />
+      ) : loaded.error ? (
+        <ErrorAlert error={loaded.error} title="Couldn't load your jobs" />
+      ) : (
+        <Loading label="Loading your jobs" />
+      )}
+    </section>
+  )
+}
+
+function JobsView({ data }: { data: CandidateJobs }) {
+  if (!data.jobs.length) {
+    return (
+      <p className="flex items-start gap-2 text-sm text-muted-foreground">
+        <Briefcase className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <span>
+          You haven&apos;t connected to a job yet. Find one on the{' '}
+          <Link to="../jobs" className="underline">
+            job board
+          </Link>
+          .
+        </span>
+      </p>
+    )
+  }
+  return (
+    <>
+      <dl aria-label="Your success rate" className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Connected" value={data.connected} note={`job${data.connected === 1 ? '' : 's'}`} />
+        <Stat label="Revealed" value={percent(data.revealed_rate)} note={`${data.revealed} of ${data.connected}`} />
+        <Stat
+          label="Asked to apply"
+          value={percent(data.requested_rate)}
+          note={`${data.requested} of ${data.connected}`}
+        />
+      </dl>
+      <ul aria-label="Jobs you connected to" className="space-y-3">
+        {data.jobs.map((j) => (
+          <JobRow key={j.job} outcome={j} min={data.min_group} />
+        ))}
+      </ul>
+    </>
+  )
+}
+
+function JobRow({ outcome: j, min }: { outcome: JobOutcome; min: number }) {
+  const tips = j.revealed_skills
+  return (
+    <li className="space-y-3 rounded-xl border bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium">
+            <Link to={`../jobs/${encodeURIComponent(j.job)}`} className="hover:underline">
+              {j.listing?.title ?? j.job}
+            </Link>
+          </p>
+          <p className="text-sm text-muted-foreground">{j.listing?.company ?? 'No longer on the board'}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {j.fit?.band && <FitBadge band={j.fit.band} />}
+          <StageBadge stage={j.stage} />
+        </div>
+      </div>
+      {tips ? (
+        <div role="group" aria-label={`Common among those revealed: ${j.listing?.title ?? j.job}`} className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Skills common among the candidates this job revealed, from their own levels:
+          </p>
+          <SkillList label="Not in your profile" skills={tips.missing} />
+          <SkillList label="You rated lower than most of them" skills={tips.lower} />
+          {!tips.missing.length && !tips.lower.length && (
+            <p className="text-sm text-muted-foreground">None: you list them all, at their levels or higher.</p>
+          )}
+        </div>
+      ) : (
+        j.stage === 'connected' && (
+          <p className="text-xs text-muted-foreground">
+            Skills common among the candidates revealed show once at least {min} others are revealed.
+          </p>
+        )
+      )}
+    </li>
+  )
+}
+
+function SkillList({ label, skills }: { label: string; skills: string[] }) {
+  if (!skills.length) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span>{label}:</span>
+      <ul aria-label={label} className="flex flex-wrap gap-1.5">
+        {skills.map((s) => (
+          <li key={s}>
+            <Badge variant="secondary">{s}</Badge>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** A rate from 0 to 1 as a whole percentage; a dash when there is none. */
+function percent(rate: number | null): string {
+  return rate === null ? '–' : `${Math.round(rate * 100)}%`
 }
 
 function Stat({ label, value, note }: { label: string; value: number | string; note?: string }) {

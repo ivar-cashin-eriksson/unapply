@@ -469,6 +469,38 @@ test('reveal, request and apply: John Doe applies to one job and declines anothe
   await page.goto(`/jobs/${jobs[1]}/shortlist`)
   await expect(page.getByRole('button', { name: 'Declined: John Doe' })).toBeDisabled()
   await expect(page.getByRole('region', { name: 'Application from John Doe' })).toHaveCount(0)
+
+  // Smørblomst Mejeri: John connects, and the employer reveals five others, so his
+  // dashboard names the skills common among those revealed.
+  const dairy = 'board-smoerblomst-dairy'
+  await page.goto(`/candidates/${candidate}/jobs/${dairy}`)
+  await page.getByRole('button', { name: 'Connect my profile' }).click()
+  await expect(page.getByRole('region', { name: 'Your connection' })).toContainText('Connected on')
+  expect((await page.request.post(`/api/jobs/${dairy}/match`)).ok()).toBe(true)
+  const shortlist = await (await page.request.get(`/api/jobs/${dairy}/shortlist`)).json()
+  const others = shortlist.candidates
+    .map((c: { profile_id: string }) => c.profile_id)
+    .filter((id: string) => id !== profile.id)
+    .slice(0, 5)
+  for (const id of others) {
+    expect((await page.request.post(`/api/jobs/${dairy}/candidates/${id}/reveal`)).ok()).toBe(true)
+  }
+
+  // His dashboard: three jobs, revealed on two, asked to apply on two.
+  await page.goto(`/candidates/${candidate}/dashboard`)
+  const yours = page.getByRole('list', { name: 'Jobs you connected to' })
+  await expect(yours.locator(':scope > li')).toHaveCount(3)
+  const rate = page.getByLabel('Your success rate')
+  await expect(rate).toContainText('Revealed67%2 of 3')
+  await expect(rate).toContainText('Asked to apply67%2 of 3')
+  const dairyRow = yours.locator(':scope > li').filter({ hasText: 'Smørblomst Mejeri' })
+  await expect(dairyRow).toContainText('Connected')
+  await expect(dairyRow.getByRole('group', { name: /Common among those revealed/ })).toBeVisible()
+  await expect(yours.locator(':scope > li').filter({ hasText: 'Fjord Grocery' })).toContainText('Applied')
+  await expect(yours.locator(':scope > li').filter({ hasText: 'Lynfjord' })).toContainText('Declined')
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await yours.scrollIntoViewIfNeeded()
+  await shot(page, '26-candidate-jobs', { fullPage: false })
 })
 
 test('a real candidate is refused paid calls, and told about the demo', async ({ page }) => {

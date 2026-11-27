@@ -195,6 +195,11 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   candidates' (groups of at least five), and tips from the board's skills and the
   taxonomy. Built from candidate views of the profiles, so no estimate or claim
   support can reach it.
+- Done (task 20, `src/unapply/jobs/outcomes.py`): on the Dashboard, the jobs the
+  candidate connected to with their stage and fit, their success rate (revealed,
+  and asked to apply, out of connected), and for a job where they weren't revealed
+  the skills common among the candidates who were (at least five) that they lack
+  or rated lower, from own levels only.
 
 ## The key experiment (run alongside M1–M4)
 

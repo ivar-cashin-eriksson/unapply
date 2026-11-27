@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { AdText } from '@/components/AdText'
 import { Counts } from '@/components/Counts'
 import { FitBadge, FitSummary, MissedFilters } from '@/components/FitBadge'
+import { StageBadge } from '@/components/StageBadge'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -259,15 +260,6 @@ function Filter({
   )
 }
 
-/** What a candidate's stage on a job is called, and its badge's icon. */
-const STAGES: Record<Stage, { label: string; icon: typeof Link2 }> = {
-  connected: { label: 'Connected', icon: Link2 },
-  revealed: { label: 'Revealed', icon: Eye },
-  requested: { label: 'Asked to apply', icon: Mail },
-  applied: { label: 'Applied', icon: Check },
-  declined: { label: 'Declined', icon: X },
-}
-
 /** The jobs whose employer asked you to apply and are waiting for your answer. */
 function Requests({ requests }: { requests: Connection[] }) {
   return (
@@ -296,7 +288,6 @@ function Requests({ requests }: { requests: Connection[] }) {
 
 function ListingCard({ listing: x, stage, fit }: { listing: Listing; stage?: Stage; fit?: Fit }) {
   const connected = stage !== undefined
-  const StageIcon = stage ? STAGES[stage].icon : Link2
   return (
     <Card className={cn('transition-colors hover:border-primary/40', connected && 'border-primary/40')}>
       <CardHeader className="gap-1">
@@ -306,11 +297,7 @@ function ListingCard({ listing: x, stage, fit }: { listing: Listing; stage?: Sta
               {x.title}
             </Link>
           </CardTitle>
-          {stage && (
-            <Badge variant={stage === 'declined' ? 'outline' : 'default'}>
-              <StageIcon aria-hidden /> {STAGES[stage].label}
-            </Badge>
-          )}
+          {stage && <StageBadge stage={stage} />}
         </div>
         <Meta listing={x} />
       </CardHeader>

@@ -2,19 +2,20 @@ import { fireEvent, screen, within } from '@testing-library/react'
 
 import { placeAmong } from '@/lib/format'
 import { api } from '@/lib/api'
-import { candidate, dashboard } from '@/test/fixtures'
+import { candidate, candidateJobs, dashboard } from '@/test/fixtures'
 import { renderApp } from '@/test/render'
 
 // The assessment and the rubric: neither is ever shown on a candidate page.
 const HIDDEN_FROM_CANDIDATES = /estimat|confidence|claim support|overclaim|rubric|criteri|weight|min.?level/i
 
-function open(data = dashboard()) {
+function open(data = dashboard(), jobs = candidateJobs()) {
   vi.spyOn(api, 'candidate').mockResolvedValue(
     candidate({ has_profile: true, approved: true, history: ['extracted', 'reviewed'] }),
   )
   const get = vi.spyOn(api, 'dashboard').mockResolvedValue(data)
+  const getJobs = vi.spyOn(api, 'candidateJobs').mockResolvedValue(jobs)
   const rendered = renderApp('/candidates/john-doe/dashboard')
-  return { get, ...rendered }
+  return { get, getJobs, ...rendered }
 }
 
 describe('the dashboard', () => {
@@ -81,6 +82,56 @@ describe('the dashboard', () => {
     renderApp('/candidates/john-doe/dashboard')
     expect(await screen.findByText('No profile yet')).toBeInTheDocument()
     expect(get).not.toHaveBeenCalled()
+  })
+})
+
+describe('your jobs on the dashboard', () => {
+  it('shows each job with its stage and fit, and the success rate', async () => {
+    const { getJobs } = open()
+    const jobs = await screen.findByRole('list', { name: 'Jobs you connected to' })
+    expect(getJobs).toHaveBeenCalledWith('john-doe')
+    const rows = within(jobs).getAllByRole('listitem').filter((li) => li.parentElement === jobs)
+    expect(rows).toHaveLength(3)
+    expect(rows[0]).toHaveTextContent('Smørblomst Mejeri')
+    expect(rows[0]).toHaveTextContent('Good fit')
+    expect(rows[0]).toHaveTextContent('Connected')
+    expect(rows[1]).toHaveTextContent('Asked to apply')
+    expect(rows[1]).toHaveTextContent('Strong fit')
+    expect(rows[2]).toHaveTextContent('No longer on the board')
+    expect(within(rows[1]).getByRole('link', { name: /Senior Data Scientist/ })).toHaveAttribute(
+      'href',
+      '/candidates/john-doe/jobs/board-fjord-grocery',
+    )
+    const rate = screen.getByLabelText('Your success rate')
+    expect(rate).toHaveTextContent('Connected3jobs')
+    expect(rate).toHaveTextContent('Revealed33%1 of 3')
+    expect(rate).toHaveTextContent('Asked to apply33%1 of 3')
+  })
+
+  it('names the skills common among those revealed, where they were not', async () => {
+    open()
+    const group = await screen.findByRole('group', { name: /Common among those revealed: Junior Data Scientist/ })
+    expect(within(group).getByRole('list', { name: 'Not in your profile' })).toHaveTextContent('kafkadbt')
+    expect(within(group).getByRole('list', { name: 'You rated lower than most of them' })).toHaveTextContent('sql')
+    // Too few revealed: only a note, and nothing for a job where they were revealed.
+    expect(screen.getAllByText(/show once at least 5 others are revealed/)).toHaveLength(1)
+    expect(screen.getAllByRole('group', { name: /Common among those revealed/ })).toHaveLength(1)
+  })
+
+  it('points to the board before any connection', async () => {
+    open(
+      dashboard(),
+      candidateJobs({ jobs: [], connected: 0, revealed: 0, requested: 0, revealed_rate: null, requested_rate: null }),
+    )
+    expect(await screen.findByText(/You haven't connected to a job yet/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'job board' })).toHaveAttribute('href', '/candidates/john-doe/jobs')
+    expect(screen.queryByLabelText('Your success rate')).toBeNull()
+  })
+
+  it('never shows a level, weight or other assessment word in the jobs', async () => {
+    open()
+    await screen.findByRole('list', { name: 'Jobs you connected to' })
+    expect(document.body.textContent).not.toMatch(HIDDEN_FROM_CANDIDATES)
   })
 })
 
