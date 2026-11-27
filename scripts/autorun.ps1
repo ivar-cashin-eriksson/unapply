@@ -1,11 +1,13 @@
 <#
 .SYNOPSIS
-Work through docs/autonomous-plan.md with one fresh Claude Code session per task.
+Work through the open `autonomous` GitHub issues with one fresh Claude Code session
+per task.
 
 .DESCRIPTION
-Each session starts with an empty context, reads the plan and docs/progress.md,
-does one task (or resumes an unfinished one) and exits. Everything a session needs
-to know is in those files, so no context carries over between tasks.
+Each session starts with an empty context, reads docs/autonomous.md, takes one
+issue (or resumes an unfinished one), logs it on the issue and exits. Everything a
+session needs to know is in that file and the issues, so no context carries over
+between tasks. Needs the GitHub CLI (gh), logged in.
 
 The run stops when a session replies "ALL DONE", after -MaxSessions sessions, or
 when sessions keep failing (for example because the usage limit is reached).
@@ -21,7 +23,7 @@ pwsh scripts/autorun.ps1 -WaitForReset   # keep waiting for the usage limit to r
 param(
     [int]$MaxSessions = 40,
     [string]$Model = "opus",
-    [string]$Effort = "high",
+    [string]$Effort = "medium",
     # After a failed session: retry this many times, this many minutes apart.
     [int]$MaxRetries = 2,
     [int]$RetryMinutes = 10,
@@ -40,21 +42,35 @@ if (Test-Path $node) { $env:Path = "$node;$env:Path" }
 $env:UNAPPLY_ALLOW_API_CALLS = "0"
 New-Item -ItemType Directory -Force $LogDir | Out-Null
 
+# Tasks are GitHub issues, so sessions need gh, logged in.
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    # Installed per user with winget, but not on PATH in shells started before.
+    $winget = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin"
+    if (Test-Path (Join-Path $winget "gh.exe")) { $env:Path = "$winget;$env:Path" }
+}
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw "The GitHub CLI (gh) isn't installed: winget install --id GitHub.cli -e"
+}
+gh auth status *> $null
+if ($LASTEXITCODE -ne 0) { throw "gh isn't logged in: run gh auth login" }
+
 $prompt = @'
 You are one session in an unattended run; the user is away and can't answer.
-Read docs/autonomous-plan.md and follow its ground rules exactly, then read
-docs/progress.md.
+Read docs/autonomous.md and follow its ground rules exactly. Tasks are the GitHub
+issues labelled `autonomous`; use the gh CLI.
 
-If an earlier session left an unfinished task (an unmerged branch, or work noted in
-the progress log), finish that first. Otherwise take the first task in the plan that
-isn't done or blocked; once every task is done or blocked, take the next piece of
-work allowed under "After the plan".
+If an earlier session left an unfinished task (an open issue labelled `in-progress`,
+or an unmerged task branch), finish that first, reading the issue's comments to see
+where it stopped. Otherwise take the next open `autonomous` issue that isn't
+`blocked`, by priority as docs/autonomous.md says (`priority: high`, then none, then
+`priority: low`; lowest number first within each); once none is left, take the next
+piece of work allowed under "After the issues".
 
-Do that one task completely: implement it, test it, merge as the plan says, mark it
-done in the plan, and add its line to docs/progress.md. Then stop: the next task
-starts in a fresh session.
+Do that one task completely: implement it, test it, merge as docs/autonomous.md says,
+comment the log on the issue and close it. Then stop: the next task starts in a fresh
+session.
 
-If nothing is left that the plan allows, reply with exactly: ALL DONE
+If nothing is left that docs/autonomous.md allows, reply with exactly: ALL DONE
 '@
 
 $failures = 0
@@ -95,4 +111,4 @@ while ($session -lt $MaxSessions) {
         break
     }
 }
-Write-Host "Done. Logs: $LogDir. Progress: docs/progress.md."
+Write-Host "Done. Logs: $LogDir. Progress: the comments on the GitHub issues."
