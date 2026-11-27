@@ -440,6 +440,46 @@ branch, what was done, what was tested, anything to know.
   shortlist demo ranks exactly the 12 of the pool, as John's demo isn't connected
   to it; `scripts/autorun.ps1`, `frontend/package-lock.json` and `TODO.md` still
   have changes not made by a task, left uncommitted.
+- 2026-11-27 · Task 15, How well you fit, for candidates · `feat/fit-for-candidates` ·
+  Added `src/unapply/jobs/fit.py` (`FitBand`, `band`, `filter_label`,
+  `missed_filters`, `own_band`, `place`, `fit`, `fits`) and
+  `matching.baseline.own_total`. The **band** is the baseline's total on own levels
+  only, worked out on `candidate_view(profile)` (no estimates, no claim support, so
+  nothing from the assessment can move it): strong from 0.8, good from 0.6, partial
+  from 0.3, below that "Low fit". Only the band is returned, never the score. The
+  **missed hard filters** are those that fail (unknown ones don't, as in matching),
+  named from the job's hard filters, which are copied from the ad ("Location:
+  Aarhus", "Work mode: remote", "Work permit: EU required", "Experience: at least 4
+  years"). The **place** ("You're #3 of 13") comes from the job's latest ranking
+  entry in the audit log, only while the candidate is connected; connected but not
+  in that ranking says "Not ranked yet". Nothing is stored (no consent, no audit
+  entry). Routes `GET /candidates/<name>/fit` (every listing) and `GET
+  /candidates/<name>/fit/<job>`. Frontend: a band badge, a "You're #N of M" badge
+  and red badges for missed requirements on each board card
+  (`components/FitBadge.tsx`), and a "How well you fit" card on each listing that
+  updates after connecting and withdrawing. Tested: pytest 397 (29 new in
+  `tests/test_fit.py`: bands at every edge, twelve pool candidates across the jobs
+  from strong to low, every pool band equals the own-only total's band, the
+  overclaimer's band unchanged when his estimates are replaced, filter labels,
+  Priya, Emil and Clara's failed filters on Fjord Grocery and none for a profile
+  that leaves place and permit out, John's fits on all eleven jobs, nothing stored,
+  place before ranking, after matching, from the newest ranking, gone after
+  withdrawal, a failed pool candidate placed 10th of 12, unknown names, and no
+  rubric or assessment word, nor "score" or "total", in any fit response); Vitest
+  108 (5 new); Playwright 6 (John's board test checks bands, missed filters, "Not
+  ranked yet" and his place after the job is matched, on the listing and the
+  board), screenshot `20-job-listing-place` added and the rest refreshed. All
+  checks pass. Decisions to check (small, conservative): **a fourth band, "Low
+  fit"**, below 0.3, because calling a total of 0.00 "Partial fit" would mislead;
+  the band and missed filters are shown after connecting too, beside the place;
+  "of" counts everyone in the latest ranking, including those who fail a filter;
+  the latest ranking is whichever scorer ranked last (the employer's view also
+  records rankings); the place shows only after the employer has ranked since the
+  candidate connected. To know: `playwright.config.ts` now starts Vite with
+  `--bypass-lock`, because Vite 8 refuses a second dev server for the project and
+  one (PID 30480, port 5173, not started by this session) was running; it was left
+  alone. `scripts/autorun.ps1`, `frontend/package-lock.json` and `TODO.md` still
+  have changes not made by a task, left uncommitted.
 
 ## Questions for Ivar
 

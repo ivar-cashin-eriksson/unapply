@@ -2,12 +2,18 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 
 import { AdText } from '@/components/AdText'
 import { api, ApiError } from '@/lib/api'
-import { adSummary, day, vacancies } from '@/lib/format'
-import { board, candidate, connection, DAIRY, listing } from '@/test/fixtures'
+import { adSummary, day, fitLabel, placeText, vacancies } from '@/lib/format'
+import { board, candidate, connection, DAIRY, fit, listing } from '@/test/fixtures'
 import { renderApp } from '@/test/render'
 
 // Words for the rubric and the assessment, which a candidate never sees.
 const HIDDEN = /rubric|criteri|weight|min.?level|estimat|confidence|claim support/i
+
+// Every page here asks how well the candidate fits; tests that check it mock it again.
+beforeEach(() => {
+  vi.spyOn(api, 'fits').mockResolvedValue([])
+  vi.spyOn(api, 'fit').mockResolvedValue(fit())
+})
 
 function approved() {
   vi.spyOn(api, 'candidate').mockResolvedValue(
@@ -39,6 +45,45 @@ describe('the job board', () => {
     expect(within(cards[1]).queryByText('Connected')).toBeNull()
     expect(screen.getByRole('status', { name: '' })).toHaveTextContent('2 jobs')
     expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('shows how well you fit each job: band, place and missed requirements', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([connection()])
+    vi.spyOn(api, 'fits').mockResolvedValue([
+      fit({ connected: true, place: { rank: 4, of: 37, ranked_at: '2026-11-27T11:00:00' } }),
+      fit({
+        job: 'board-smoerblomst-dairy',
+        band: 'partial',
+        missed: [{ filter: 'work_permit', label: 'Work permit: EU required' }],
+      }),
+    ])
+    renderApp('/candidates/john-doe/jobs')
+
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    const first = await within(cards[0]).findByRole('group', { name: 'Your fit' })
+    expect(first).toHaveTextContent('Strong fit')
+    expect(first).toHaveTextContent("You're #4 of 37")
+    expect(within(first).queryByRole('group', { name: "Requirements you don't meet" })).toBeNull()
+    const second = within(cards[1]).getByRole('group', { name: 'Your fit' })
+    expect(second).toHaveTextContent('Partial fit')
+    expect(second).not.toHaveTextContent('#')
+    expect(within(second).getByRole('group', { name: "Requirements you don't meet" })).toHaveTextContent(
+      'Work permit: EU required',
+    )
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('still lists the jobs when the fit does not load', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    vi.spyOn(api, 'fits').mockRejectedValue(new ApiError(500, 'The server broke.'))
+    renderApp('/candidates/john-doe/jobs')
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    expect(cards).toHaveLength(2)
+    expect(screen.queryByRole('group', { name: 'Your fit' })).toBeNull()
   })
 
   it('searches by words and filters, and clears them', async () => {
@@ -127,6 +172,54 @@ describe('a listing', () => {
     expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
   })
 
+  it('shows your fit before connecting, and your place after', async () => {
+    approved()
+    vi.spyOn(api, 'listing').mockResolvedValue(listing())
+    const connections = vi.spyOn(api, 'connections').mockResolvedValueOnce([])
+    connections.mockResolvedValue([connection()])
+    vi.spyOn(api, 'connect').mockResolvedValue(connection())
+    const fits = vi
+      .spyOn(api, 'fit')
+      .mockResolvedValueOnce(
+        fit({ band: 'good', missed: [{ filter: 'location', label: 'Location: Copenhagen' }] }),
+      )
+      .mockResolvedValue(
+        fit({
+          band: 'good',
+          missed: [{ filter: 'location', label: 'Location: Copenhagen' }],
+          connected: true,
+          place: { rank: 3, of: 13, ranked_at: '2026-11-27T12:00:00' },
+        }),
+      )
+    const { user } = renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
+
+    const region = await screen.findByRole('region', { name: 'How well you fit' })
+    expect(region).toHaveTextContent('Good fit')
+    expect(region).toHaveTextContent('From your own levels')
+    expect(within(region).getByRole('group', { name: "Requirements you don't meet" })).toHaveTextContent(
+      'Location: Copenhagen',
+    )
+    expect(region).toHaveTextContent('Connect to see your place among the connected candidates.')
+    expect(fits).toHaveBeenCalledWith('john-doe', 'board-fjord-grocery')
+
+    await user.click(await screen.findByRole('button', { name: 'Connect my profile' }))
+    await waitFor(() => expect(region).toHaveTextContent("You're #3 of 13 connected candidates"))
+    expect(region).toHaveTextContent('in the latest ranking on 27 Nov 2026')
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('says when you are connected but not ranked yet', async () => {
+    approved()
+    vi.spyOn(api, 'listing').mockResolvedValue(listing())
+    vi.spyOn(api, 'connections').mockResolvedValue([connection()])
+    vi.spyOn(api, 'fit').mockResolvedValue(fit({ band: 'low', connected: true }))
+    renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
+    const region = await screen.findByRole('region', { name: 'How well you fit' })
+    expect(region).toHaveTextContent('Low fit')
+    expect(region).toHaveTextContent('Not ranked yet')
+    expect(within(region).queryByRole('group', { name: "Requirements you don't meet" })).toBeNull()
+  })
+
   it('withdraws, and says why when that is refused', async () => {
     approved()
     vi.spyOn(api, 'listing').mockResolvedValue(listing())
@@ -197,6 +290,14 @@ describe('the ad text', () => {
   it('summarises an ad by its first plain paragraph', () => {
     expect(adSummary(listing().ad)).toBe('Fjord Grocery runs 85 grocery stores across Denmark.')
     expect(adSummary('# Only a title')).toBe('')
+  })
+
+  it('formats fit bands and places', () => {
+    expect(fitLabel('strong')).toBe('Strong fit')
+    expect(fitLabel('good')).toBe('Good fit')
+    expect(fitLabel('partial')).toBe('Partial fit')
+    expect(fitLabel('low')).toBe('Low fit')
+    expect(placeText({ rank: 4, of: 37, ranked_at: '2026-11-27T11:00:00' })).toBe("You're #4 of 37")
   })
 
   it('formats vacancies and days', () => {

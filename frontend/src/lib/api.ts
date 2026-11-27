@@ -13,6 +13,7 @@ import type {
   CandidateSummary,
   Connection,
   Extraction,
+  Fit,
   Intent,
   IntentKind,
   JobAd,
@@ -175,6 +176,9 @@ export const api = {
     json<Connection>('PUT', `${c(name)}/connections/${encodeURIComponent(job)}`),
   withdraw: (name: string, job: string) =>
     json<void>('DELETE', `${c(name)}/connections/${encodeURIComponent(job)}`),
+  // How well the candidate fits each job: a band from their own levels, missed filters, place
+  fits: (name: string) => json<Fit[]>('GET', `${c(name)}/fit`),
+  fit: (name: string, job: string) => json<Fit>('GET', `${c(name)}/fit/${encodeURIComponent(job)}`),
 }
 
 /** A message for an error, saying what to do about a refused paid call. */

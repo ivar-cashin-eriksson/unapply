@@ -6,6 +6,7 @@ import type {
   CandidateProfile,
   CandidateSummary,
   Connection,
+  Fit,
   JobSummary,
   Listing,
   Questions,
@@ -328,4 +329,8 @@ export function board(patch: Partial<Board> = {}): Board {
 
 export function connection(patch: Partial<Connection> = {}): Connection {
   return { job: 'board-fjord-grocery', connected_at: '2026-11-27T10:15:00', listing: listing(), ...patch }
+}
+
+export function fit(patch: Partial<Fit> = {}): Fit {
+  return { job: 'board-fjord-grocery', band: 'strong', missed: [], connected: false, place: null, ...patch }
 }
