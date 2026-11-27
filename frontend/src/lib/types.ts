@@ -528,3 +528,48 @@ export interface Overview {
   counts: ListingCounts
   vacancies: number
 }
+
+/** Other candidates' own levels in a skill, in aggregate (at least five of them). */
+export interface Comparison {
+  candidates: number
+  /** How many gave each level: index 0 is level 1, index 4 is level 5. */
+  levels: number[]
+  median: number
+}
+
+/** One of the candidate's skills on their dashboard: own level and quote counts only. */
+export interface DashboardSkill {
+  name: string
+  self_level: SkillLevel | null
+  /** Quotes from their documents that mention it. */
+  documents: number
+  /** Their own statements about it: answers and review notes. */
+  statements: number
+  comparison: Comparison | null
+}
+
+export interface DashboardArea {
+  category: SkillCategory | null
+  skills: DashboardSkill[]
+}
+
+export interface FollowingSkill {
+  skill: string
+  because: string[]
+}
+
+/** The candidate's overview of their own profile, never the assessment. */
+export interface Dashboard {
+  candidate: string
+  approved: boolean
+  skills: number
+  rated: number
+  documents: number
+  statements: number
+  areas: DashboardArea[]
+  /** Other candidates compared with; 0 when fewer than `min_group`. */
+  compared_with: number
+  min_group: number
+  in_demand: string[]
+  following: FollowingSkill[]
+}

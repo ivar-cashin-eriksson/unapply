@@ -92,7 +92,13 @@ npm run dev                   # http://localhost:5173
   revealed, were asked to apply and applied. When an employer asks them to apply,
   the request shows on the board and the listing, and the candidate applies with a
   cover letter, files or both, or declines. On their profile, candidates give the
-  name and contact details an employer sees only once they reveal them.
+  name and contact details an employer sees only once they reveal them. Their
+  **dashboard** sums up their own profile: skills by area (the taxonomy's
+  categories) with their own levels and how many quotes from their material
+  mention each, how their own levels compare with other candidates' own levels
+  (only over at least five of them), and skills to develop: those the jobs on the
+  board ask for most that they don't list, and those that follow from theirs in the
+  taxonomy. Never anything from the assessment or a rubric.
 - **Employers:** paste a job ad and set its vacancies (shown on the job board),
   draft a rubric from it, and edit and approve the
   hard filters and weighted criteria. Any change makes a new version. Then the
@@ -216,6 +222,13 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   aggregate on the current rubric version, from stored matches: counts per hard
   filter, scores per tenth with medians, skill counts and the job's counts. No
   quote, name, alias or profile id; nothing is recorded and no model is called.
+- **Dashboard** (`/candidates/<name>/dashboard`): the candidate's own profile in
+  overview, from the profile without the assessment: skills by area with own levels
+  and counts of quotes from documents and of their own statements; other
+  candidates' own levels per skill (counts per level and the median), only where at
+  least five rated it (the synthetic pool for a demo candidate, other real
+  candidates with approved profiles otherwise); and tips naming skills only. No
+  model is called.
 - **Hiring** (`/jobs/<name>/candidates/<profile id>/reveal`,
   `.../request-application`, `.../files/<id>`; `/candidates/<name>/applications/<job>`,
   `.../decline`, `/candidates/<name>/contact`): reveal a connected candidate (quota,

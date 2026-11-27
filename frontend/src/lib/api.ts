@@ -12,6 +12,7 @@ import type {
   CandidateProfile,
   CandidateSummary,
   Connection,
+  Dashboard,
   Contact,
   EmployerProgress,
   Extraction,
@@ -140,6 +141,7 @@ export const api = {
     json<{ answered: number }>('POST', `${c(name)}/answers`, answers),
   demoAnswers: (name: string) => json<Answers>('GET', `${c(name)}/demo/answers`),
   profile: (name: string) => json<CandidateProfile>('GET', `${c(name)}/profile`),
+  dashboard: (name: string) => json<Dashboard>('GET', `${c(name)}/dashboard`),
 
   // Jobs
   jobs: () => json<string[]>('GET', '/jobs'),

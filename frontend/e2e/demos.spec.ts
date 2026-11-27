@@ -18,7 +18,7 @@ async function shot(page: Page, name: string, { fullPage = true } = {}) {
   await page.screenshot({ path: path.join(SHOTS, `${name}.png`), fullPage })
 }
 
-test('the John Doe demo: material, review, questions and profile', async ({ page }) => {
+test('the John Doe demo: material, review, questions, profile and dashboard', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Upload your material once')
   await shot(page, '01-home')
@@ -69,6 +69,23 @@ test('the John Doe demo: material, review, questions and profile', async ({ page
   await expect(steps.getByRole('link', { name: /Questions/ })).toContainText('(done)')
   expect(await page.locator('main').textContent()).not.toMatch(ASSESSMENT)
   await shot(page, '06-candidate-profile')
+
+  // Step 5: the dashboard. With the demo jobs on the board, the synthetic pool is
+  // who John is compared with, and the jobs' skills are what tips draw on.
+  expect((await page.request.post('/api/demos/board')).ok()).toBe(true)
+  await steps.getByRole('link', { name: /Dashboard/ }).click()
+  await expect(page.getByRole('heading', { name: 'Your dashboard' })).toBeVisible()
+  const numbers = page.getByLabel('Your profile in numbers')
+  await expect(numbers).toContainText('12')
+  await expect(numbers).toContainText('other candidates')
+  const technology = page.getByRole('list', { name: 'Technology' })
+  await expect(technology.getByText('python', { exact: true })).toBeVisible()
+  await expect(page.getByRole('img', { name: /Other candidates' own levels in python/ })).toBeVisible()
+  await expect(page.getByText(/^Fewer than 5 others rated it$/).first()).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Asked for on the job board' }).getByRole('listitem').first()).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Follow from your skills' })).toContainText('machine learning')
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await shot(page, '25-candidate-dashboard')
 
   // The questions page now shows the answers given.
   await steps.getByRole('link', { name: /Questions/ }).click()
