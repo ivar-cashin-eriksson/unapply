@@ -517,12 +517,7 @@ def test_withdrawing_is_refused_once_revealed(client, repo):
     ok(client.put(f"/candidates/{name}/connections/{job}"))
     ok(client.post(f"/jobs/{job}/match"))
     profile_id = ok(client.get(f"/candidates/{name}/profile"))["id"]
-    ok(
-        client.post(
-            f"/jobs/{job}/intents", json={"profile_id": profile_id, "kind": "reveal"}
-        ),
-        201,
-    )
+    ok(client.post(f"/jobs/{job}/candidates/{profile_id}/reveal"), 201)
     response = client.delete(f"/candidates/{name}/connections/{job}")
     assert response.status_code == 409
     assert "revealed" in response.json()["detail"]

@@ -4,15 +4,16 @@
 and jobs by name, their current `Profile` or `Job`, a history of every step, and
 interview questions waiting for answers. It adds what folders can't do well: rubric
 versions that can't change once a match uses them, matches, an append-only audit log
-of matches and rankings, employers' intents (reveals and application requests),
-candidates' consents to jobs, and a copy of the skill taxonomy.
+of matches, rankings and reveals, employers' early intents (kept as history),
+candidates' consents to jobs, their progress on each job with their applications,
+and a copy of the skill taxonomy.
 
 Every method runs in its own transaction, so a failed call changes nothing.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
@@ -24,6 +25,7 @@ from sqlalchemy.orm import Session
 from unapply.consent import Consent, ConsentSection
 from unapply.db.engine import make_engine
 from unapply.db.models import (
+    ApplicationFileRow,
     AuditEntryRow,
     CandidateHistoryRow,
     CandidateRow,
@@ -39,12 +41,14 @@ from unapply.db.models import (
     JobHistoryRow,
     JobRow,
     MatchRow,
+    ProgressRow,
     RubricVersionRow,
     SkillRelationRow,
     SkillSynonymRow,
     SourceRow,
     TaxonomySkillRow,
 )
+from unapply.jobs.hiring import ApplicationFile, ChargeIntent, Progress
 from unapply.matching.audit import AuditEntry, AuditKind
 from unapply.matching.shortlist import Intent, IntentKind
 from unapply.schemas import Job, Match, Profile, Rubric
@@ -998,6 +1002,150 @@ class Repository:
             )
             return [_load_consent(row, name, job) for row, name in rows]
 
+    # Candidates' progress on jobs, and their applications
+
+    def save_progress(
+        self, progress: Progress, files: Sequence[tuple[str, bytes]] = ()
+    ) -> None:
+        """Store how far a candidate got on a job, adding any application files.
+
+        Parameters
+        ----------
+        progress : Progress
+            The progress; its `files` are ignored, as files are only added.
+        files : sequence of (str, bytes), optional
+            Files to add to the application: names and contents.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        now = datetime.now()
+        with self.transaction() as s:
+            key = (_candidate(s, progress.candidate).id, _job(s, progress.job).id)
+            row = s.get(ProgressRow, key)
+            if row is None:
+                row = ProgressRow(candidate_id=key[0], job_id=key[1])
+                s.add(row)
+            row.revealed_at = progress.revealed_at
+            row.revealed_profile_id = progress.revealed_profile_id
+            row.charge = (
+                progress.charge.model_dump(mode="json") if progress.charge else None
+            )
+            row.requested_at = progress.requested_at
+            row.answer = progress.answer
+            row.answered_at = progress.answered_at
+            row.letter = progress.letter
+            s.flush()
+            for name, content in files:
+                s.add(
+                    ApplicationFileRow(
+                        candidate_id=key[0],
+                        job_id=key[1],
+                        name=name,
+                        size=len(content),
+                        content=content,
+                        uploaded_at=now,
+                    )
+                )
+
+    def progress(self, candidate: str, job: str) -> Progress | None:
+        """Read how far a candidate got on a job.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+
+        Returns
+        -------
+        Progress or None
+            None until the employer reveals the candidate.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            key = (_candidate(s, candidate).id, _job(s, job).id)
+            row = s.get(ProgressRow, key)
+            return _load_progress(s, row, candidate, job) if row else None
+
+    def progresses(
+        self, job: str | None = None, candidate: str | None = None
+    ) -> list[Progress]:
+        """List the candidates' progress on jobs.
+
+        Parameters
+        ----------
+        job : str or None, optional
+            Only on this job.
+        candidate : str or None, optional
+            Only this candidate's.
+
+        Returns
+        -------
+        list of Progress
+            Sorted by job, then candidate.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            query = (
+                select(ProgressRow, CandidateRow.name, JobRow.name)
+                .join(CandidateRow, CandidateRow.id == ProgressRow.candidate_id)
+                .join(JobRow, JobRow.id == ProgressRow.job_id)
+                .order_by(JobRow.name, CandidateRow.name)
+            )
+            if job is not None:
+                query = query.where(ProgressRow.job_id == _job(s, job).id)
+            if candidate is not None:
+                query = query.where(
+                    ProgressRow.candidate_id == _candidate(s, candidate).id
+                )
+            rows = s.execute(query).all()
+            return [_load_progress(s, row, c, j) for row, c, j in rows]
+
+    def application_file(
+        self, candidate: str, job: str, file_id: int
+    ) -> tuple[str, bytes] | None:
+        """Read a file a candidate sent with their application for a job.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+        file_id : int
+            `ApplicationFile.id`.
+
+        Returns
+        -------
+        tuple of str and bytes, or None
+            The file's name and content, or None if this candidate's application
+            for this job has no such file.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            candidate_id = _candidate(s, candidate).id
+            job_id = _job(s, job).id
+            row = s.get(ApplicationFileRow, file_id)
+            if row is None or (row.candidate_id, row.job_id) != (candidate_id, job_id):
+                return None
+            return row.name, row.content
+
     # Skill taxonomy
 
     def save_taxonomy(self, taxonomy: Taxonomy) -> None:
@@ -1494,4 +1642,29 @@ def _load_consent(row: ConsentRow, candidate: str, job: str) -> Consent:
         job=job,
         sections=[ConsentSection(v) for v in row.sections],
         granted_at=row.granted_at,
+    )
+
+
+def _load_progress(s: Session, row: ProgressRow, candidate: str, job: str) -> Progress:
+    files = s.scalars(
+        select(ApplicationFileRow)
+        .filter_by(candidate_id=row.candidate_id, job_id=row.job_id)
+        .order_by(ApplicationFileRow.id)
+    )
+    return Progress(
+        candidate=candidate,
+        job=job,
+        revealed_at=row.revealed_at,
+        revealed_profile_id=row.revealed_profile_id,
+        charge=ChargeIntent.model_validate(row.charge) if row.charge else None,
+        requested_at=row.requested_at,
+        answer=row.answer,  # type: ignore[arg-type]
+        answered_at=row.answered_at,
+        letter=row.letter,
+        files=[
+            ApplicationFile(
+                id=f.id, name=f.name, size=f.size, uploaded_at=f.uploaded_at
+            )
+            for f in files
+        ],
     )

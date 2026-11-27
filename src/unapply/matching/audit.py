@@ -8,7 +8,9 @@ enough to check a ranking later without trusting anything else in the database:
   scorer and model, the rubric version and a hash of it, and a hash of the profile
   that was scored (its "profile version");
 - a **ranking** entry: the rubric version used, in full, and each ranked match in
-  full, with its rank and total.
+  full, with its rank and total;
+- a **reveal** entry: an employer saw who a candidate is, with the profile version
+  revealed and where payment would have been taken (see `unapply.jobs.hiring`).
 
 `reproduce_ranking` ranks a ranking entry's matches again with its rubric, and
 `check_ranking` says whether that gives back the recorded ranking and agrees with
@@ -36,6 +38,7 @@ class AuditKind(StrEnum):
 
     MATCH = "match"
     RANKING = "ranking"
+    REVEAL = "reveal"
 
 
 class AuditEntry(BaseModel):
@@ -47,7 +50,7 @@ class AuditEntry(BaseModel):
         Given by the database when the entry is stored, in the order entries were
         recorded; None before.
     kind : AuditKind
-        A match or a ranking.
+        A match, a ranking or a reveal.
     job_id : UUID
         The `Job.id`.
     rubric_version : int
@@ -56,21 +59,23 @@ class AuditEntry(BaseModel):
         `content_hash` of that rubric version.
     scorer : str
         The scorer, "baseline" or "llm". A ranking of matches by several scorers
-        lists them all, sorted and separated by ", ".
+        lists them all, sorted and separated by ", ". "employer" for a reveal.
     model : str
         `Match.model`, such as "baseline-v1" or a model name. Several, like
-        `scorer`, for a ranking.
+        `scorer`, for a ranking. "none" for a reveal.
     match_id : UUID or None
         The `Match.id` of a match entry; None for a ranking.
     profile_id : UUID or None
-        The `Profile.id` scored, for a match entry; None for a ranking.
+        The `Profile.id` scored, for a match entry, or revealed, for a reveal;
+        None for a ranking.
     profile_hash : str or None
-        `content_hash` of the profile scored, for a match entry: the profile
-        version. None for a ranking.
+        `content_hash` of the profile scored or revealed: the profile version.
+        None for a ranking, and for a reveal of a profile since replaced.
     payload : dict
         For a match: "match" (the `Match`), "hard_filters" (name, outcome and
         reason of each) and "problems". For a ranking: "rubric" (the `Rubric`) and
-        "ranking" (rank, total and the `Match`, best first). JSON-ready.
+        "ranking" (rank, total and the `Match`, best first). For a reveal:
+        "charge" (where payment would have been taken). JSON-ready.
     recorded_at : datetime
         When the entry was made, local time.
     """
@@ -197,6 +202,42 @@ def ranking_entry(job: Job, ranking: list[Ranked], scorers: list[str]) -> AuditE
                 for r in ranking
             ],
         },
+    )
+
+
+def reveal_entry(
+    job: Job, profile_id: UUID, profile: Profile | None, charge: dict[str, Any]
+) -> AuditEntry:
+    """Make the audit entry for an employer revealing a candidate.
+
+    Parameters
+    ----------
+    job : Job
+        The job, with its current rubric.
+    profile_id : UUID
+        The profile revealed, as the shortlist showed it.
+    profile : Profile or None
+        The candidate's current profile, hashed if it is the one revealed.
+    charge : dict
+        Where payment would have been taken, JSON-ready.
+
+    Returns
+    -------
+    AuditEntry
+        The entry, not stored yet. It names no candidate: the profile id links it
+        to the matches.
+    """
+    same = profile is not None and profile.id == profile_id
+    return AuditEntry(
+        kind=AuditKind.REVEAL,
+        job_id=job.id,
+        rubric_version=job.rubric.version,
+        rubric_hash=content_hash(job.rubric),
+        scorer="employer",
+        model="none",
+        profile_id=profile_id,
+        profile_hash=content_hash(profile) if same and profile else None,
+        payload={"charge": json.loads(json.dumps(charge, default=str))},
     )
 
 

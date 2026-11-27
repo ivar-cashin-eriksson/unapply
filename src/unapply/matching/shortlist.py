@@ -4,13 +4,13 @@ The shortlist is anonymised: a candidate is shown by an alias made from their
 profile id (an adjective and an animal or object, such as "Cobalt Otter", unique
 within the job) and an abstract avatar drawn from it, never by name, and every text from the profile goes through
 `anonymise.redact`, as it does on the way to the LLM scorer. The employer sees what
-the scorer saw: the headline, the roles, the quotes and, for each skill the rubric
-asks for, the candidate's own level and the estimated level, so candidates can be
-compared on both.
+the scorer saw: the headline, the roles, the quotes (once the employer reveals the
+candidate) and, for each skill the rubric asks for, the candidate's own level and
+the estimated level, so candidates can be compared on both.
 
-From the shortlist, the employer can ask to reveal a candidate (see who they are)
-or to request an application from them. Both only record the intent for now: no
-payment is taken and nobody's identity is shown (see `Intent`).
+From the shortlist, the employer reveals a candidate and then asks them to apply
+(see `unapply.jobs.hiring`). Before that existed, both only recorded an `Intent`;
+those are kept as history.
 """
 
 from __future__ import annotations
@@ -37,11 +37,11 @@ class IntentKind(StrEnum):
 
 
 class Intent(BaseModel):
-    """An employer's request about a candidate on a job's shortlist.
+    """An early employer request about a candidate on a job's shortlist: history.
 
-    Only the intent is recorded: revealing will need payment and the candidate's
-    consent, and requesting an application will ask the candidate, neither of
-    which exists yet.
+    Only the intent was recorded, before revealing and requesting applications
+    were built (`unapply.jobs.hiring`), which replaced it. Kept as history; no
+    longer made.
 
     Parameters
     ----------
@@ -156,7 +156,9 @@ class AnonymousCandidate(BaseModel):
     experiences : list of AnonymousExperience
         Their roles, in profile order.
     evidence : list of AnonymousEvidence
-        Every quote, so cited evidence can be shown.
+        Every quote, so cited evidence can be shown; empty where quotes are
+        hidden (on the shortlist, until the candidate is revealed). Role
+        summaries are empty there too.
     skills : list of SkillLevels
         Levels in each skill the rubric asks for, in rubric order.
     """
@@ -357,6 +359,7 @@ def anonymous_candidate(
     names: list[str] | None = None,
     taxonomy: Taxonomy | None = None,
     known_as: Identity | None = None,
+    quotes: bool = True,
 ) -> AnonymousCandidate:
     """Build the employer's view of a candidate on a job's shortlist.
 
@@ -373,6 +376,10 @@ def anonymous_candidate(
     known_as : Identity or None, optional
         Their alias and avatar on this job (see `identities`), by default
         `identity(profile.id)`.
+    quotes : bool, optional
+        Whether to include their quotes and the summaries of their roles, which
+        often repeat the material word for word; by default True. The shortlist
+        leaves both out until the employer reveals the candidate.
 
     Returns
     -------
@@ -405,14 +412,16 @@ def anonymous_candidate(
                 end=x.end,
                 start_precision=x.start_precision,
                 end_precision=x.end_precision,
-                summary=text(x.summary),
+                summary=text(x.summary) if quotes else "",
             )
             for x in profile.experiences
         ],
         evidence=[
             AnonymousEvidence(id=e.id, source=source(e.source_id), quote=text(e.quote))
             for e in profile.evidence
-        ],
+        ]
+        if quotes
+        else [],
         skills=[
             skill_levels(profile, s, taxonomy) for s in rubric_skills(rubric, taxonomy)
         ],

@@ -387,9 +387,13 @@ def test_the_shortlist_demo_ranks_the_pool_as_the_evaluation_does(client, repo, 
         ]
         for c in shortlist["candidates"]:
             assert [s["skill"] for s in c["skills"]] == shortlist["skills"]
-        # Every cited quote is on the shortlist with its candidate.
+        # No quotes before a reveal; each cited one is the candidate's own.
         for r, c in zip(ranking, shortlist["candidates"], strict=True):
-            quotes = {e["id"] for e in c["evidence"]}
+            assert c["evidence"] == []
+            assert c["progress"]["stage"] == "connected" and c["contact"] is None
+            quotes = {
+                str(e.id) for e in repo.profile_by_id(UUID(c["profile_id"])).evidence
+            }
             for score in r["criterion_scores"]:
                 assert set(score["evidence_ids"]) <= quotes
     assert shortlist["intents"] == []
@@ -459,78 +463,24 @@ def test_pool_candidates_make_no_model_calls(client):
     assert ok(client.get(f"/candidates/{name}/profile"))["approved_by_candidate_at"]
 
 
-def test_reveal_and_request_an_application_record_the_intent(client, repo):
+def test_the_early_intents_are_kept_as_history_on_the_shortlist(client, repo):
     job = shortlist_demo(client)
     ranking = ok(client.post(f"/jobs/{job}/match"))["candidates"]
-    first, second = ranking[0]["profile_id"], ranking[1]["profile_id"]
-
-    reveal = ok(
-        client.post(
-            f"/jobs/{job}/intents", json={"profile_id": first, "kind": "reveal"}
-        ),
-        201,
-    )
-    assert (reveal["profile_id"], reveal["kind"]) == (first, "reveal")
-    # Asking again changes nothing.
-    again = client.post(
-        f"/jobs/{job}/intents", json={"profile_id": first, "kind": "reveal"}
-    )
-    assert ok(again) == reveal
-    ok(
-        client.post(
-            f"/jobs/{job}/intents",
-            json={"profile_id": second, "kind": "request_application"},
-        ),
-        201,
-    )
+    first = UUID(ranking[0]["profile_id"])
+    repo.record_intent(Intent(job_id=repo.job(job).id, profile_id=first, kind="reveal"))
     intents = ok(client.get(f"/jobs/{job}/intents"))
-    assert [(i["profile_id"], i["kind"]) for i in intents] == [
-        (first, "reveal"),
-        (second, "request_application"),
-    ]
-    assert ok(client.get(f"/jobs/{job}/shortlist"))["intents"] == intents
-    # Recording an intent shows no one's identity: the answer has only ids.
-    assert set(reveal) == {"id", "job_id", "profile_id", "kind", "recorded_at"}
-    assert repo.intents(repo.job(job).id)[0].kind == IntentKind.REVEAL
-
-
-def test_intent_errors_and_the_reveal_quota(client):
-    job = shortlist_demo(client)
-    url = f"/jobs/{job}/intents"
-    stranger = str(uuid4())
-    # Nobody is on the shortlist before matching.
-    assert (
-        client.post(url, json={"profile_id": stranger, "kind": "reveal"}).status_code
-        == 404
+    assert [(i["profile_id"], i["kind"]) for i in intents] == [(str(first), "reveal")]
+    shortlist = ok(client.get(f"/jobs/{job}/shortlist"))
+    assert shortlist["intents"] == intents
+    # They revealed no one: the candidate is still anonymous, with no quotes.
+    assert shortlist["candidates"][0]["contact"] is None
+    assert shortlist["counts"]["revealed"] == 0
+    # New intents can't be recorded: reveals go through their own route.
+    response = client.post(
+        f"/jobs/{job}/intents", json={"profile_id": str(first), "kind": "reveal"}
     )
-    ranking = ok(client.post(f"/jobs/{job}/match"))["candidates"]
-    assert (
-        client.post(url, json={"profile_id": stranger, "kind": "reveal"}).status_code
-        == 404
-    )
-    assert (
-        client.post(url, json={"profile_id": stranger, "kind": "hire"}).status_code
-        == 422
-    )
+    assert response.status_code == 405
     assert client.get("/jobs/nothing/intents").status_code == 404
-    assert client.post("/jobs/nothing/intents", json={}).status_code == 422
-
-    # Ten reveals, the job's quota; then no more, though asking again still works.
-    ids = [c["profile_id"] for c in ranking]
-    for profile_id in ids[:10]:
-        ok(client.post(url, json={"profile_id": profile_id, "kind": "reveal"}), 201)
-    response = client.post(url, json={"profile_id": ids[10], "kind": "reveal"})
-    assert response.status_code == 409
-    assert "All 10 reveals" in response.json()["detail"]
-    ok(client.post(url, json={"profile_id": ids[0], "kind": "reveal"}))
-    # Application requests have no quota.
-    for profile_id in ids:
-        ok(
-            client.post(
-                url, json={"profile_id": profile_id, "kind": "request_application"}
-            ),
-            201,
-        )
 
 
 def test_years_of_experience_count_to_the_pools_date(client, repo, monkeypatch):

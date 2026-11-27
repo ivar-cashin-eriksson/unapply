@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import { AdText } from '@/components/AdText'
 import { api, ApiError } from '@/lib/api'
 import { adSummary, day, fitLabel, placeText, vacancies } from '@/lib/format'
-import { board, candidate, connection, DAIRY, fit, listing } from '@/test/fixtures'
+import { board, candidate, connection, DAIRY, fit, listing, progressed } from '@/test/fixtures'
 import { renderApp } from '@/test/render'
 
 // Words for the rubric and the assessment, which a candidate never sees.
@@ -44,7 +44,34 @@ describe('the job board', () => {
     expect(within(cards[1]).getByText('Junior')).toBeInTheDocument()
     expect(within(cards[1]).queryByText('Connected')).toBeNull()
     expect(screen.getByRole('status', { name: '' })).toHaveTextContent('2 jobs')
+    // How far the job's candidates got.
+    const counts = within(cards[0]).getByRole('group', { name: 'How far candidates got' })
+    expect(counts).toHaveTextContent('13 connected')
+    expect(counts).toHaveTextContent('2 revealed')
+    expect(counts).toHaveTextContent('1 asked to apply')
+    expect(counts).toHaveTextContent('0 applications')
     expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('shows the requests to apply on top, and each stage on its card', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([
+      progressed('requested'),
+      progressed('applied', { job: DAIRY.name, listing: DAIRY }),
+    ])
+    renderApp('/candidates/john-doe/jobs')
+    const requests = await screen.findByRole('region', { name: 'Asked to apply' })
+    expect(requests).toHaveTextContent('Fjord Grocery ApS asked you to apply for Senior Data Scientist')
+    expect(within(requests).getByRole('link', { name: 'Answer' })).toHaveAttribute(
+      'href',
+      '/candidates/john-doe/jobs/board-fjord-grocery',
+    )
+    // Only waiting requests are listed there.
+    expect(requests).not.toHaveTextContent('Junior')
+    const cards = within(screen.getByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    expect(within(cards[0]).getByText('Asked to apply', { selector: '[data-slot=badge]' })).toBeInTheDocument()
+    expect(within(cards[1]).getByText('Applied', { selector: '[data-slot=badge]' })).toBeInTheDocument()
   })
 
   it('shows how well you fit each job: band, place and missed requirements', async () => {
@@ -238,6 +265,67 @@ describe('a listing', () => {
     await user.click(screen.getByRole('button', { name: 'Withdraw' }))
     expect(withdraw).toHaveBeenCalledTimes(2)
     expect(await screen.findByRole('button', { name: 'Connect my profile' })).toBeEnabled()
+  })
+
+  it('once revealed, says so and offers no withdrawal', async () => {
+    approved()
+    vi.spyOn(api, 'listing').mockResolvedValue(listing())
+    vi.spyOn(api, 'connections').mockResolvedValue([progressed('revealed')])
+    renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
+    const region = await screen.findByRole('region', { name: 'Your connection' })
+    expect(region).toHaveTextContent('Revealed on 27 Nov 2026')
+    expect(region).toHaveTextContent('has seen your name, contact details and the quotes')
+    expect(screen.queryByRole('button', { name: 'Withdraw' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Asked to apply' })).toBeNull()
+  })
+
+  it('applies with a letter and a file when asked', async () => {
+    approved()
+    vi.spyOn(api, 'listing').mockResolvedValue(listing())
+    const connections = vi.spyOn(api, 'connections').mockResolvedValue([progressed('requested')])
+    const apply = vi.spyOn(api, 'apply').mockResolvedValue(progressed('applied'))
+    const { user } = renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
+
+    const asked = await screen.findByRole('region', { name: 'Asked to apply' })
+    expect(asked).toHaveTextContent('Fjord Grocery ApS asks you to apply')
+    const send = within(asked).getByRole('button', { name: 'Apply' })
+    expect(send).toBeDisabled()
+    await user.type(within(asked).getByLabelText('Cover letter'), 'I would like to apply.')
+    const file = new File(['# John Doe'], 'cv.md', { type: 'text/markdown' })
+    await user.upload(within(asked).getByLabelText('Files'), file)
+    expect(send).toBeEnabled()
+
+    connections.mockResolvedValue([progressed('applied')])
+    await user.click(send)
+    expect(apply).toHaveBeenCalledWith('john-doe', 'board-fjord-grocery', 'I would like to apply.', [file])
+    const sent = await screen.findByRole('region', { name: 'Your application' })
+    expect(sent).toHaveTextContent('You applied')
+    expect(sent).toHaveTextContent('I would like to apply.')
+    expect(within(sent).getByRole('link', { name: 'cv.md' })).toHaveAttribute(
+      'href',
+      '/api/candidates/john-doe/applications/board-fjord-grocery/files/3',
+    )
+    expect(await screen.findByText('Your application is sent to Fjord Grocery ApS.')).toBeInTheDocument()
+  })
+
+  it('declines, and says why an answer was refused', async () => {
+    approved()
+    vi.spyOn(api, 'listing').mockResolvedValue(listing())
+    const connections = vi.spyOn(api, 'connections').mockResolvedValue([progressed('requested')])
+    const decline = vi
+      .spyOn(api, 'decline')
+      .mockRejectedValueOnce(new ApiError(409, 'you already applied for this job'))
+      .mockResolvedValueOnce(progressed('declined'))
+    const { user } = renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
+
+    const asked = await screen.findByRole('region', { name: 'Asked to apply' })
+    await user.click(within(asked).getByRole('button', { name: 'Decline' }))
+    expect(await screen.findByText('you already applied for this job')).toBeInTheDocument()
+
+    connections.mockResolvedValue([progressed('declined')])
+    await user.click(within(asked).getByRole('button', { name: 'Decline' }))
+    expect(decline).toHaveBeenCalledTimes(2)
+    expect(await screen.findByRole('region', { name: 'Your application' })).toHaveTextContent('You declined')
   })
 
   it('needs an approved profile to connect', async () => {

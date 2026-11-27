@@ -8,6 +8,11 @@ import { renderApp } from '@/test/render'
 // Words for the assessment, which a candidate never sees.
 const ASSESSMENT = /estimat|confidence|claim support|overclaim/i
 
+// The profile page asks for the contact details shown when revealed.
+beforeEach(() => {
+  vi.spyOn(api, 'contact').mockResolvedValue({ name: 'John Doe', email: null, phone: null })
+})
+
 describe('the steps', () => {
   it('locks the steps that need an earlier one', async () => {
     vi.spyOn(api, 'candidate').mockResolvedValue(candidate({ demo: false }))
@@ -271,6 +276,35 @@ describe('profile', () => {
     expect(screen.getByText('Not rated')).toBeInTheDocument()
     expect(screen.getByText('Copenhagen')).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(ASSESSMENT)
+  })
+
+  it('sets the contact details an employer sees once they reveal you', async () => {
+    vi.spyOn(api, 'candidate').mockResolvedValue(
+      candidate({ demo: false, has_profile: true, approved: true, history: ['approved'] }),
+    )
+    vi.spyOn(api, 'profile').mockResolvedValue(profile())
+    const save = vi
+      .spyOn(api, 'saveContact')
+      .mockResolvedValue({ name: 'John Doe', email: 'john@example.org', phone: null })
+    const { user } = renderApp('/candidates/john-doe/profile')
+    const card = await screen.findByRole('region', { name: 'Shown when revealed' })
+    expect(await within(card).findByLabelText('Full name')).toHaveValue('John Doe')
+    await user.type(within(card).getByLabelText('Email'), 'john@example.org')
+    await user.click(within(card).getByRole('button', { name: 'Save' }))
+    expect(save).toHaveBeenCalledWith('john-doe', { name: 'John Doe', email: 'john@example.org', phone: null })
+    expect(await screen.findByText('Your contact details are saved.')).toBeInTheDocument()
+  })
+
+  it('shows a demo candidate their details from the CV, read-only', async () => {
+    vi.spyOn(api, 'candidate').mockResolvedValue(
+      candidate({ demo: true, has_profile: true, approved: true, history: ['approved'] }),
+    )
+    vi.spyOn(api, 'profile').mockResolvedValue(profile())
+    renderApp('/candidates/john-doe/profile')
+    const card = await screen.findByRole('region', { name: 'Shown when revealed' })
+    expect(await within(card).findByText('John Doe')).toBeInTheDocument()
+    expect(within(card).queryByRole('textbox')).toBeNull()
+    expect(card).toHaveTextContent('In the demo, these come from the CV.')
   })
 
   it('says a draft is not seen by employers yet', async () => {

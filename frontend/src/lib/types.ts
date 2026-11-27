@@ -310,10 +310,69 @@ export interface AnonymousCandidate {
   /** The alias's number, to draw the avatar from (`lib/avatar`). */
   avatar: number
   headline: string
+  /** Role summaries are empty until the candidate is revealed. */
   experiences: AnonymousExperience[]
+  /** Empty until the candidate is revealed: quotes stay hidden till then. */
   evidence: AnonymousEvidence[]
   /** One per rubric skill, in `Shortlist.skills` order. */
   skills: SkillLevels[]
+}
+
+/** How far a connected candidate got on a job, in order. */
+export type Stage = 'connected' | 'revealed' | 'requested' | 'applied' | 'declined'
+
+export interface ApplicationFile {
+  id: number
+  name: string
+  size: number
+  uploaded_at: string
+}
+
+/** A shortlisted candidate's progress, as the employer sees it: no names. */
+export interface EmployerProgress {
+  profile_id: string
+  stage: Stage
+  revealed_at: string | null
+  requested_at: string | null
+  answered_at: string | null
+  /** The application, once sent. */
+  letter: string
+  files: ApplicationFile[]
+}
+
+/** Who a candidate is: shown to an employer only once they reveal them. */
+export interface Contact {
+  name: string
+  email: string | null
+  phone: string | null
+}
+
+export interface ShortlistCandidate extends AnonymousCandidate {
+  progress: EmployerProgress
+  /** Null until revealed. */
+  contact: Contact | null
+}
+
+/** How far a job's candidates got. */
+export interface ListingCounts {
+  connected: number
+  revealed: number
+  /** Asked to apply, whatever they answered. */
+  requested: number
+  applied: number
+}
+
+/** A candidate's own progress on a job, with their application. */
+export interface Progress {
+  candidate: string
+  job: string
+  stage: Stage
+  revealed_at: string | null
+  requested_at: string | null
+  answer: 'applied' | 'declined' | null
+  answered_at: string | null
+  letter: string
+  files: ApplicationFile[]
 }
 
 export interface Intent {
@@ -329,9 +388,12 @@ export interface Shortlist {
   /** The rubric version ranked against. */
   rubric: Rubric
   skills: string[]
-  candidates: AnonymousCandidate[]
+  candidates: ShortlistCandidate[]
+  /** The early reveal and application requests, which revealed no one: history. */
   intents: Intent[]
   reveal_quota: number
+  counts: ListingCounts
+  vacancies: number
 }
 
 export interface ShortlistDemo {
@@ -355,6 +417,7 @@ export interface Listing {
   seniority: Seniority
   posted_at: string
   demo: boolean
+  counts: ListingCounts | null
 }
 
 export interface Board {
@@ -378,6 +441,9 @@ export interface Connection {
   job: string
   connected_at: string
   listing: Listing | null
+  stage: Stage
+  /** Null until the employer reveals the candidate. */
+  progress: Progress | null
 }
 
 /** How well the candidate fits a job, from their own levels only. */

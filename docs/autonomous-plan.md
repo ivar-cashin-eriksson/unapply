@@ -265,7 +265,7 @@ widen it.
   edges, a failed hard filter, the place after connecting), with no rubric or
   assessment detail on any candidate route.
 
-### 16. [ ] Reveal, request application, apply
+### 16. [x] Reveal, request application, apply
 
 - The employer's actions on a candidate go in one order, through **one button** on
   each shortlisted card: **Reveal**, then **Request application**, then (waiting),

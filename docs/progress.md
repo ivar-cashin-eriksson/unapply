@@ -481,6 +481,60 @@ branch, what was done, what was tested, anything to know.
   alone. `scripts/autorun.ps1`, `frontend/package-lock.json` and `TODO.md` still
   have changes not made by a task, left uncommitted.
 
+- 2026-11-27 · Task 16, Reveal, request application, apply · `feat/reveal-and-apply` ·
+  Added `src/unapply/jobs/hiring.py` (`Stage`, `Progress`, `ChargeIntent`,
+  `Contact`, `reveal`, `request_application`, `answer`, `candidate_on_job`,
+  `contact_from_cv`) and `src/unapply/api/hiring.py`. **Schema change to the
+  database:** new tables `job_progress` (per candidate and job: revealed, charge
+  intent, asked to apply, applied or declined, letter) and `application_files`
+  (files kept in the database, so no path is built from an upload), migration
+  `0008`; the Pydantic schemas in `src/unapply/schemas/` are unchanged. New audit
+  kind `reveal` (profile id and hash, the charge intent; no name). Employer routes
+  `POST /jobs/<job>/candidates/<profile id>/reveal` (connected candidates only,
+  within `reveal_quota`; again gives 200) and `.../request-application` (409 before
+  a reveal), `GET .../files/<id>` (only once applied, as a download); candidate
+  routes `POST /candidates/<name>/applications/<job>` (multipart letter and files:
+  PDF, Word, ODT, RTF, Markdown, text; up to 5 of 10 MB; a letter or a file
+  needed), `.../decline`, `GET .../files/<id>`, and `GET`/`PUT
+  /candidates/<name>/contact`. The shortlist now carries each candidate's progress,
+  their name and contact details once revealed, and the job's counts and
+  vacancies; listings and connections carry the counts and the stage.
+  `POST /jobs/<job>/intents` is gone (replaced, as the plan says); `GET` still lists
+  the early intents as history, and they count as no reveal. Frontend: one button
+  per shortlist card (Reveal, Request application, Waiting for application,
+  Applied, Declined), the revealed name and contact details, the application with
+  download links, "N quotes support this, shown once you reveal" before a reveal,
+  and counts above the list; on the candidate side an "Asked to apply" panel on the
+  board, stage badges and counts on each card, an apply form (cover letter, files)
+  and decline on the listing, "Revealed on ..." without Withdraw, and a "Shown when
+  revealed" contact card on the profile (read-only for demos). Tested: pytest 404
+  (`tests/test_hiring.py`: contact from a CV and set by a candidate, the whole flow
+  through the API with counts at each step, the audit entry and charge intent,
+  request before reveal refused, apply rules and file checks, downloads, a decline,
+  the quota, and **every employer `GET` route** (found from the OpenAPI schema) plus
+  matching checked for John's name, email, phone, database name and every quote
+  before a reveal, and only the shortlist naming him after); the shortlist and
+  board tests updated for the new routes. Vitest 116 (new: the button sequence,
+  application, decline, quota, hidden quotes, requests panel, apply and decline
+  forms, revealed listing, contact form). Playwright 7 (new: John connects to two
+  jobs; the employer reveals and asks him to apply on both; he applies with a
+  letter and a file on one, which the employer reads and downloads, and declines
+  the other; counts checked at each step; the shortlist demo now checks hidden
+  quotes and a reveal). Screenshots `21` to `24` added and the rest refreshed. All
+  checks pass. Decisions to check (small, conservative): **role summaries are
+  hidden before a reveal too**, as extraction often copies them word for word from
+  the CV (the test found John's quotes in them); a reveal shows the name and
+  contact details the candidate gives on their profile page, for demo and pool
+  candidates read from the top of their fixture CV (profiles store no names);
+  candidates see that they were revealed; "asked to apply" counts everyone asked,
+  whatever they answered, and "applications" only those who applied. Not covered:
+  the MCP server's `search_evidence` still gives quotes to a job's matching agent
+  for consenting candidates, as task 11 decided; it isn't an employer page. Fixed in
+  passing: a flaky Playwright selector (`Version 2` also matched a toast) and two
+  that the new counts made ambiguous, made exact without changing what they check.
+  `scripts/autorun.ps1`, `frontend/package-lock.json` and `TODO.md` still have
+  changes not made by a task, left uncommitted.
+
 ## Questions for Ivar
 
 None yet.

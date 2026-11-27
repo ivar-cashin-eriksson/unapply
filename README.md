@@ -88,7 +88,11 @@ npm run dev                   # http://localhost:5173
   profile** to a job with one click. Connecting is the candidate's consent for that
   job, recorded with its time: only connected candidates are matched and ranked.
   It can be withdrawn, which takes the candidate out of the job's next ranking,
-  until the employer reveals them.
+  until the employer reveals them. Each listing shows how many connected, were
+  revealed, were asked to apply and applied. When an employer asks them to apply,
+  the request shows on the board and the listing, and the candidate applies with a
+  cover letter, files or both, or declines. On their profile, candidates give the
+  name and contact details an employer sees only once they reveal them.
 - **Employers:** paste a job ad and set its vacancies (shown on the job board),
   draft a rubric from it, and edit and approve the
   hard filters and weighted criteria. Any change makes a new version. Then the
@@ -96,11 +100,15 @@ npm run dev                   # http://localhost:5173
   anonymised (an alias such as "Cobalt Otter" and an abstract, mirrored-pattern
   avatar, both from the profile id and unique within the job; never a name or a
   photo), with a score per
-  criterion, its reason and the quotes it cites, and the hard filter outcomes. A
-  **spider chart** compares up to three candidates on the rubric's skills, with
-  estimated levels, own levels or both, and a table of every value. "Reveal" and
-  "Request application" only record the intent (no payment, nobody contacted);
-  reveals are limited to the job's reveal quota (10).
+  criterion, its reason and how many quotes support it, and the hard filter
+  outcomes. A **spider chart** compares up to three candidates on the rubric's
+  skills, with estimated levels, own levels or both, and a table of every value.
+  **One button** on each card steps through **Reveal** (the candidate's name,
+  contact details and the quotes behind each score; no payment is taken, a charge
+  intent is recorded; limited to the job's reveal quota, 10), then **Request
+  application**, then waits, then shows **Applied** with the application (letter
+  and files to download) or **Declined**. Until a reveal, no quotes and no role
+  summaries are shown. The job's counts sit above the list, beside its vacancies.
 - **Demos:** "Try the John Doe demo", "Try the Fjord Grocery demo" and "Try the
   shortlist demo" (Fjord Grocery with its rubric approved and the 12 synthetic
   candidates of `tests/fixtures/pool`) replay recorded answers, so they cost
@@ -179,8 +187,9 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
 - **Job board** (`/board`, `/board/<job>`, `/candidates/<name>/connections`):
   search the listings (jobs with an approved rubric) by words, location, work mode
   and seniority, read one (the ad and vacancies, never the rubric), and connect an
-  approved profile to a job (`PUT`), list the connections and withdraw (`DELETE`,
-  refused once the employer revealed the candidate).
+  approved profile to a job (`PUT`), list the connections with how far each got
+  and withdraw (`DELETE`, refused once the employer revealed the candidate). Each
+  listing has its counts: connected, revealed, asked to apply, applied.
 - **Fit** (`/candidates/<name>/fit`, `/candidates/<name>/fit/<job>`): how well the
   candidate fits each job on the board: a band ("Strong", "Good", "Partial" or "Low
   fit") from the baseline on their own levels only, the hard filters they don't meet
@@ -191,11 +200,20 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   candidate connected to a job, with an approved profile, against its approved
   rubric, with the baseline or the LLM scorer, and read the anonymised ranking
   (profile ids, never names). A candidate who withdrew isn't in the next ranking.
-- **Shortlist** (`/jobs/<name>/shortlist`, `/jobs/<name>/intents`): the ranking
-  with each candidate anonymised (an alias, their roles and quotes with names and
-  contact details removed, their own and estimated levels in the rubric's skills,
-  and the baseline's totals on own and on estimated levels only),
-  and the employer's reveals and application requests, which are only recorded.
+- **Shortlist** (`/jobs/<name>/shortlist`): the ranking with each candidate
+  anonymised (an alias, their roles with names and contact details removed, their
+  own and estimated levels in the rubric's skills, and the baseline's totals on own
+  and on estimated levels only), how far each got, and the job's counts. Quotes and
+  role summaries only once revealed, with the candidate's name and contact details.
+  `/jobs/<name>/intents` lists the early reveal and application requests, which
+  only recorded intent, as history.
+- **Hiring** (`/jobs/<name>/candidates/<profile id>/reveal`,
+  `.../request-application`, `.../files/<id>`; `/candidates/<name>/applications/<job>`,
+  `.../decline`, `/candidates/<name>/contact`): reveal a connected candidate (quota,
+  charge intent, audit log entry), ask a revealed one to apply (refused before a
+  reveal), apply with a letter and files (PDF, Word, Markdown, text; up to 5 of 10
+  MB, kept in the database) or decline, download application files, and the
+  candidate's contact details (from the CV for demo candidates).
 - **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`, `/demos/board`):
   John Doe, Fjord Grocery, Fjord Grocery with the synthetic pool, and the eleven
   demo jobs on the board, which replay recorded answers for free. The pool's
@@ -263,6 +281,8 @@ uv run unapply match fjord-grocery-demo --scorer llm --allow-api   # one paid ca
    full, so it can be ranked again from the log alone. Rankings read back through
    the API's `/ranking` route are recorded too. `unapply audit <job>` lists a job's
    rankings and checks that each one reproduces and agrees with its match entries.
+   Each reveal is recorded too, with the profile revealed, a hash of it and where
+   payment would have been taken.
 
 `--replay` and `--record` take a folder with one `<candidate>.json` each, or a file
 for one candidate. John Doe against Fjord Grocery: 0.81 with the baseline, 0.71 with

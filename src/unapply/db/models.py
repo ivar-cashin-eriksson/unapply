@@ -1,7 +1,9 @@
 """SQLAlchemy tables: candidates, profiles, jobs, rubrics, matches, audit and more.
 
-The others are intents (employers' reveals and application requests) and consents
-(which jobs a candidate opted in to).
+The others are intents (employers' early reveal and application requests, kept as
+history), consents (which jobs a candidate opted in to), and each connected
+candidate's progress on a job (revealed, asked to apply, applied or declined) with
+the files of their application.
 
 The tables mirror the Pydantic schemas in `unapply.schemas`; `unapply.db.repository`
 converts between the two, so nothing else needs to know about the tables.
@@ -33,6 +35,7 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Integer,
+    LargeBinary,
     MetaData,
     String,
     Text,
@@ -471,3 +474,55 @@ class ConsentRow(Base):
     # `ConsentSection` values, in that order.
     sections: Mapped[list[str]] = mapped_column(default=list)
     granted_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ProgressRow(Base):
+    """How far a candidate got on a job after connecting (`unapply.jobs.hiring`).
+
+    Created when the employer reveals the candidate; the later steps fill in the
+    other columns. Keyed like consents, by the candidate's and the job's row ids, so
+    it outlives a profile that is extracted again.
+    """
+
+    __tablename__ = "job_progress"
+
+    candidate_id: Mapped[UUID] = mapped_column(
+        ForeignKey("candidates.id", ondelete=CASCADE), primary_key=True
+    )
+    job_id: Mapped[UUID] = mapped_column(
+        ForeignKey("jobs.id", ondelete=CASCADE), primary_key=True, index=True
+    )
+    revealed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    revealed_profile_id: Mapped[UUID | None] = mapped_column(Uuid)
+    # `ChargeIntent`, JSON-ready.
+    charge: Mapped[dict[str, Any] | None] = mapped_column()
+    requested_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # "applied" or "declined".
+    answer: Mapped[str | None] = mapped_column(String(16))
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime)
+    letter: Mapped[str] = mapped_column(Text, default="")
+
+
+class ApplicationFileRow(Base):
+    """A file a candidate sent with an application (`ApplicationFile`).
+
+    Kept in the database, not on disk, so it goes with the candidate or the job and
+    no file path is ever built from what was uploaded.
+    """
+
+    __tablename__ = "application_files"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["candidate_id", "job_id"],
+            ["job_progress.candidate_id", "job_progress.job_id"],
+            ondelete=CASCADE,
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    candidate_id: Mapped[UUID] = mapped_column(Uuid)
+    job_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    size: Mapped[int] = mapped_column(Integer)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime)

@@ -10,13 +10,13 @@ can be withdrawn until the employer reveals the candidate.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from unapply.api.candidates import demos
 from unapply.api.deps import Context, Ctx
+from unapply.api.hiring import connection
 from unapply.api.models import BoardDemo, Connection
 from unapply.app import demo
 from unapply.evaluation.pool import load_pool, store_board
@@ -69,13 +69,16 @@ def read_listing(job: str, ctx: Ctx) -> Listing:
 
 @router.get("/candidates/{name}/connections", tags=["candidates"])
 def list_connections(name: str, ctx: Ctx) -> list[Connection]:
-    """List the jobs a candidate connected their profile to, newest first."""
+    """List the jobs a candidate connected their profile to, newest first.
+
+    Each says how far they got: revealed, asked to apply, applied or declined.
+    """
     ctx.repo.settings(name)  # 404 if there is no such candidate.
     found = []
     for job in ctx.repo.job_names():
         consent = ctx.repo.consent(name, job)
         if consent is not None:
-            found.append(_connection(ctx, consent.job, consent.granted_at))
+            found.append(connection(ctx, name, job))
     return sorted(found, key=lambda c: c.connected_at, reverse=True)
 
 
@@ -112,7 +115,7 @@ def connect_profile(name: str, job: str, ctx: Ctx) -> Connection:
         consent = connect(ctx.repo, name, job)
     except ConnectError as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
-    return _connection(ctx, job, consent.granted_at)
+    return connection(ctx, name, consent.job)
 
 
 @router.delete(
@@ -154,9 +157,3 @@ def _listing(ctx: Context, job: str) -> Listing:
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No job {job!r} on the board.")
     return found
-
-
-def _connection(ctx: Context, job: str, connected_at: datetime) -> Connection:
-    return Connection(
-        job=job, connected_at=connected_at, listing=find_listing(ctx.repo, job)
-    )

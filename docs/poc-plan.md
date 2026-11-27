@@ -126,7 +126,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - Anonymised ranked list with explanations.
 - **Spider chart comparing selected candidates** on the rubric's skills, toggling between
   self-reported and estimated levels (and an overlay of both).
-- "Reveal" button (no payment yet; logs intent) and "Request application" button.
+- "Reveal" button (no payment yet) and "Request application" button.
 - Done: the Shortlist step in the frontend (`frontend/src/pages/employer/Shortlist.tsx`)
   over `GET /jobs/<name>/shortlist` (`src/unapply/matching/shortlist.py`): candidates
   by alias ("Cobalt Otter") and abstract avatar, unique within the job, with each criterion's score, reason and cited quotes, and hard filter
@@ -146,6 +146,16 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   then can ask anyone revealed to apply properly with written material. One button
   steps through Reveal, then Request application; a request needs a reveal first.
   Quotes stay hidden until reveal. A job has a number of vacancies.
+- Done (task 16, `src/unapply/jobs/hiring.py`, `src/unapply/api/hiring.py`): one
+  button per card steps through Reveal, Request application, waiting, and Applied or
+  Declined. A reveal needs a connected candidate and a reveal left in the quota,
+  records a charge intent (nothing is paid) and an audit log entry, and shows the
+  candidate's name, contact details, quotes and role summaries, all hidden before
+  (tested on every employer route). Requesting before a reveal is refused in the
+  API. The candidate applies with a letter and files, or declines; the employer
+  sees and downloads the application. Progress is stored per candidate and job
+  (`job_progress`, `application_files`, migration `0008`). The early intents stay
+  as history.
 
 ### M6: Candidate view
 - "You're #4 of 37 for this role." The profile, without the assessment.
@@ -170,7 +180,11 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   the baseline on the candidate's own levels only (on the profile without estimates
   or claim support; strong from 0.8, good from 0.6, partial from 0.3, else low), the
   hard filters they miss named as in the ad, and after connecting their place in
-  the job's latest ranking in the audit log. Still to do: the counts (task 16).
+  the job's latest ranking in the audit log.
+- Done (task 16): each listing's counts (connected, revealed, asked to apply,
+  applications) on the board, the listing and the shortlist; requests to apply on
+  top of the board and on the listing, with the application form; once revealed,
+  the listing says so and the connection can't be withdrawn.
 
 ## The key experiment (run alongside M1–M4)
 

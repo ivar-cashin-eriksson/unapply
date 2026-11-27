@@ -1,6 +1,7 @@
 import { BadgeCheck, Briefcase, Download, FileUp, MapPin, Pencil } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { ContactCard } from '@/components/ContactCard'
 import { LevelChip } from '@/components/LevelChips'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -105,7 +106,10 @@ export function Profile() {
             )}
           </CardContent>
         </Card>
-        <LookingFor profile={profile} />
+        <div className="space-y-6">
+          <LookingFor profile={profile} />
+          <ContactCard candidate={name} demo={summary.demo} />
+        </div>
       </div>
 
       <section aria-labelledby="skills-title" className="mt-8 space-y-4">

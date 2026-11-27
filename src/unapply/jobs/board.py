@@ -1,7 +1,8 @@
 """The job board: listings candidates browse, and connecting a profile to a job.
 
 A listing is what a candidate may read about a job: the ad as posted, its vacancies,
-and the place, work modes and seniority to filter by. Never the rubric's criteria,
+how many candidates connected, were revealed, were asked to apply and applied, and
+the place, work modes and seniority to filter by. Never the rubric's criteria,
 weights or minimum levels. Place and work modes come from the approved rubric's hard
 filters, which are copied from the ad ("Copenhagen, hybrid"), so they say nothing the
 ad doesn't; seniority is read from the title.
@@ -26,7 +27,6 @@ from pydantic import BaseModel
 
 from unapply.consent import Consent
 from unapply.matching.filters import same_place
-from unapply.matching.shortlist import IntentKind
 from unapply.schemas import Job, WorkMode
 
 if TYPE_CHECKING:
@@ -74,6 +74,27 @@ def seniority(title: str) -> Seniority:
     return Seniority.MID
 
 
+class ListingCounts(BaseModel):
+    """How far a job's candidates got: shown on its listing and to the employer.
+
+    Parameters
+    ----------
+    connected : int
+        Candidates connected to the job (for a demo job, the pool too).
+    revealed : int
+        Candidates the employer revealed.
+    requested : int
+        Candidates asked to apply, whatever they answered.
+    applied : int
+        Applications received.
+    """
+
+    connected: int = 0
+    revealed: int = 0
+    requested: int = 0
+    applied: int = 0
+
+
 class Listing(BaseModel):
     """A job as candidates see it on the board.
 
@@ -99,6 +120,9 @@ class Listing(BaseModel):
         When the job was posted, local time.
     demo : bool
         Whether it is a demo job, with an invented company.
+    counts : ListingCounts or None
+        How many candidates connected, were revealed, were asked to apply and
+        applied. None where they weren't counted.
     """
 
     name: str
@@ -111,6 +135,7 @@ class Listing(BaseModel):
     seniority: Seniority
     posted_at: datetime
     demo: bool = False
+    counts: ListingCounts | None = None
 
 
 class Board(BaseModel):
@@ -141,7 +166,9 @@ class ConnectError(ValueError):
     """A candidate can't connect to or withdraw from a job. The message says why."""
 
 
-def listing(name: str, job: Job, demo: bool = False) -> Listing:
+def listing(
+    name: str, job: Job, demo: bool = False, counts: ListingCounts | None = None
+) -> Listing:
     """Make a job's listing: what candidates may read about it.
 
     Parameters
@@ -153,6 +180,8 @@ def listing(name: str, job: Job, demo: bool = False) -> Listing:
         are used.
     demo : bool, optional
         Whether it is a demo job.
+    counts : ListingCounts or None, optional
+        How far its candidates got, if counted.
 
     Returns
     -------
@@ -171,6 +200,7 @@ def listing(name: str, job: Job, demo: bool = False) -> Listing:
         seniority=seniority(job.title),
         posted_at=job.created_at,
         demo=demo,
+        counts=counts,
     )
 
 
@@ -195,7 +225,7 @@ def listings(repo: Repository) -> list[Listing]:
         job = repo.job(name)
         if job is not None and job.rubric.approved_at is not None:
             demo = bool(repo.job_settings(name).get("demo"))
-            found.append(listing(name, job, demo))
+            found.append(listing(name, job, demo, count(repo, name)))
     return sorted(found, key=lambda x: (-x.posted_at.timestamp(), x.name))
 
 
@@ -219,7 +249,8 @@ def find_listing(repo: Repository, name: str) -> Listing | None:
     job = repo.job(name)
     if job is None or job.rubric.approved_at is None:
         return None
-    return listing(name, job, bool(repo.job_settings(name).get("demo")))
+    demo = bool(repo.job_settings(name).get("demo"))
+    return listing(name, job, demo, count(repo, name))
 
 
 def search(
@@ -302,6 +333,35 @@ def connected(repo: Repository, job: str) -> list[str]:
     return sorted(names)
 
 
+def count(repo: Repository, job: str) -> ListingCounts:
+    """Count how far a job's candidates got.
+
+    Parameters
+    ----------
+    repo : Repository
+        The database.
+    job : str
+        The job.
+
+    Returns
+    -------
+    ListingCounts
+        Connected, revealed, asked to apply and applied.
+
+    Raises
+    ------
+    NotFound
+        If there is no such job.
+    """
+    progress = repo.progresses(job=job)
+    return ListingCounts(
+        connected=len(connected(repo, job)),
+        revealed=sum(p.revealed_at is not None for p in progress),
+        requested=sum(p.requested_at is not None for p in progress),
+        applied=sum(p.answer == "applied" for p in progress),
+    )
+
+
 def connected_profiles(repo: Repository, job: str) -> set[UUID]:
     """Find every profile id of the candidates connected to a job.
 
@@ -343,18 +403,17 @@ def revealed(repo: Repository, candidate: str, job: str) -> bool:
     Returns
     -------
     bool
-        True if a reveal was recorded for any of the candidate's profiles.
+        True once the employer revealed them (see `unapply.jobs.hiring.reveal`).
+        The early reveal intents, kept as history, revealed no one and don't
+        count.
 
     Raises
     ------
     NotFound
         If there is no such candidate or job.
     """
-    current = repo.job(job)
-    if current is None:
-        return False
-    ids = set(repo.profile_ids(candidate))
-    return any(i.profile_id in ids for i in repo.intents(current.id, IntentKind.REVEAL))
+    progress = repo.progress(candidate, job)
+    return progress is not None and progress.revealed_at is not None
 
 
 def connect(repo: Repository, candidate: str, job: str) -> Consent:

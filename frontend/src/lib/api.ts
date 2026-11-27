@@ -12,10 +12,10 @@ import type {
   CandidateProfile,
   CandidateSummary,
   Connection,
+  Contact,
+  EmployerProgress,
   Extraction,
   Fit,
-  Intent,
-  IntentKind,
   JobAd,
   JobSummary,
   Listing,
@@ -159,8 +159,17 @@ export const api = {
     json<Ranking>('POST', `${j(name)}/match?scorer=${scorer}`),
   shortlist: (name: string, scorer: Scorer) =>
     json<Shortlist>('GET', `${j(name)}/shortlist?scorer=${scorer}`),
-  recordIntent: (name: string, profileId: string, kind: IntentKind) =>
-    json<Intent>('POST', `${j(name)}/intents`, { profile_id: profileId, kind }),
+  // The employer's steps on a candidate: reveal, then request an application
+  reveal: (name: string, profileId: string) =>
+    json<EmployerProgress>('POST', `${j(name)}/candidates/${encodeURIComponent(profileId)}/reveal`),
+  requestApplication: (name: string, profileId: string) =>
+    json<EmployerProgress>(
+      'POST',
+      `${j(name)}/candidates/${encodeURIComponent(profileId)}/request-application`,
+    ),
+  /** Where the employer downloads a file of a candidate's application. */
+  applicationFileUrl: (name: string, profileId: string, fileId: number) =>
+    `${BASE}${j(name)}/candidates/${encodeURIComponent(profileId)}/files/${fileId}`,
 
   // The job board: listings (never the rubric), and the candidate's connections
   board: (query: BoardQuery = {}) => {
@@ -179,6 +188,19 @@ export const api = {
   // How well the candidate fits each job: a band from their own levels, missed filters, place
   fits: (name: string) => json<Fit[]>('GET', `${c(name)}/fit`),
   fit: (name: string, job: string) => json<Fit>('GET', `${c(name)}/fit/${encodeURIComponent(job)}`),
+  // Applying when an employer asks, and what an employer sees once they reveal you
+  apply: (name: string, job: string, letter: string, files: File[]) => {
+    const body = new FormData()
+    body.append('letter', letter)
+    for (const f of files) body.append('files', f, f.name)
+    return request<Connection>(`${c(name)}/applications/${encodeURIComponent(job)}`, { method: 'POST', body })
+  },
+  decline: (name: string, job: string) =>
+    json<Connection>('POST', `${c(name)}/applications/${encodeURIComponent(job)}/decline`),
+  ownApplicationFileUrl: (name: string, job: string, fileId: number) =>
+    `${BASE}${c(name)}/applications/${encodeURIComponent(job)}/files/${fileId}`,
+  contact: (name: string) => json<Contact>('GET', `${c(name)}/contact`),
+  saveContact: (name: string, contact: Contact) => json<Contact>('PUT', `${c(name)}/contact`, contact),
 }
 
 /** A message for an error, saying what to do about a refused paid call. */

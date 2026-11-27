@@ -12,8 +12,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from unapply.jobs.board import Listing
-from unapply.matching.shortlist import AnonymousCandidate, Intent, IntentKind
+from unapply.jobs.board import Listing, ListingCounts
+from unapply.jobs.hiring import ApplicationFile, Contact, Progress, Stage
+from unapply.matching.shortlist import AnonymousCandidate, Intent
 from unapply.schemas import (
     CriterionKind,
     CriterionScore,
@@ -670,37 +671,95 @@ class Shortlist(BaseModel):
     skills : list of str
         The skills the rubric asks for, canonical and in rubric order: what
         candidates are compared on.
-    candidates : list of AnonymousCandidate
-        Each ranked candidate's alias, roles, quotes and levels, in ranking order.
-        A candidate whose profile was replaced since the match is left out.
+    candidates : list of ShortlistCandidate
+        Each ranked candidate's alias, roles and levels, how far they got, and
+        once revealed who they are and their quotes, in ranking order. A
+        candidate whose profile was replaced since the match is left out.
     intents : list of Intent
-        What the employer asked for on this job so far, oldest first.
+        The early reveal and application requests, which only recorded intent:
+        kept as history, oldest first.
     reveal_quota : int
         How many candidates the employer may reveal for this job.
+    counts : ListingCounts
+        How many candidates connected, were revealed, were asked to apply and
+        applied.
+    vacancies : int
+        How many people the job hires.
     """
 
     ranking: Ranking
     rubric: Rubric
     skills: list[str]
-    candidates: list[AnonymousCandidate]
+    candidates: list[ShortlistCandidate]
     intents: list[Intent]
     reveal_quota: int
+    counts: ListingCounts
+    vacancies: int
 
 
-class NewIntent(BaseModel):
-    """What an employer asks for about a shortlisted candidate.
+class EmployerProgress(BaseModel):
+    """How far a shortlisted candidate got, as their employer sees it.
 
     Parameters
     ----------
     profile_id : UUID
         The candidate, as the shortlist shows them.
-    kind : IntentKind
-        "reveal" to see who they are, or "request_application" to ask them for
-        their application material. Only recorded for now.
+    stage : Stage
+        Connected, revealed, requested (asked to apply, waiting), applied or
+        declined.
+    revealed_at, requested_at, answered_at : datetime or None
+        When each step happened.
+    letter : str
+        Their application's text, once they applied.
+    files : list of ApplicationFile
+        Their application's files, once they applied.
     """
 
     profile_id: UUID
-    kind: IntentKind
+    stage: Stage = Stage.CONNECTED
+    revealed_at: datetime | None = None
+    requested_at: datetime | None = None
+    answered_at: datetime | None = None
+    letter: str = ""
+    files: list[ApplicationFile] = Field(default_factory=list)
+
+
+class ShortlistCandidate(AnonymousCandidate):
+    """A shortlisted candidate: anonymous until revealed.
+
+    Until the employer reveals them, `evidence` is empty and so are the roles'
+    summaries (which often repeat the material word for word), so no quote is
+    shown: each criterion score still says how many quotes support it, by their
+    ids.
+
+    Parameters
+    ----------
+    progress : EmployerProgress
+        How far they got on this job, and their application once sent.
+    contact : Contact or None
+        Their name and contact details, once revealed; None before.
+    """
+
+    progress: EmployerProgress
+    contact: Contact | None = None
+
+
+class ContactForm(BaseModel):
+    """The name and contact details an employer sees once they reveal a candidate.
+
+    Parameters
+    ----------
+    name : str
+        Full name.
+    email : str or None
+        Email address.
+    phone : str or None
+        Phone number.
+    """
+
+    name: str = Field(min_length=1, max_length=200)
+    email: str | None = Field(default=None, max_length=200)
+    phone: str | None = Field(default=None, max_length=50)
 
 
 class ShortlistDemo(BaseModel):
@@ -741,8 +800,15 @@ class Connection(BaseModel):
         When the candidate connected, local time: their consent for this job.
     listing : Listing or None
         The job's listing, or None if it is no longer on the board.
+    stage : Stage
+        How far they got: connected, revealed, asked to apply (requested),
+        applied or declined.
+    progress : Progress or None
+        When each step happened, and their application; None until revealed.
     """
 
     job: str
     connected_at: datetime
     listing: Listing | None
+    stage: Stage = Stage.CONNECTED
+    progress: Progress | None = None
