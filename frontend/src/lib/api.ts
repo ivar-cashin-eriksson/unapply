@@ -9,11 +9,12 @@ import type {
   Board,
   BoardDemo,
   BoardQuery,
+  CandidateJobs,
   CandidateProfile,
   CandidateSummary,
   Connection,
-  Dashboard,
   Contact,
+  Dashboard,
   EmployerProgress,
   Extraction,
   Fit,
@@ -142,6 +143,7 @@ export const api = {
   demoAnswers: (name: string) => json<Answers>('GET', `${c(name)}/demo/answers`),
   profile: (name: string) => json<CandidateProfile>('GET', `${c(name)}/profile`),
   dashboard: (name: string) => json<Dashboard>('GET', `${c(name)}/dashboard`),
+  candidateJobs: (name: string) => json<CandidateJobs>('GET', `${c(name)}/jobs`),
 
   // Jobs
   jobs: () => json<string[]>('GET', '/jobs'),

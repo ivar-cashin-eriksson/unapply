@@ -32,6 +32,7 @@ from unapply.jobs.board import (
     withdraw,
 )
 from unapply.jobs.fit import Fit, fit, fits
+from unapply.jobs.outcomes import CandidateJobs, candidate_jobs
 from unapply.schemas import WorkMode
 
 router = APIRouter(tags=["job board"])
@@ -80,6 +81,18 @@ def list_connections(name: str, ctx: Ctx) -> list[Connection]:
         if consent is not None:
             found.append(connection(ctx, name, job))
     return sorted(found, key=lambda c: c.connected_at, reverse=True)
+
+
+@router.get("/candidates/{name}/jobs", tags=["candidates"])
+def list_candidate_jobs(name: str, ctx: Ctx) -> CandidateJobs:
+    """List the jobs a candidate is connected to, how far they got, and the rate.
+
+    Each job has its stage and the candidate's fit. Where they weren't revealed, it
+    names the skills common among the candidates who were that they don't list or
+    rated lower, from own levels only, once at least five others were revealed.
+    Never a level, weight, criterion or anything about one other candidate.
+    """
+    return candidate_jobs(ctx.repo, name)
 
 
 @router.get("/candidates/{name}/fit", tags=["candidates"])

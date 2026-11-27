@@ -98,7 +98,12 @@ npm run dev                   # http://localhost:5173
   mention each, how their own levels compare with other candidates' own levels
   (only over at least five of them), and skills to develop: those the jobs on the
   board ask for most that they don't list, and those that follow from theirs in the
-  taxonomy. Never anything from the assessment or a rubric.
+  taxonomy. It also lists the jobs they connected to, each with how far they got
+  and their fit, and their success rate (revealed, and asked to apply, out of
+  connected). For a job where they weren't revealed, it names the skills common
+  among those who were that they don't list or rated lower, from own levels only
+  and only once at least five others were revealed. Never anything from the
+  assessment or a rubric.
 - **Employers:** paste a job ad and set its vacancies (shown on the job board),
   draft a rubric from it, and edit and approve the
   hard filters and weighted criteria. Any change makes a new version. Then the
@@ -229,6 +234,12 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   least five rated it (the synthetic pool for a demo candidate, other real
   candidates with approved profiles otherwise); and tips naming skills only. No
   model is called.
+- **Candidate's jobs** (`/candidates/<name>/jobs`): the jobs a candidate is
+  connected to, newest first, each with its stage and fit, and the success rate.
+  For a job where they weren't revealed and at least five others were: the skills
+  at least half of those revealed list that the candidate doesn't, or rated lower
+  than the median of at least five of them who rated it. Skill names only, from
+  own levels; no model is called and nothing is stored.
 - **Hiring** (`/jobs/<name>/candidates/<profile id>/reveal`,
   `.../request-application`, `.../files/<id>`; `/candidates/<name>/applications/<job>`,
   `.../decline`, `/candidates/<name>/contact`): reveal a connected candidate (quota,

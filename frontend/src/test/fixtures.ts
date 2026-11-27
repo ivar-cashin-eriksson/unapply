@@ -2,6 +2,7 @@
 // and the Fjord Grocery job. No real person's data.
 import type {
   Board,
+  CandidateJobs,
   CandidateProfile,
   CandidateSummary,
   Connection,
@@ -467,6 +468,47 @@ export function dashboard(patch: Partial<Dashboard> = {}): Dashboard {
     min_group: 5,
     in_demand: ['excel', 'databricks'],
     following: [{ skill: 'gradient boosting', because: ['lightgbm'] }],
+    ...patch,
+  }
+}
+
+/** The candidate's jobs and success rate (`GET /candidates/<name>/jobs`). */
+export function candidateJobs(patch: Partial<CandidateJobs> = {}): CandidateJobs {
+  return {
+    candidate: 'john-doe',
+    jobs: [
+      {
+        job: 'board-smoerblomst-dairy',
+        listing: DAIRY,
+        connected_at: '2026-11-27T10:00:00',
+        stage: 'connected',
+        fit: fit({ job: 'board-smoerblomst-dairy', band: 'good', connected: true }),
+        revealed_skills: { missing: ['kafka', 'dbt'], lower: ['sql'] },
+      },
+      {
+        job: 'board-fjord-grocery',
+        listing: listing(),
+        connected_at: '2026-11-27T09:30:00',
+        stage: 'requested',
+        fit: fit({ connected: true }),
+        revealed_skills: null,
+      },
+      {
+        job: 'board-lynfjord-power',
+        listing: null,
+        connected_at: '2026-11-27T09:00:00',
+        stage: 'connected',
+        fit: null,
+        revealed_skills: null,
+      },
+    ],
+    connected: 3,
+    revealed: 1,
+    requested: 1,
+    applied: 0,
+    revealed_rate: 1 / 3,
+    requested_rate: 1 / 3,
+    min_group: 5,
     ...patch,
   }
 }

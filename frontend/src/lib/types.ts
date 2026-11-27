@@ -475,6 +475,42 @@ export interface Fit {
   place: Place | null
 }
 
+/** Skills common among the candidates a job revealed, which the candidate lacks: names only. */
+export interface RevealedSkills {
+  /** Common skills the profile doesn't list. */
+  missing: string[]
+  /** Common skills the candidate rated lower than most of the revealed did. */
+  lower: string[]
+}
+
+/** A job the candidate is connected to, how far they got and their fit. */
+export interface JobOutcome {
+  job: string
+  /** Null if the job is no longer on the board. */
+  listing: Listing | null
+  connected_at: string
+  stage: Stage
+  fit: Fit | null
+  /** Only where they weren't revealed and at least `min_group` others were. */
+  revealed_skills: RevealedSkills | null
+}
+
+/** The candidate's jobs and their success rate (`GET /candidates/<name>/jobs`). */
+export interface CandidateJobs {
+  candidate: string
+  /** Newest connection first. */
+  jobs: JobOutcome[]
+  connected: number
+  revealed: number
+  /** Asked to apply, whatever they answered. */
+  requested: number
+  applied: number
+  /** From 0 to 1; null with no connections. */
+  revealed_rate: number | null
+  requested_rate: number | null
+  min_group: number
+}
+
 export interface BoardDemo {
   /** The demo jobs on the board, newest first. */
   jobs: string[]
