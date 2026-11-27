@@ -20,7 +20,7 @@ from unapply.consent import Consent, ConsentSection
 from unapply.db.engine import init_db
 from unapply.db.repository import NotFound, Repository
 from unapply.evaluation.pool import load_pool, store_pool
-from unapply.matching.shortlist import alias
+from unapply.matching.shortlist import identities
 from unapply.mcp_server import AgentTools, ToolRefused, build_server
 from unapply.schemas import (
     Evidence,
@@ -37,6 +37,7 @@ from unapply.schemas import (
 
 POOL = Path(__file__).parent / "fixtures" / "pool"
 JOB = "fjord"
+ALIAS = r"[A-Z][a-z]+ [A-Z][a-z]+"
 TOOLS = {
     "get_rubric",
     "list_candidates",
@@ -275,14 +276,19 @@ def test_only_candidates_who_opted_in_with_an_approved_profile_are_listed(
 
     listed = call(server, "list_candidates")[1]["result"]
     ids = [repo.profile(n).id for n in names[:2]]
+    known_as = identities(ids)
     assert listed == sorted(
         [
             {
                 "candidate_id": str(ids[0]),
-                "alias": alias(ids[0]),
+                "alias": known_as[ids[0]].alias,
                 "shared": list(ConsentSection),
             },
-            {"candidate_id": str(ids[1]), "alias": alias(ids[1]), "shared": ["skills"]},
+            {
+                "candidate_id": str(ids[1]),
+                "alias": known_as[ids[1]].alias,
+                "shared": ["skills"],
+            },
         ],
         key=lambda e: e["candidate_id"],
     )
@@ -439,11 +445,12 @@ def test_no_pool_candidate_is_named_by_any_tool(repo, names):
     server = build_server(repo, JOB)
     listed = call(server, "list_candidates")[1]["result"]
     assert len(listed) == len(names)
+    assert len({e["alias"] for e in listed}) == len(names)
 
     seen = [listed]
     for entry in listed:
         cid = entry["candidate_id"]
-        assert re.fullmatch(r"Candidate [0-9A-F]{4}", entry["alias"])
+        assert re.fullmatch(ALIAS, entry["alias"])
         for tool in ("get_experiences", "get_skills", "get_preferences"):
             seen.append(call(server, tool, candidate_id=cid)[1])
         for query in ("python", "sql", "forecasting", "email phone linkedin"):

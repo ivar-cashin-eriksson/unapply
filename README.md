@@ -86,7 +86,9 @@ npm run dev                   # http://localhost:5173
 - **Employers:** paste a job ad, draft a rubric from it, and edit and approve the
   hard filters and weighted criteria. Any change makes a new version. Then the
   **shortlist**: match the candidates with either scorer and see them ranked and
-  anonymised (an alias such as "Candidate 3F2A", never a name), with a score per
+  anonymised (an alias such as "Cobalt Otter" and an abstract, mirrored-pattern
+  avatar, both from the profile id and unique within the job; never a name or a
+  photo), with a score per
   criterion, its reason and the quotes it cites, and the hard filter outcomes. A
   **spider chart** compares up to three candidates on the rubric's skills, with
   estimated levels, own levels or both, and a table of every value. "Reveal" and
@@ -283,7 +285,7 @@ uv run unapply mcp acme                                         # serve over std
 ```
 
 The tools, all read-only: `get_rubric`, `list_candidates` (profile id, alias such as
-"Candidate 3F2A" and what each shared), `get_experiences`, `get_skills` (own and
+"Cobalt Otter", as on the shortlist, and what each shared), `get_experiences`, `get_skills` (own and
 estimated levels with the estimate's confidence), `search_evidence(query)` (quotes
 cited for the skill the query names, or one that counts towards it through the
 taxonomy, first; then quotes with more of its words) and `get_preferences`. Texts go

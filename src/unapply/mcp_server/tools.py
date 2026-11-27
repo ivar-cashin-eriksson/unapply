@@ -25,7 +25,7 @@ from unapply.consent import Consent, ConsentSection
 from unapply.dates import format_partial_date
 from unapply.db.repository import Repository
 from unapply.matching.anonymise import redact
-from unapply.matching.shortlist import alias
+from unapply.matching.shortlist import identities
 from unapply.schemas import (
     CriterionKind,
     HardFilters,
@@ -112,7 +112,7 @@ class CandidateEntry(BaseModel):
     candidate_id : str
         Their profile id: what every other tool takes.
     alias : str
-        What to call them, such as "Candidate 3F2A".
+        What to call them, such as "Cobalt Otter", as on the shortlist.
     shared : list of ConsentSection
         The sections they shared with this job; the tools for the others refuse.
     """
@@ -356,18 +356,26 @@ class AgentTools:
         list of CandidateEntry
             Ordered by candidate id, which says nothing about the candidates.
         """
-        entries = []
+        opted_in = self._opted_in()
+        known_as = identities(profile.id for profile, _ in opted_in)
+        entries = [
+            CandidateEntry(
+                candidate_id=str(profile.id),
+                alias=known_as[profile.id].alias,
+                shared=consent.sections,
+            )
+            for profile, consent in opted_in
+        ]
+        return sorted(entries, key=lambda e: e.candidate_id)
+
+    def _opted_in(self) -> list[tuple[Profile, Consent]]:
+        """Find the candidates who opted in to this job with an approved profile."""
+        found = []
         for consent in self.repo.consents(self.job):
             profile = self.repo.profile(consent.candidate)
             if profile is not None and profile.approved_by_candidate_at is not None:
-                entries.append(
-                    CandidateEntry(
-                        candidate_id=str(profile.id),
-                        alias=alias(profile.id),
-                        shared=consent.sections,
-                    )
-                )
-        return sorted(entries, key=lambda e: e.candidate_id)
+                found.append((profile, consent))
+        return found
 
     def experiences(self, candidate_id: str) -> ExperiencesView:
         """Read a candidate's headline and experience.
@@ -577,8 +585,9 @@ class AgentTools:
         ):
             raise unknown
         if not consent.allows(section):
+            known_as = identities(p.id for p, _ in self._opted_in())
             raise ToolRefused(
-                f"{alias(profile_id)} hasn't shared their {section.value} with this "
+                f"{known_as[profile_id].alias} hasn't shared their {section.value} with this "
                 f"job; they shared: {', '.join(consent.sections) or 'nothing yet'}"
             )
         github = self.repo.settings(name).get("github")

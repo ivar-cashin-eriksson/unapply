@@ -122,10 +122,17 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(ranked).toBeVisible()
   // The 12 of the pool, and the John Doe demo if an earlier test approved him.
   expect(Number((await ranked.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(12)
-  await expect(page.getByRole('meter', { name: /^Total for Candidate/ }).first()).toBeVisible()
+  await expect(page.getByRole('meter', { name: /^Total for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
   // Each card: the scorer's total, and the baseline on own and on estimated levels.
-  await expect(page.getByRole('meter', { name: /^Own rating for Candidate/ }).first()).toBeVisible()
-  await expect(page.getByRole('meter', { name: /^Estimated from evidence for Candidate/ }).first()).toBeVisible()
+  await expect(page.getByRole('meter', { name: /^Own rating for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
+  await expect(page.getByRole('meter', { name: /^Estimated from evidence for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
+  // Each candidate has a two-word alias and an avatar, none shared.
+  const aliases = await page.getByRole('heading', { level: 3 }).allTextContents()
+  expect(aliases.every((a) => /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(a))).toBe(true)
+  expect(new Set(aliases).size).toBe(aliases.length)
+  const avatars = await page.locator('svg[data-avatar]').evaluateAll((all) => all.map((a) => a.getAttribute('data-avatar')))
+  expect(avatars).toHaveLength(aliases.length)
+  expect(new Set(avatars).size).toBe(aliases.length)
   await shot(page, '11-shortlist', { fullPage: false })
 
   // The three who fail a hard filter: below a divider, scored, with the filter named.
@@ -134,7 +141,7 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   const failing = page.getByRole('list', { name: "Don't meet the requirements" })
   await expect(failing.getByRole('listitem')).toHaveCount(3)
   await expect(failing.getByText(/^Doesn't meet/)).toHaveCount(4) // One fails two filters.
-  await expect(failing.getByRole('meter', { name: /^Total for Candidate/ })).toHaveCount(3)
+  await expect(failing.getByRole('meter', { name: /^Total for [A-Z][a-z]+ [A-Z][a-z]+$/ })).toHaveCount(3)
   await divider.scrollIntoViewIfNeeded()
   await shot(page, '15-shortlist-failed', { fullPage: false })
   await page.getByRole('heading', { name: 'Shortlist', exact: true }).scrollIntoViewIfNeeded()
@@ -150,7 +157,7 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await first.getByRole('button', { name: /^Hide for/ }).click()
 
   // Compare the top three on the rubric's skills, own and estimated levels.
-  const boxes = page.getByRole('checkbox', { name: /^Compare Candidate/ })
+  const boxes = page.getByRole('checkbox', { name: /^Compare [A-Z][a-z]+ [A-Z][a-z]+$/ })
   for (const i of [0, 1, 2]) await boxes.nth(i).click()
   await expect(boxes.nth(3)).toBeDisabled()
   const chart = page.getByRole('img', { name: /^Levels in \d+ skills/ })
@@ -163,7 +170,7 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(page.getByTestId('shape-estimated-0')).toBeVisible()
 
   // Reveal the first and ask the second to apply: recorded, no payment, no name.
-  await first.getByRole('button', { name: /^Reveal Candidate/ }).click()
+  await first.getByRole('button', { name: /^Reveal [A-Z][a-z]+ [A-Z][a-z]+$/ }).click()
   await expect(page.getByText(/recorded\. No payment is taken yet/)).toBeVisible()
   await expect(page.getByText('Reveals: 1 of 10')).toBeVisible()
   await expect(first.getByRole('button', { name: /^Reveal requested/ })).toBeDisabled()
@@ -177,7 +184,7 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(page.getByText(/replays recorded answers/)).toBeVisible()
   await page.getByRole('button', { name: 'Match candidates' }).click()
   await expect(ranked).toBeVisible()
-  await expect(page.getByRole('meter', { name: /^Total for Candidate/ }).first()).toBeVisible()
+  await expect(page.getByRole('meter', { name: /^Total for [A-Z][a-z]+ [A-Z][a-z]+$/ }).first()).toBeVisible()
   // The comparison stays: the same people, scored another way.
   await expect(chart).toBeVisible()
   // The requests are the job's, whichever scorer ranks.

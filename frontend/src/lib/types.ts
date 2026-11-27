@@ -302,8 +302,10 @@ export interface AnonymousExperience {
 
 export interface AnonymousCandidate {
   profile_id: string
-  /** Such as "Candidate 3F2A". */
+  /** Such as "Cobalt Otter": from the profile id, unique on the job. */
   alias: string
+  /** The alias's number, to draw the avatar from (`lib/avatar`). */
+  avatar: number
   headline: string
   experiences: AnonymousExperience[]
   evidence: AnonymousEvidence[]
