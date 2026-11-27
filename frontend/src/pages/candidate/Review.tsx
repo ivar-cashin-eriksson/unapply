@@ -109,26 +109,21 @@ function ReviewEditor({ initial }: { initial: ReviewForm }) {
 
         <Tabs defaultValue="skills">
           <TabsList className="flex-wrap">
-            <TabsTrigger value="skills">Skills ({kept.length})</TabsTrigger>
+            <TabsTrigger value="skills">Skills ({kept.length + form.add_skills.length})</TabsTrigger>
             <TabsTrigger value="experience">
               Experience ({form.experiences.filter((x) => x.keep).length})
             </TabsTrigger>
-            <TabsTrigger value="add">
-              Add skills{form.add_skills.length ? ` (${form.add_skills.length})` : ''}
-            </TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
           </TabsList>
-          <TabsContent value="skills" className="pt-4">
+          <TabsContent value="skills" className="space-y-8 pt-4">
             <Skills skills={form.skills} onChange={(skills) => update({ skills })} />
+            <AddSkills skills={form.add_skills} onChange={(add_skills) => update({ add_skills })} />
           </TabsContent>
           <TabsContent value="experience" className="pt-4">
             <Experiences
               experiences={form.experiences}
               onChange={(experiences) => update({ experiences })}
             />
-          </TabsContent>
-          <TabsContent value="add" className="pt-4">
-            <AddSkills skills={form.add_skills} onChange={(add_skills) => update({ add_skills })} />
           </TabsContent>
           <TabsContent value="preferences" className="pt-4">
             <PreferencesForm form={form} onChange={(preferences) => update({ preferences })} />
@@ -342,10 +337,16 @@ function AddSkills({ skills, onChange }: { skills: NewSkill[]; onChange: (s: New
   const set = (i: number, patch: Partial<NewSkill>) =>
     onChange(skills.map((s, j) => (j === i ? { ...s, ...patch } : s)))
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Say where you used each one. Skills you add are kept as your own statements.
-      </p>
+    <section aria-labelledby="add-skills-title" className="space-y-4">
+      <div className="space-y-1">
+        <h2 id="add-skills-title" className="font-medium">
+          Missing a skill?
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Add it with your level and say where you used it. Skills you add are kept as
+          your own statements.
+        </p>
+      </div>
       <ul className="space-y-3">
         {skills.map((s, i) => (
           <li key={i}>
@@ -368,7 +369,12 @@ function AddSkills({ skills, onChange }: { skills: NewSkill[]; onChange: (s: New
                   </Field>
                 </div>
                 <div className="sm:col-span-2">
-                  <Button variant="ghost" size="sm" onClick={() => onChange(skills.filter((_, j) => j !== i))}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Remove ${s.name || 'the new skill'}`}
+                    onClick={() => onChange(skills.filter((_, j) => j !== i))}
+                  >
                     <Trash2 aria-hidden /> Remove
                   </Button>
                 </div>
@@ -380,7 +386,7 @@ function AddSkills({ skills, onChange }: { skills: NewSkill[]; onChange: (s: New
       <Button variant="outline" onClick={() => onChange([...skills, { ...NEW_SKILL }])}>
         <Plus aria-hidden /> Add a skill
       </Button>
-    </div>
+    </section>
   )
 }
 

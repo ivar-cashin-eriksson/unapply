@@ -128,6 +128,8 @@ export const api = {
     for (const f of files) body.append('files', f, f.name)
     return request<MaterialFile[]>(`${c(name)}/material`, { method: 'POST', body })
   },
+  /** Where the candidate downloads one of their own uploaded files. */
+  materialFileUrl: (name: string, file: string) => `${BASE}${c(name)}/material/${encodeURIComponent(file)}`,
   removeFile: (name: string, file: string) =>
     json<void>('DELETE', `${c(name)}/material/${encodeURIComponent(file)}`),
   extract: (name: string) => json<Extraction>('POST', `${c(name)}/extract`),

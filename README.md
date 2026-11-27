@@ -79,8 +79,9 @@ npm install                   # once
 npm run dev                   # http://localhost:5173
 ```
 
-- **Candidates:** upload material (drag and drop), review the draft profile (edit
-  experience, rate skills with level chips, add skills, set preferences, approve),
+- **Candidates:** upload and download material (drag and drop), review the draft
+  profile (edit experience, rate skills with level chips and add missing ones with a
+  level and where they were used, in the same Skills tab, set preferences, approve),
   answer a few questions, and see the profile as employers will. The assessment is
   never shown. Then the **job board**: browse and search the jobs (free text over
   title, company and ad; filters for location, work mode and seniority), read a
@@ -195,7 +196,9 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
 ```
 
 - **Candidates** (`/candidates`): create, upload material (PDF, Markdown, text,
-  LaTeX, YAML, JSON or a zipped LinkedIn export; up to 20 MB a file), extract a
+  LaTeX, YAML, JSON or a zipped LinkedIn export; up to 20 MB a file), download
+  their own uploads (`/candidates/<name>/material/<file>`, only files directly in
+  that candidate's folder; any path in the name is refused, 404), extract a
   draft profile, read and save the review form, prepare and answer questions, and
   read the profile. Candidate routes never return the assessment.
 - **Jobs** (`/jobs`): create with the ad, extract a rubric, read any version and

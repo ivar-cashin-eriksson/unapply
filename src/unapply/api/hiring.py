@@ -17,12 +17,11 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated
-from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
 
-from unapply.api.deps import Context, Ctx
+from unapply.api.deps import Context, Ctx, download
 from unapply.api.models import Connection, ContactForm, EmployerProgress
 from unapply.app import demo
 from unapply.evaluation.pool import DEFAULT_POOL
@@ -102,7 +101,7 @@ def application_file(job: str, profile_id: UUID, file_id: int, ctx: Ctx) -> Resp
     found = ctx.repo.application_file(candidate, job, file_id)
     if progress is None or progress.answer != "applied" or found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such application file.")
-    return _download(*found)
+    return download(*found)
 
 
 @router.get("/candidates/{name}/contact", tags=["candidates"])
@@ -166,7 +165,7 @@ def own_application_file(name: str, job: str, file_id: int, ctx: Ctx) -> Respons
     found = ctx.repo.application_file(name, job, file_id)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such application file.")
-    return _download(*found)
+    return download(*found)
 
 
 def employer_progress(progress: Progress | None, profile_id: UUID) -> EmployerProgress:
@@ -316,22 +315,6 @@ def _checked(files: list[UploadFile]) -> list[tuple[str, bytes]]:
             )
         checked.append((filename, content))
     return checked
-
-
-def _download(filename: str, content: bytes) -> Response:
-    """Send a stored file as a download, never shown inline."""
-    name = Path(filename).name
-    plain = name.encode("ascii", "replace").decode().replace('"', "").replace("?", "_")
-    return Response(
-        content,
-        media_type="application/octet-stream",
-        headers={
-            "Content-Disposition": (
-                f"attachment; filename=\"{plain}\"; filename*=UTF-8''{quote(name)}"
-            ),
-            "X-Content-Type-Options": "nosniff",
-        },
-    )
 
 
 def _not_on_job() -> HTTPException:

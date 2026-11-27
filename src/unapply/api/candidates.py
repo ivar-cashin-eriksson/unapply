@@ -13,9 +13,9 @@ import shutil
 from pathlib import Path
 
 import yaml
-from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi import APIRouter, HTTPException, Response, UploadFile, status
 
-from unapply.api.deps import AllowAPI, Context, Ctx, may_call
+from unapply.api.deps import AllowAPI, Context, Ctx, download, may_call
 from unapply.api.models import (
     AnsweredQuestion,
     AnswerResult,
@@ -141,15 +141,24 @@ def upload_material(name: str, files: list[UploadFile], ctx: Ctx) -> list[Materi
     return _files(folder)
 
 
+@router.get("/{name}/material/{filename}")
+def download_material(name: str, filename: str, ctx: Ctx) -> Response:
+    """Download one of the candidate's uploaded files, as uploaded.
+
+    Only a file directly in their own folder: a name with a path in it, such as
+    "../other/cv.pdf", is refused (404) like a file that isn't there.
+    """
+    ctx.repo.settings(name)  # 404 for an unknown candidate
+    path = _own_file(ctx, name, filename)
+    return download(path.name, path.read_bytes())
+
+
 @router.delete("/{name}/material/{filename}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_material(name: str, filename: str, ctx: Ctx) -> None:
     """Remove an uploaded file. The profile keeps what was extracted from it."""
     settings = ctx.repo.settings(name)
     _not_demo(settings, "The demo's material is fixed, so the recordings fit it.")
-    path = ctx.material(name) / filename
-    if Path(filename).name != filename or not path.is_file():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"no file {filename!r}")
-    path.unlink()
+    _own_file(ctx, name, filename).unlink()
 
 
 @router.post("/{name}/extract")
@@ -572,6 +581,24 @@ def _files(folder: Path) -> list[MaterialFile]:
         for f in sorted(folder.iterdir())
         if f.is_file()
     ]
+
+
+def _own_file(ctx: Context, name: str, filename: str) -> Path:
+    """Find a file directly in the candidate's material folder, or 404.
+
+    `filename` comes from the URL, so it may hold a path; only a bare name that
+    stays in the folder is accepted.
+    """
+    folder = ctx.material(name).resolve()
+    path = (folder / filename).resolve()
+    if (
+        Path(filename).name != filename
+        or filename.startswith(".")
+        or path.parent != folder
+        or not path.is_file()
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"no file {filename!r}")
+    return path
 
 
 def _need_profile(ctx: Context, name: str) -> Profile:

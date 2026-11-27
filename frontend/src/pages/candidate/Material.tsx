@@ -1,4 +1,4 @@
-import { Code2, FileText, Lock, Sparkles, Trash2 } from 'lucide-react'
+import { Code2, Download, FileText, Lock, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -109,6 +109,15 @@ export function Material() {
                     <FileText className="size-4 text-primary" aria-hidden />
                     <span className="flex-1 truncate font-medium">{f.name}</span>
                     <span className="text-sm text-muted-foreground">{fileSize(f.size)}</span>
+                    <Button variant="ghost" size="icon-sm" asChild>
+                      <a
+                        href={api.materialFileUrl(name, f.name)}
+                        download={f.name}
+                        aria-label={`Download ${f.name}`}
+                      >
+                        <Download aria-hidden />
+                      </a>
+                    </Button>
                     {!fixed && (
                       <Button
                         variant="ghost"

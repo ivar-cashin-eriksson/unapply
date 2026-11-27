@@ -201,6 +201,39 @@ def test_upload_list_and_remove_material(client):
     assert client.delete("/candidates/jane/material/notes.md").status_code == 404
 
 
+def test_download_own_material(client, tmp_path):
+    ok(client.post("/candidates", json={"name": "jane"}), 201)
+    ok(upload_john(client), 201)
+    response = client.get("/candidates/jane/material/cv.md")
+    assert response.status_code == 200
+    assert response.content == (JOHN / "material" / "cv.md").read_bytes()
+    assert response.headers["content-type"] == "application/octet-stream"
+    assert response.headers["content-disposition"].startswith("attachment;")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert client.get("/candidates/jane/material/missing.md").status_code == 404
+    assert client.get("/candidates/nobody/material/cv.md").status_code == 404
+
+
+def test_material_download_stays_in_the_candidates_folder(client, tmp_path):
+    """Another candidate's file, or any other file, can't be reached by its path."""
+    ok(client.post("/candidates", json={"name": "jane"}), 201)
+    ok(client.post("/candidates", json={"name": "joan"}), 201)
+    ok(upload_john(client, "joan"), 201)
+    (tmp_path / "secret.txt").write_text("not yours")
+    (tmp_path / "uploads" / "jane").mkdir(parents=True)
+    for path in [
+        "..%2Fjoan%2Fcv.md",
+        "..%5Cjoan%5Ccv.md",
+        "%2E%2E%2Fjoan%2Fcv.md",
+        "..%2F..%2Fsecret.txt",
+        "%2E%2E",
+    ]:
+        response = client.get(f"/candidates/jane/material/{path}")
+        assert response.status_code == 404, path
+        assert b"not yours" not in response.content
+        assert b"John" not in response.content
+
+
 def test_every_upload_is_read_even_a_readme_and_removed_files_are_not(client, fake):
     """Uploads are the candidate's choice; they leave a file out by removing it."""
     ok(client.post("/candidates", json={"name": "jane"}), 201)
@@ -476,6 +509,8 @@ def test_demo_material_is_fixed(client):
     files = [("files", ("extra.md", b"# More", "text/markdown"))]
     assert client.post(f"/candidates/{name}/material", files=files).status_code == 409
     assert client.delete(f"/candidates/{name}/material/cv.md").status_code == 409
+    # Downloading is still allowed: it is the candidate's own material.
+    assert client.get(f"/candidates/{name}/material/cv.md").status_code == 200
     assert client.patch(f"/candidates/{name}", json={"github": "x"}).status_code == 409
 
 
