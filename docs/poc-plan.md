@@ -89,7 +89,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   extraction: Claude found the filters (Copenhagen, hybrid, EU, 4+ years), 6
   must-haves and 4 nice-to-haves, dropped nothing and ignored the injected line.
 
-### M4: Matching (done, except over MCP)
+### M4: Matching (done)
 - `src/unapply/matching/`, `unapply match <job> [--scorer baseline|llm]` and the API's
   `/jobs/<name>/match` and `/ranking`. Only approved profiles, only approved rubrics,
   and matching locks the rubric version.
@@ -114,9 +114,12 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   e-commerce"); places are matched by name, without geography ("Denmark" doesn't
   match "Copenhagen"); hard filter outcomes are kept in the audit log, not with the
   match.
-- Still to do: agent scoring over MCP tools scoped to what the candidate consented
-  to (`get_experiences`, `get_skills`, `search_evidence(query)`, `get_preferences`),
-  with the MCP server.
+- The MCP server (`src/unapply/mcp_server/`, `unapply mcp <job>`): one per job, with
+  read-only tools scoped to the candidates who opted in to it and to the sections
+  each shared (`get_experiences`, `get_skills`, `search_evidence(query)`,
+  `get_preferences`, plus `get_rubric` and `list_candidates`); anonymised as on the
+  shortlist. Consent per job is `unapply consent grant|withdraw|list`. No agent
+  scores over it yet: the LLM scorer still gets the anonymised profile in one call.
 
 ### M5: Recruiter view
 - Anonymised ranked list with explanations.
@@ -131,8 +134,19 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   table, reveals limited to the job's `reveal_quota`. The shortlist demo stores the
   synthetic pool. Revealing shows no identity yet: that needs payment and consent.
 
+- Decided flow (2026-11-27, tasks 14 and 16 of `docs/autonomous-plan.md`): a
+  candidate gets in with one click, **Connect my profile**, which is their consent to
+  be ranked anonymously and revealed. The employer pays to reveal anyone connected,
+  then can ask anyone revealed to apply properly with written material. One button
+  steps through Reveal, then Request application; a request needs a reveal first.
+  Quotes stay hidden until reveal. A job has a number of vacancies.
+
 ### M6: Candidate view
 - "You're #4 of 37 for this role." The profile, without the assessment.
+- A job board to search listings and connect, with a fit indicator for each (a band
+  from own levels before connecting, the place among connected candidates after) and
+  each listing's vacancies and counts: connected, revealed, asked to apply,
+  applications.
 
 ## The key experiment (run alongside M1–M4)
 

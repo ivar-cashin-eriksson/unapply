@@ -4,8 +4,8 @@
 and jobs by name, their current `Profile` or `Job`, a history of every step, and
 interview questions waiting for answers. It adds what folders can't do well: rubric
 versions that can't change once a match uses them, matches, an append-only audit log
-of matches and rankings, employers' intents (reveals and application requests), and
-a copy of the skill taxonomy.
+of matches and rankings, employers' intents (reveals and application requests),
+candidates' consents to jobs, and a copy of the skill taxonomy.
 
 Every method runs in its own transaction, so a failed call changes nothing.
 """
@@ -21,6 +21,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Engine, delete, func, select
 from sqlalchemy.orm import Session
 
+from unapply.consent import Consent, ConsentSection
 from unapply.db.engine import make_engine
 from unapply.db.models import (
     AuditEntryRow,
@@ -28,6 +29,7 @@ from unapply.db.models import (
     CandidateRow,
     CandidateSkillRow,
     ClaimSupportRow,
+    ConsentRow,
     CriterionRow,
     CriterionScoreRow,
     EvidenceRow,
@@ -836,6 +838,132 @@ class Repository:
                 query = query.where(IntentRow.kind == kind.value)
             return [_load_intent(row) for row in s.scalars(query)]
 
+    # Candidates' consents
+
+    def grant_consent(
+        self,
+        candidate: str,
+        job: str,
+        sections: list[ConsentSection] | None = None,
+    ) -> Consent:
+        """Opt a candidate in to a job, or change what its agent may read.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+        sections : list of ConsentSection or None, optional
+            What the job's agent may read; by default every section.
+
+        Returns
+        -------
+        Consent
+            The consent as stored. Granting again replaces the sections and the
+            time.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        consent = Consent(
+            candidate=candidate,
+            job=job,
+            **({} if sections is None else {"sections": sections}),
+        )
+        with self.transaction() as s:
+            candidate_row = _candidate(s, candidate)
+            job_row = _job(s, job)
+            row = s.get(ConsentRow, (candidate_row.id, job_row.id))
+            if row is None:
+                row = ConsentRow(candidate_id=candidate_row.id, job_id=job_row.id)
+                s.add(row)
+            row.sections = [section.value for section in consent.sections]
+            row.granted_at = consent.granted_at
+        return consent
+
+    def withdraw_consent(self, candidate: str, job: str) -> bool:
+        """Opt a candidate out of a job: its agent no longer sees them.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+
+        Returns
+        -------
+        bool
+            True if the candidate had opted in.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            key = (_candidate(s, candidate).id, _job(s, job).id)
+            row = s.get(ConsentRow, key)
+            if row is None:
+                return False
+            s.delete(row)
+            return True
+
+    def consent(self, candidate: str, job: str) -> Consent | None:
+        """Read a candidate's consent to a job.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+
+        Returns
+        -------
+        Consent or None
+            The consent, or None if the candidate hasn't opted in.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            key = (_candidate(s, candidate).id, _job(s, job).id)
+            row = s.get(ConsentRow, key)
+            return _load_consent(row, candidate, job) if row else None
+
+    def consents(self, job: str) -> list[Consent]:
+        """List the candidates who opted in to a job.
+
+        Parameters
+        ----------
+        job : str
+            The job.
+
+        Returns
+        -------
+        list of Consent
+            One per candidate, sorted by candidate name.
+
+        Raises
+        ------
+        NotFound
+            If there is no such job.
+        """
+        with self.transaction() as s:
+            rows = s.execute(
+                select(ConsentRow, CandidateRow.name)
+                .join(CandidateRow, CandidateRow.id == ConsentRow.candidate_id)
+                .where(ConsentRow.job_id == _job(s, job).id)
+                .order_by(CandidateRow.name)
+            )
+            return [_load_consent(row, name, job) for row, name in rows]
+
     # Skill taxonomy
 
     def save_taxonomy(self, taxonomy: Taxonomy) -> None:
@@ -1321,4 +1449,13 @@ def _load_intent(row: IntentRow) -> Intent:
         profile_id=row.profile_id,
         kind=IntentKind(row.kind),
         recorded_at=row.recorded_at,
+    )
+
+
+def _load_consent(row: ConsentRow, candidate: str, job: str) -> Consent:
+    return Consent(
+        candidate=candidate,
+        job=job,
+        sections=[ConsentSection(v) for v in row.sections],
+        granted_at=row.granted_at,
     )

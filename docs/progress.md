@@ -289,6 +289,40 @@ branch, what was done, what was tested, anything to know.
   changed so the pool's filter edges and the evaluation stay as they were; the
   frontend's review form already took "YYYY" or "YYYY-MM" text, so it keeps the
   precision through the API with no change.
+- 2026-11-27 · Task 11, MCP server · `feat/mcp-server` · Finished from an earlier
+  session's uncommitted work (it had the code, no tests). **Consent:** a database
+  schema change: new table `consents` (migration `0006`), keyed by the candidate's
+  and the job's row ids so it outlives a new profile or rubric, with the shared
+  sections and the time; the Pydantic schemas in `schemas/` are unchanged (the
+  `Consent` model is in `src/unapply/consent.py`). `Repository.grant_consent`,
+  `withdraw_consent`, `consent`, `consents`, and `unapply consent
+  grant|withdraw|list`. **Server:** `src/unapply/mcp_server/` (`build_server(repo,
+  job)`, `unapply mcp <job>` over stdio), on the MCP SDK 2.3 (`mcp` moved from an
+  optional extra to a core dependency), with read-only tools `get_rubric`,
+  `list_candidates`, `get_experiences`, `get_skills`, `search_evidence(query,
+  limit)` and `get_preferences`; the logic is in `AgentTools`, testable without MCP.
+  Only candidates who opted in with an approved profile exist for the job's agent;
+  each tool needs its section shared; consent is read on every call; strangers,
+  unknown or old profile ids and drafts all get the same refusal. Texts go through
+  `anonymise.redact` (with the GitHub username, as the shortlist does); no name,
+  contact, file name or claim support. Tested: 19 new pytest tests (321 in all),
+  through the SDK's in-process `Client`: consent stored, changed, per job, kept over
+  a new profile, withdrawn, and unknown names; the tools and their read-only
+  annotations and instructions; the rubric; who is listed; the same refusal for
+  every kind of stranger on every tool; each section on its own; withdrawal on the
+  next call; redaction on a synthetic candidate with contact details; search
+  ranking (dbt quotes first for "SQL" through the taxonomy, then by words found),
+  limits and empty queries; no pool candidate named by any tool; the CLI. All
+  checks pass; the frontend is unchanged. Decisions to check (conservative, small):
+  sections are chosen per job and all are shared by default; the agent sees
+  estimated levels and their confidence (as the employer's shortlist does) but not
+  claim support; `get_rubric` and `list_candidates` were added so the agent knows
+  the job and the ids. Task 14's "Connect my profile" will grant this consent. To
+  know: no agent scores over the server yet (the LLM scorer still takes the profile
+  in one call); `redact` removes known names in a bare domain such as
+  "jane.example.com" but leaves the rest of the domain (pre-existing, not changed);
+  `scripts/autorun.ps1`, `frontend/package-lock.json` (its name) and `TODO.md` had
+  changes not made by this task, left uncommitted.
 
 ## Questions for Ivar
 

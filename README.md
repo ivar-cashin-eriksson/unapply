@@ -258,12 +258,39 @@ trusts a candidate's own levels where the estimates are unsure, so the overclaim
 comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ranking
 (tau 1.00), which only shows they are consistent until they are recorded.
 
+## The MCP server
+
+A job's matching agent reads candidates over MCP, and only candidates who opted in
+to that job, with an approved profile. A candidate's consent (`unapply.consent`, the
+`consents` table) names the sections the job's agent may read: experiences (with the
+headline), skills, evidence and preferences. Each is one tool; the others refuse.
+Consent is read on every call, so withdrawing takes effect at once, and it stays
+when the profile is extracted again.
+
+```bash
+uv run unapply consent grant john-doe acme                      # share everything
+uv run unapply consent grant john-doe acme --sections skills evidence
+uv run unapply consent list acme
+uv run unapply consent withdraw john-doe acme
+uv run unapply mcp acme                                         # serve over stdio
+```
+
+The tools, all read-only: `get_rubric`, `list_candidates` (profile id, alias such as
+"Candidate 3F2A" and what each shared), `get_experiences`, `get_skills` (own and
+estimated levels with the estimate's confidence), `search_evidence(query)` (quotes
+cited for the skill the query names, or one that counts towards it through the
+taxonomy, first; then quotes with more of its words) and `get_preferences`. Texts go
+through the same redaction as the shortlist, and no tool gives the candidate's name,
+contact details, file names or claim support. An unknown id and a candidate who
+didn't opt in get the same answer. The server's instructions to the agent are in
+`src/unapply/mcp_server/instructions.md`.
+
 ## Common commands
 
 | Command | What it does |
 |---|---|
 | `uv sync` | Create or update `.venv/` from `uv.lock` |
-| `uv sync --all-extras` | Also install the optional extras (MCP, Postgres drivers) |
+| `uv sync --all-extras` | Also install the optional extras (Postgres drivers) |
 | `uv run pytest` | Run the tests |
 | `uv run ruff check .` | Lint. Add `--fix` to fix what can be fixed automatically |
 | `uv run ruff format .` | Format |
@@ -278,6 +305,8 @@ comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ran
 | `uv run unapply db init` | Create the database's tables, or migrate them to the newest version, and load the skill taxonomy |
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
 | `uv run unapply match acme` | Match the database's candidates to a job and rank them (`--scorer llm` calls the Claude API: add `--allow-api`) |
+| `uv run unapply consent grant john-doe acme [--sections ...]` | Opt a candidate in to a job, choosing what its agent may read (`withdraw`, `list` too) |
+| `uv run unapply mcp acme` | Serve a job's matching agent over MCP (stdio), scoped to the candidates who opted in |
 | `uv run unapply audit acme` | List a job's rankings from the audit log and check that each reproduces |
 | `uv run unapply evaluate` | Rank the synthetic pool with both scorers and compare with its intended ranking (`--reference FILE` for another) |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
@@ -302,6 +331,8 @@ comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ran
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
 | `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, matching, demo and internal routes |
 | `src/unapply/matching/` | Matching: hard filters, the baseline and LLM scorers, anonymisation and ranking |
+| `src/unapply/mcp_server/` | The MCP server for a job's matching agent: consent-scoped, anonymised reads, and its instructions |
+| `src/unapply/consent.py` | A candidate's consent to one job: which profile sections its agent may read |
 | `src/unapply/evaluation/` | Evaluation: top-k overlap, Kendall's tau, and the synthetic candidate pool |
 | `src/unapply/taxonomy.py` | The skill taxonomy: canonical names, synonyms, implied and broader skills |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
