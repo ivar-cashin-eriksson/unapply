@@ -146,7 +146,8 @@ instead), production auth, multi-company tenancy, and verification (references, 
 ## Stack
 
 Python 3.12, uv, Pydantic, SQLAlchemy 2.0 and Alembic (SQLite now, Postgres + pgvector later:
-a URL change), FastAPI, the MCP Python SDK, the Claude API, and Streamlit for the first UI.
+a URL change), FastAPI, the MCP Python SDK, the Claude API, a React frontend (Vite,
+TypeScript, Tailwind CSS, shadcn/ui), and Streamlit as the internal developer tool.
 
 ### Database (done)
 - `src/unapply/db/`: tables for candidates and their profiles (sources, evidence,
@@ -180,3 +181,19 @@ a URL change), FastAPI, the MCP Python SDK, the Claude API, and Streamlit for th
 - Paid model calls are refused (403) unless the request adds `?allow_api=true` or the
   switch is on; a refused request changes nothing. Demos replay recordings.
 - Matching routes (M4): `POST /jobs/<name>/match`, `GET /jobs/<name>/ranking`.
+
+### Frontend (done)
+- `frontend/`: Vite, React, TypeScript, Tailwind CSS and shadcn/ui, light theme with
+  the indigo accent, over the API. Candidate steps: material (drag and drop, GitHub),
+  review (headline, skills with level chips and their quotes, experience,
+  added skills, preferences, approval), questions, and the profile as employers see
+  it. Employer steps: the job ad and the rubric editor (hard filters, criteria with
+  their quotes, lowest level, weight 1 to 5, kind, approval; any change is a new
+  version). No assessment anywhere.
+- Both demos run free in the browser; for anything else the frontend never asks for
+  paid calls and says to try the demo when the API refuses one.
+- Component tests (Vitest) and both demos end to end in Chromium (Playwright, which
+  starts and stops the API and the dev server itself); CI runs lint, build and both.
+  Screenshots in `docs/screenshots/`.
+- Streamlit stays as the internal developer tool. The recruiter's shortlist and
+  spider chart (M5) come next, in the same frontend.

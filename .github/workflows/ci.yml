@@ -33,3 +33,58 @@ jobs:
 
       - name: Tests
         run: uv run pytest -q -p no:logging
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # The end-to-end tests start the API, so they need Python too.
+      - name: Set up uv and Python 3.12
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          uv sync --locked --all-extras
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Component tests
+        run: npm test
+
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests of the demos
+        run: npm run e2e
+
+      - name: Keep the report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            frontend/e2e/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7

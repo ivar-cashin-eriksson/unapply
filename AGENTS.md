@@ -25,7 +25,8 @@ This file only adds what applies to agents.
 ## Verifying a change
 
 Before you say a change is done, run checks 1 and 2 of the pull request checklist in
-CONTRIBUTING.md and make sure they pass.
+CONTRIBUTING.md and make sure they pass, and check 3 if `frontend/` changed. The
+end-to-end tests start their own servers and stop them; don't leave others running.
 
 ## Autonomous runs
 

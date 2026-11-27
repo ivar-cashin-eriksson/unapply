@@ -47,6 +47,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and the Git workflow.
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [Node.js](https://nodejs.org/) 26 or newer, for the frontend only
 - VS Code (recommended). Accept the recommended extensions when prompted.
 
 ## Getting started
@@ -66,7 +67,45 @@ off, except the opt-in live test. Every real call is logged with its estimated c
 in `data/api_calls.jsonl`. Use `--record` once and `--replay` after that to work
 without calling the API.
 
-## The candidate app
+## The frontend
+
+The web app for candidates and employers lives in `frontend/` (Vite, React,
+TypeScript, Tailwind CSS and shadcn/ui) and talks to the API (below). Run both:
+
+```bash
+uv run unapply api            # in one terminal
+cd frontend
+npm install                   # once
+npm run dev                   # http://localhost:5173
+```
+
+- **Candidates:** upload material (drag and drop), review the draft profile (edit
+  experience, rate skills with level chips, add skills, set preferences, approve),
+  answer a few questions, and see the profile as employers will. The assessment is
+  never shown.
+- **Employers:** paste a job ad, draft a rubric from it, and edit and approve the
+  hard filters and weighted criteria. Any change makes a new version.
+- **Demos:** "Try the John Doe demo" and "Try the Fjord Grocery demo" replay recorded
+  answers, so they cost nothing. A real candidate or job needs paid model calls,
+  which the frontend never asks for: they work only if the API runs with
+  `UNAPPLY_ALLOW_API_CALLS=1`.
+
+Requests to `/api` go to the API at `UNAPPLY_API_URL` (by default
+`http://127.0.0.1:8000`). Checks, from `frontend/`:
+
+| Command | What it does |
+|---|---|
+| `npm run lint` | Lint (oxlint) |
+| `npm run build` | Type-check and build into `dist/` |
+| `npm test` | Component tests (Vitest, Testing Library) |
+| `npm run e2e` | Both demos end to end in Chromium (Playwright). Starts the API and the dev server on ports 8766 and 5174 with an empty data folder in the temporary folder, stops them afterwards, and saves screenshots in `e2e/screenshots/`. Needs `npx playwright install chromium` once |
+
+Screenshots of both demos are in [docs/screenshots/](docs/screenshots/).
+
+## The Streamlit app (internal)
+
+The Streamlit app is kept as the internal developer tool, with workspace folders
+instead of the database:
 
 ```bash
 uv run unapply app
@@ -106,7 +145,7 @@ the rubric and it gets a new version.
 
 ## The API
 
-`unapply api` serves the same steps over HTTP, on the database, for the new frontend:
+`unapply api` serves the same steps over HTTP, on the database, for the frontend:
 
 ```bash
 uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
@@ -241,7 +280,7 @@ comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ran
 | `src/unapply/llm.py` | The one place that calls a language model |
 | `src/unapply/estimation/` | Skill estimation from evidence, and claim support |
 | `src/unapply/interview/` | Follow-up questions (rules choose, a model words them) and the answer sheet |
-| `src/unapply/app/` | The app (Streamlit): `candidate.py`, `employer.py`, shared helpers and the demos |
+| `src/unapply/app/` | The internal developer app (Streamlit): `candidate.py`, `employer.py`, shared helpers and the demos |
 | `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
@@ -250,6 +289,7 @@ comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ran
 | `src/unapply/evaluation/` | Evaluation: top-k overlap, Kendall's tau, and the synthetic candidate pool |
 | `src/unapply/taxonomy.py` | The skill taxonomy: canonical names, synonyms, implied and broader skills |
 | `src/unapply/review.py` | The candidate's review sheet: levels, corrections, additions, approval |
+| `frontend/` | The web app (React): `src/pages/` for the candidate and employer steps, `src/components/` for shared parts, `src/lib/` for the API client and types, `e2e/` for the Playwright tests |
 | `config/` | Configuration, such as the skill taxonomy (`skills.yaml`) |
 | `docs/` | Plans and design notes |
 | `tests/` | Tests for the package |
