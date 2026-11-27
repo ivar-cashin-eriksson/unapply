@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import uuid4
@@ -65,6 +65,10 @@ DEFAULT_KS = (3, 5)
 SCORERS = ("baseline", "llm")
 # Pool candidates stored as demos are named with this in front of their folder name.
 DEMO_PREFIX = "pool-"
+# The demo job board: the jobs in tests/fixtures/jobs, with their vacancies.
+DEFAULT_BOARD = FIXTURES / "jobs" / "board.yaml"
+# Board jobs stored as demos are named with this in front of their folder name.
+BOARD_PREFIX = "board-"
 
 # Makes the model for one recorded step, given the recording's path: a replay of
 # it by default, or a real model that records its answer there.
@@ -397,7 +401,9 @@ def store_pool(repo: Repository, pool: Pool, job_name: str) -> list[str]:
     candidate is stored with their approved, estimated profile as a demo
     candidate named "pool-<folder name>", with `pool` in their settings so the LLM
     scorer replays their recording. Candidates stored by an earlier call are kept
-    as they are, so every pool job ranks the same people.
+    as they are, so every pool job ranks the same people. As demo candidates they
+    count as connected to every demo job (`unapply.jobs.board.connected`), though
+    a job's agent over MCP only sees those who opted in to it.
 
     Parameters
     ----------
@@ -431,6 +437,29 @@ def store_pool(repo: Repository, pool: Pool, job_name: str) -> list[str]:
     # A new id, so a second pool job doesn't clash with the first.
     job = pool.job.model_copy(update={"id": uuid4()})
     repo.save_job(job_name, job, "rubric")
+    return store_pool_candidates(repo, pool)
+
+
+def store_pool_candidates(repo: Repository, pool: Pool) -> list[str]:
+    """Store a pool's candidates as demo candidates, unless they are stored already.
+
+    Parameters
+    ----------
+    repo : Repository
+        The database.
+    pool : Pool
+        The loaded pool.
+
+    Returns
+    -------
+    list of str
+        The candidates' names in the database ("pool-<folder name>"), sorted.
+
+    Raises
+    ------
+    ValueError
+        If a candidate name is taken by someone who isn't from the pool.
+    """
     taken = set(repo.candidate_names())
     names = []
     for folder_name, candidate in pool.candidates.items():
@@ -443,3 +472,122 @@ def store_pool(repo: Repository, pool: Pool, job_name: str) -> list[str]:
         repo.create_candidate(name, demo=True, pool=folder_name)
         repo.save_profile(name, candidate.profile, "assessed")
     return sorted(names)
+
+
+@dataclass
+class BoardJob:
+    """One demo job on the board, as `board.yaml` describes it.
+
+    Parameters
+    ----------
+    folder : str
+        The job's folder in `tests/fixtures/jobs`, such as "fjord_grocery".
+    job : Job
+        The job, with its rubric approved and its vacancies set.
+    llm : bool
+        Whether the pool has recorded LLM scorer answers for it.
+    """
+
+    folder: str
+    job: Job
+    llm: bool = False
+
+    @property
+    def name(self) -> str:
+        """The job's name in the database: "board-" and the folder, with dashes."""
+        return BOARD_PREFIX + self.folder.replace("_", "-")
+
+
+def load_board(path: Path = DEFAULT_BOARD) -> tuple[date, list[BoardJob]]:
+    """Load the demo job board: every job in `board.yaml`, with its rubric approved.
+
+    Parameters
+    ----------
+    path : Path, optional
+        The board file, by default `tests/fixtures/jobs/board.yaml`.
+
+    Returns
+    -------
+    tuple of (date, list of BoardJob)
+        The date years of experience are counted to, and the jobs in the order
+        they are posted.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file or a job's ad or recording is missing.
+    ValueError
+        If the file is invalid.
+    """
+    spec = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if "today" not in spec or not spec.get("jobs"):
+        raise ValueError(f"{path}: `today` and `jobs` are needed")
+    today = spec["today"]
+    if not isinstance(today, date):
+        today = date.fromisoformat(str(today))
+    jobs = []
+    for entry in spec["jobs"]:
+        job = _approved_job(path.parent / entry["folder"])
+        job = job.model_copy(update={"vacancies": int(entry.get("vacancies", 1))})
+        jobs.append(BoardJob(entry["folder"], job, bool(entry.get("llm", False))))
+    return today, jobs
+
+
+def store_board(repo: Repository, pool: Pool, path: Path = DEFAULT_BOARD) -> list[str]:
+    """Store the demo job board: its jobs, and the pool connected to each.
+
+    Each job is stored once, as a demo job named "board-<folder>" with its rubric
+    approved and the board's `today`; calling again keeps the jobs already there,
+    so matches and connections on them stay. The pool's candidates are stored as
+    `store_pool` does; as demo candidates they count as connected to every board
+    job. Jobs are posted a minute
+    apart in the file's order, the first newest, so the board lists them in that
+    order.
+
+    Parameters
+    ----------
+    repo : Repository
+        The database.
+    pool : Pool
+        The loaded pool.
+    path : Path, optional
+        The board file, by default `tests/fixtures/jobs/board.yaml`.
+
+    Returns
+    -------
+    list of str
+        The board jobs' names, in the file's order.
+
+    Raises
+    ------
+    ValueError
+        If a job name is taken by a job that isn't that board job, or a candidate
+        name by someone not from the pool.
+    """
+    today, jobs = load_board(path)
+    taken = set(repo.job_names())
+    store_pool_candidates(repo, pool)
+    now = datetime.now().replace(microsecond=0)
+    for i, board_job in enumerate(jobs):
+        name = board_job.name
+        if name in taken:
+            if repo.job_settings(name).get("board") != board_job.folder:
+                raise ValueError(f"{name!r} is taken by a job not from the board")
+        else:
+            repo.create_job(
+                name,
+                demo=True,
+                pool=True,
+                board=board_job.folder,
+                llm=board_job.llm,
+                today=today.isoformat(),
+                ad=board_job.job.ad_text,
+                vacancies=board_job.job.vacancies,
+                company=None,
+                title=None,
+            )
+            job = board_job.job.model_copy(
+                update={"id": uuid4(), "created_at": now - timedelta(minutes=i)}
+            )
+            repo.save_job(name, job, "rubric")
+    return [j.name for j in jobs]

@@ -45,14 +45,27 @@ def get_job(name: str, ctx: Ctx) -> JobSummary:
 
 @router.put("/{name}/ad")
 def set_ad(name: str, body: JobAd, ctx: Ctx) -> JobSummary:
-    """Set the job ad to extract a rubric from. The current rubric stays until then."""
+    """Set the job ad to extract a rubric from, and its vacancies.
+
+    The current rubric stays until the ad is extracted again; the vacancies
+    change at once, also on the job board. A demo's ad is fixed, so only its
+    vacancies can change.
+    """
     settings = ctx.repo.job_settings(name)
     if settings.get("demo"):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "The demo's ad is fixed, so the recorded answer fits it.",
-        )
-    ctx.repo.save_job_settings(name, {**settings, **body.model_dump()})
+        if body.ad != settings.get("ad"):
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "The demo's ad is fixed, so the recorded answer fits it; only its "
+                "vacancies can change.",
+            )
+        ctx.repo.save_job_settings(name, {**settings, "vacancies": body.vacancies})
+    else:
+        ctx.repo.save_job_settings(name, {**settings, **body.model_dump()})
+    job = ctx.repo.job(name)
+    if job is not None and job.vacancies != body.vacancies:
+        updated = job.model_copy(update={"vacancies": body.vacancies})
+        ctx.repo.save_job(name, updated, "vacancies")
     return summary(ctx, name)
 
 
@@ -61,6 +74,7 @@ def extract(name: str, ctx: Ctx, allow_api: AllowAPI = False) -> RubricExtractio
     """Extract a draft rubric from the ad (a model call).
 
     Replaces the job and its rubric, unless candidates were matched against it.
+    The job keeps the vacancies set with the ad.
     Every criterion quotes the ad; criteria whose quote isn't in it are dropped.
     """
     settings = ctx.repo.job_settings(name)
@@ -71,8 +85,9 @@ def extract(name: str, ctx: Ctx, allow_api: AllowAPI = False) -> RubricExtractio
     result = extract_job(
         ad, llm, company=settings.get("company"), title=settings.get("title")
     )
-    ctx.repo.save_job(name, result.job, "extracted")
-    return RubricExtraction(job=result.job, dropped=result.dropped)
+    job = result.job.model_copy(update={"vacancies": settings.get("vacancies", 1)})
+    ctx.repo.save_job(name, job, "extracted")
+    return RubricExtraction(job=job, dropped=result.dropped)
 
 
 @router.get("/{name}/rubric")
@@ -145,6 +160,7 @@ def summary(ctx: Context, name: str) -> JobSummary:
         ad=settings.get("ad") or (job.ad_text if job else ""),
         company=settings.get("company") or (job.company if job else None),
         title=settings.get("title") or (job.title if job else None),
+        vacancies=job.vacancies if job else settings.get("vacancies", 1),
     )
     return JobSummary(
         name=name,

@@ -7,6 +7,10 @@ compares the ranking with the intended one (top-k overlap and Kendall's tau);
 `tests/test_evaluation.py` checks it. Everything here is invented: people,
 companies, schools, email addresses and phone numbers.
 
+The same twelve are matched against the ten other demo jobs on the job board
+(`../jobs/board.yaml`) with the baseline scorer; `tests/test_board.py` checks each
+job's best fit. There are no recorded LLM scorer answers for those jobs.
+
 | Intended | Candidate | Why there |
 |---|---|---|
 | 1 | `astrid-holm` | The clearest fit: production demand forecasting at an online grocer, price experiments, strong Python and SQL, PySpark, deep learning, statistics MSc, Danish |

@@ -390,6 +390,56 @@ branch, what was done, what was tested, anything to know.
   14's "matching uses only connected candidates" makes the sets the same. A
   mirrored grid can now and then look a little like a figure; it carries no
   meaning. The Vitest fixtures keep their "Candidate A1A1" aliases (mock data).
+- 2026-11-27 · Task 14, More demo jobs, vacancies and a job board · `feat/job-board` ·
+  **Demo jobs:** ten invented jobs beside Fjord Grocery in `tests/fixtures/jobs/`
+  (energy forecasting, junior analyst, senior ML engineer, data engineer in Aarhus
+  with remote work, fully remote backend developer in Berlin, a category manager and
+  a statistics lecturer outside tech, a senior forecaster in Bengaluru, an
+  experimentation analyst, a junior data scientist), each with `ad.md`, a README and
+  a **hand-written stand-in** `extraction.json` with quotes verbatim from the ad
+  (listed in `docs/to-record.md`, about $0.30 to record). `board.yaml` lists the
+  eleven with their vacancies (1 to 3). On the pool, the baseline ranks each job's
+  intended fit first among those who pass (Sofie for energy, Freja for the analyst
+  role, Nadia for ML engineering, Lars for the category manager, Ida for the
+  lecturer, Mikkel for experimentation); only Clara (remote) passes the Aarhus and
+  Berlin jobs; nobody passes Bengaluru, where Priya ranks first. **Vacancies (a
+  schema change):** `Job.vacancies` (default 1, at least 1) in
+  `src/unapply/schemas/job.py`, a `vacancies` column on `jobs` (migration `0007`,
+  existing rows get 1). The employer sets it in the ad step (`JobAd.vacancies`;
+  "Save vacancies" changes it at once, also on a demo whose ad is fixed). **Job
+  board:** `src/unapply/jobs/board.py` (`Listing`, `listings`, `search`,
+  `seniority` from the title, `connect`, `withdraw`, `connected`), routes `GET
+  /board`, `GET /board/<job>`, `GET|PUT|DELETE /candidates/<name>/connections[/<job>]`
+  and `POST /demos/board` (idempotent; jobs named `board-<folder>`). Listings are
+  jobs with an approved rubric: ad, vacancies, place, work modes and seniority,
+  never criteria, weights or levels. Frontend: a fifth candidate step, **Jobs**
+  (`frontend/src/pages/candidate/Jobs.tsx`): search, filters (native selects),
+  cards, a listing page with the ad rendered from Markdown as text (`AdText`), and
+  Connect my profile / Withdraw. **Connecting** grants task 11's consent with its
+  time; only approved profiles; refused withdrawal once revealed; withdrawing drops
+  the candidate from the next ranking and shortlist (earlier audit entries stay).
+  Tested: pytest 368 (39 new in `tests/test_board.py`: fixtures and quotes, the
+  variety of jobs, each job's ranking of the pool in memory and through the API,
+  vacancies round trip and the ad route, seniority, search and facets, only
+  approved rubrics listed, the board demo stored once, no rubric word in any board
+  response, connect/withdraw rules, matching only connected candidates, refusal
+  after reveal, LLM scorer refused on jobs without recordings); Vitest 103 (15 new);
+  Playwright 6 (new: John's demo approves, adds the demo jobs, searches, filters,
+  reads a listing, connects, is ranked by the job, withdraws and drops out of the
+  next ranking), screenshots `16` to `19` added and the rest refreshed. All checks
+  pass. Decisions to check (as the plan says, plus small conservative ones):
+  matching (API and `unapply match`, also with `--candidates`) now uses only
+  connected candidates; pool candidates count as connected to every demo job without
+  a consent row, so the MCP server still only lists those who opted in; place and
+  work modes on a listing come from the approved rubric's hard filters (they are
+  copied from the ad; task 15 names failed filters to candidates anyway), seniority
+  from title words (junior/graduate/trainee, senior/sr, lead/head/principal; else
+  mid); the LLM scorer is refused (409) on board jobs without the pool's recordings
+  (all but Fjord Grocery); demo candidates see "Add the demo jobs" on the board. To
+  know: tests that matched candidates without consent now connect them first; the
+  shortlist demo ranks exactly the 12 of the pool, as John's demo isn't connected
+  to it; `scripts/autorun.ps1`, `frontend/package-lock.json` and `TODO.md` still
+  have changes not made by a task, left uncommitted.
 
 ## Questions for Ivar
 

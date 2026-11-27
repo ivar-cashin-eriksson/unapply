@@ -2,8 +2,9 @@
 
 Employer routes. Candidates are anonymised: the ranking names profiles by id, never
 by the candidate's name, and the shortlist shows them by an alias with names and
-contact details removed. Only candidates who approved their profile are matched, and
-only against an approved rubric, which matching locks. From the shortlist, the
+contact details removed. Only candidates connected to the job (on the job board) who
+approved their profile are matched, and only against an approved rubric, which
+matching locks. From the shortlist, the
 employer can ask to reveal a candidate or request an application; both only record
 the intent, as there is no payment yet.
 """
@@ -28,6 +29,7 @@ from unapply.api.models import (
 )
 from unapply.app import demo
 from unapply.evaluation.pool import load_pool, match_recording, store_pool
+from unapply.jobs.board import connected_profiles
 from unapply.llm import (
     API_SWITCH,
     APICallsDisabled,
@@ -75,7 +77,7 @@ Version = Annotated[
 def match(
     name: str, ctx: Ctx, scorer: ScorerName = "baseline", allow_api: AllowAPI = False
 ) -> Ranking:
-    """Match every candidate with an approved profile to the job, and rank them.
+    """Match every candidate connected to the job with an approved profile, and rank.
 
     Every candidate is scored; those who fail a hard filter are ranked after
     everyone who passes. The matches are stored, which locks the rubric version. With the LLM scorer, paid calls are
@@ -84,6 +86,12 @@ def match(
     """
     job_settings = ctx.repo.job_settings(name)
     job_demo = bool(job_settings.get("demo"))
+    if scorer == "llm" and job_settings.get("llm") is False:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This demo job has no recorded LLM scorer answers; match it with the "
+            "baseline scorer, which is free.",
+        )
 
     def scorer_for(candidate: str, settings: dict[str, Any]) -> Scorer:
         if scorer == "baseline":
@@ -115,10 +123,10 @@ def ranking(
 ) -> Ranking:
     """Read the job's ranking from stored matches: each candidate's latest match.
 
-    No model is called. Hard filter outcomes, and the baseline's totals on own and
-    on estimated levels only, are worked out again for candidates whose profile
-    hasn't changed since. The ranking shown is recorded in the audit
-    log, like every ranking.
+    Only candidates still connected to the job are ranked. No model is called.
+    Hard filter outcomes, and the baseline's totals on own and on estimated levels
+    only, are worked out again for candidates whose profile hasn't changed since.
+    The ranking shown is recorded in the audit log, like every ranking.
     """
     job, ranked = _stored(ctx, name, scorer, version)
     return _ranking(ctx, name, job, scorer, ranked, {})
@@ -225,11 +233,14 @@ def _stored(
     rubric = job.rubric if version is None else ctx.repo.rubric(job.id, version)
     if rubric is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No rubric version {version}.")
+    # Candidates who withdrew are left out; their earlier audit entries stay.
+    allowed = connected_profiles(ctx.repo, name)
     matches = latest(
         [
             m
             for m in ctx.repo.matches(job.id, rubric.version)
-            if (m.model == BASELINE_MODEL) == (scorer == "baseline")
+            if m.profile_id in allowed
+            and (m.model == BASELINE_MODEL) == (scorer == "baseline")
         ]
     )
     scored = job.model_copy(update={"rubric": rubric})

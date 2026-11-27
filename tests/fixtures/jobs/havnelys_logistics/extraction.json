@@ -1,0 +1,70 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Havnelys Logistics ApS",
+    "title": "Junior Data Analyst",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "onsite",
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": null
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Good SQL",
+        "skill": "sql",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Good SQL: you can join, group and filter without looking it up"
+      },
+      {
+        "kind": "must_have",
+        "description": "Confident with Excel",
+        "skill": "excel",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "Confident with Excel"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience with Power BI or a similar reporting tool",
+        "skill": "power bi",
+        "min_level": 2,
+        "weight": 4,
+        "quote": "Some experience with Power BI or a similar reporting tool"
+      },
+      {
+        "kind": "must_have",
+        "description": "Explains numbers simply to non-technical people",
+        "skill": "stakeholder communication",
+        "min_level": null,
+        "weight": 3,
+        "quote": "You explain numbers simply to people who don't work with data"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "A little Python",
+        "skill": "python",
+        "min_level": null,
+        "weight": 2,
+        "quote": "A little Python"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Speaks Danish",
+        "skill": "danish",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Danish, as many of our planners prefer it"
+      }
+    ]
+  }
+}

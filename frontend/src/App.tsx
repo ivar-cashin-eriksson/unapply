@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { CandidateFlow, CandidateList } from '@/pages/candidate/CandidateFlow'
+import { JobBoard, JobListing } from '@/pages/candidate/Jobs'
 import { Material } from '@/pages/candidate/Material'
 import { Profile } from '@/pages/candidate/Profile'
 import { Questions } from '@/pages/candidate/Questions'
@@ -30,6 +31,10 @@ export function AppRoutes() {
             <Route path="review" element={<Review />} />
             <Route path="questions" element={<Questions />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="jobs">
+              <Route index element={<JobBoard />} />
+              <Route path=":job" element={<JobListing />} />
+            </Route>
           </Route>
           <Route path="jobs" element={<JobList />} />
           <Route path="jobs/:name" element={<JobFlow />}>

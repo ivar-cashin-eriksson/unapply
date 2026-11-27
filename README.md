@@ -82,8 +82,15 @@ npm run dev                   # http://localhost:5173
 - **Candidates:** upload material (drag and drop), review the draft profile (edit
   experience, rate skills with level chips, add skills, set preferences, approve),
   answer a few questions, and see the profile as employers will. The assessment is
-  never shown.
-- **Employers:** paste a job ad, draft a rubric from it, and edit and approve the
+  never shown. Then the **job board**: browse and search the jobs (free text over
+  title, company and ad; filters for location, work mode and seniority), read a
+  listing in full (the ad and its vacancies, never the rubric), and **connect my
+  profile** to a job with one click. Connecting is the candidate's consent for that
+  job, recorded with its time: only connected candidates are matched and ranked.
+  It can be withdrawn, which takes the candidate out of the job's next ranking,
+  until the employer reveals them.
+- **Employers:** paste a job ad and set its vacancies (shown on the job board),
+  draft a rubric from it, and edit and approve the
   hard filters and weighted criteria. Any change makes a new version. Then the
   **shortlist**: match the candidates with either scorer and see them ranked and
   anonymised (an alias such as "Cobalt Otter" and an abstract, mirrored-pattern
@@ -97,7 +104,8 @@ npm run dev                   # http://localhost:5173
 - **Demos:** "Try the John Doe demo", "Try the Fjord Grocery demo" and "Try the
   shortlist demo" (Fjord Grocery with its rubric approved and the 12 synthetic
   candidates of `tests/fixtures/pool`) replay recorded answers, so they cost
-  nothing. A real candidate or job needs paid model calls,
+  nothing. On the job board, "Add the demo jobs" posts eleven invented jobs
+  (`tests/fixtures/jobs`, listed in `board.yaml`) with the pool connected to each. A real candidate or job needs paid model calls,
   which the frontend never asks for: they work only if the API runs with
   `UNAPPLY_ALLOW_API_CALLS=1`.
 
@@ -168,19 +176,27 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   read the profile. Candidate routes never return the assessment.
 - **Jobs** (`/jobs`): create with the ad, extract a rubric, read any version and
   save the recruiter's edit (any change raises the version).
+- **Job board** (`/board`, `/board/<job>`, `/candidates/<name>/connections`):
+  search the listings (jobs with an approved rubric) by words, location, work mode
+  and seniority, read one (the ad and vacancies, never the rubric), and connect an
+  approved profile to a job (`PUT`), list the connections and withdraw (`DELETE`,
+  refused once the employer revealed the candidate).
 - **Matching** (`/jobs/<name>/match`, `/jobs/<name>/ranking`): match every
-  candidate with an approved profile to a job with an approved rubric, with the
-  baseline or the LLM scorer, and read the anonymised ranking (profile ids, never
-  names).
+  candidate connected to a job, with an approved profile, against its approved
+  rubric, with the baseline or the LLM scorer, and read the anonymised ranking
+  (profile ids, never names). A candidate who withdrew isn't in the next ranking.
 - **Shortlist** (`/jobs/<name>/shortlist`, `/jobs/<name>/intents`): the ranking
   with each candidate anonymised (an alias, their roles and quotes with names and
   contact details removed, their own and estimated levels in the rubric's skills,
   and the baseline's totals on own and on estimated levels only),
   and the employer's reveals and application requests, which are only recorded.
-- **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`): John Doe, Fjord
-  Grocery, and Fjord Grocery with the synthetic pool, which replay recorded answers
-  for free. The pool's candidates are stored once and aren't listed under
-  `/candidates`.
+- **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`, `/demos/board`):
+  John Doe, Fjord Grocery, Fjord Grocery with the synthetic pool, and the eleven
+  demo jobs on the board, which replay recorded answers for free. The pool's
+  candidates are stored once, aren't listed under `/candidates`, and count as
+  connected to every demo job. Only Fjord Grocery has the pool's recorded LLM
+  scorer answers; the other board jobs are matched with the baseline (the LLM
+  scorer is refused on them, 409).
 
 **Paid model calls are refused** (403) unless the request adds `?allow_api=true` or
 `UNAPPLY_ALLOW_API_CALLS=1` is set, just like `--allow-api`. `unapply api --internal`
@@ -202,9 +218,11 @@ for a specific skill also counts for the general one. To use another file, set
 
 ## Matching
 
-`unapply match <job>` matches the candidates in the database to a job and ranks
-them. Only candidates who approved their profile are matched, and only against an
-approved rubric; matching locks that rubric version.
+`unapply match <job>` matches the candidates connected to a job and ranks them.
+Only candidates who connected their approved profile to the job (on the job board,
+or `unapply consent grant`) are matched, and only against an approved rubric;
+matching locks that rubric version. Synthetic pool candidates count as connected to
+every demo job.
 
 ```bash
 uv run unapply match fjord-grocery-demo                    # the baseline: free
@@ -313,7 +331,7 @@ didn't opt in get the same answer. The server's instructions to the agent are in
 | `uv run unapply api` | Start the HTTP API over the database (docs at http://127.0.0.1:8000/docs) |
 | `uv run unapply db init` | Create the database's tables, or migrate them to the newest version, and load the skill taxonomy |
 | `uv run unapply db import data/me data/jobs/acme` | Import candidate and job workspace folders into the database |
-| `uv run unapply match acme` | Match the database's candidates to a job and rank them (`--scorer llm` calls the Claude API: add `--allow-api`) |
+| `uv run unapply match acme` | Match the candidates connected to a job and rank them (`--scorer llm` calls the Claude API: add `--allow-api`) |
 | `uv run unapply consent grant john-doe acme [--sections ...]` | Opt a candidate in to a job, choosing what its agent may read (`withdraw`, `list` too) |
 | `uv run unapply mcp acme` | Serve a job's matching agent over MCP (stdio), scoped to the candidates who opted in |
 | `uv run unapply audit acme` | List a job's rankings from the audit log and check that each reproduces |
@@ -335,7 +353,7 @@ didn't opt in get the same answer. The server's instructions to the agent are in
 | `src/unapply/estimation/` | Skill estimation from evidence, and claim support |
 | `src/unapply/interview/` | Follow-up questions (rules choose, a model words them) and the answer sheet |
 | `src/unapply/app/` | The internal developer app (Streamlit): `candidate.py`, `employer.py`, shared helpers and the demos |
-| `src/unapply/jobs/` | Job ads to rubrics, and the recruiter's rubric sheet |
+| `src/unapply/jobs/` | Job ads to rubrics, the recruiter's rubric sheet, and the job board (listings, search, connecting) |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
 | `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, matching, demo and internal routes |

@@ -622,18 +622,25 @@ def test_edit_and_approve_a_rubric(client):
 
 def test_create_and_set_a_job_ad(client, fake):
     created = ok(client.post("/jobs", json={"name": "acme"}), 201)
-    assert created["ad"] == {"ad": "", "company": None, "title": None}
+    assert created["ad"] == {"ad": "", "company": None, "title": None, "vacancies": 1}
     assert client.post("/jobs", json={"name": "acme"}).status_code == 409
     assert client.get("/jobs/acme/rubric").status_code == 409
     assert client.post("/jobs/acme/extract?allow_api=true").status_code == 409
 
     ad = (FJORD / "ad.md").read_text(encoding="utf-8")
-    body = {"ad": ad, "company": "Fjord Grocery A/S", "title": None}
+    body = {"ad": ad, "company": "Fjord Grocery A/S", "title": None, "vacancies": 2}
     assert ok(client.put("/jobs/acme/ad", json=body))["ad"] == body
     assert ok(client.get("/jobs")) == ["acme"]
     job = ok(client.post("/jobs/acme/extract?allow_api=true"))["job"]
     assert job["company"] == "Fjord Grocery A/S"
+    assert job["vacancies"] == 2
     assert fake.calls == [("rubric", True)]
+    # Vacancies change at once, without extracting again.
+    body["vacancies"] = 3
+    assert ok(client.put("/jobs/acme/ad", json=body))["ad"]["vacancies"] == 3
+    assert ok(client.get("/jobs/acme"))["ad"]["vacancies"] == 3
+    assert fake.calls == [("rubric", True)]
+    assert client.put("/jobs/acme/ad", json={**body, "vacancies": 0}).status_code == 422
 
 
 def test_a_matched_rubric_is_not_replaced(client, repo):
@@ -655,6 +662,11 @@ def test_a_matched_rubric_is_not_replaced(client, repo):
 
 
 # Matching
+
+
+def connect(client, candidate: str, job: str) -> dict:
+    """Connect a candidate's approved profile to a job, as the job board does."""
+    return ok(client.put(f"/candidates/{candidate}/connections/{job}"))
 
 
 def interviewed_demo(client) -> str:
@@ -694,6 +706,7 @@ def test_match_the_demos_with_both_scorers_for_free(client, fake):
     candidate = interviewed_demo(client)
     job = ok(client.post("/demos/job"), 201)["name"]
     rubric = approve_rubric(client, job)
+    connect(client, candidate, job)
 
     baseline = ok(client.post(f"/jobs/{job}/match"))
     assert (baseline["job"], baseline["rubric_version"]) == (job, 1)
@@ -742,9 +755,10 @@ def test_match_the_demos_with_both_scorers_for_free(client, fake):
 
 
 def test_every_ranking_shown_is_in_the_audit_log(client, repo):
-    interviewed_demo(client)
+    candidate = interviewed_demo(client)
     job = ok(client.post("/demos/job"), 201)["name"]
     approve_rubric(client, job)
+    connect(client, candidate, job)
     matched = ok(client.post(f"/jobs/{job}/match"))["candidates"][0]
     ok(client.get(f"/jobs/{job}/ranking"))
     log = repo.audit_log()
@@ -768,6 +782,7 @@ def test_matching_refuses_paid_llm_calls_unless_allowed(client, fake):
     ok(client.put("/candidates/jane/review", json=with_john_edits(review)))
     job = ok(client.post("/demos/job"), 201)["name"]
     approve_rubric(client, job)
+    connect(client, "jane", job)
     fake.calls.clear()
 
     # A demo job doesn't make a real candidate's scoring free.
@@ -783,11 +798,13 @@ def test_matching_refuses_paid_llm_calls_unless_allowed(client, fake):
     assert len(ranked["candidates"]) == 1
 
     # Nor does a demo candidate make a real job's scoring free.
-    interviewed_demo(client)
+    candidate = interviewed_demo(client)
     ok(client.post("/jobs", json={"name": "acme"}), 201)
     ad = (FJORD / "ad.md").read_text(encoding="utf-8")
     ok(client.put("/jobs/acme/ad", json={"ad": ad, "company": None, "title": None}))
     approve_rubric(client, "acme", allow=True)
+    for name in (candidate, "jane"):
+        connect(client, name, "acme")
     fake.calls.clear()
     assert client.post("/jobs/acme/match?scorer=llm").status_code == 403
     assert fake.calls == []

@@ -204,6 +204,40 @@ class Repository:
         with self.transaction() as s:
             return _load_profile(s, _candidate(s, name))
 
+    def profile_ids(self, name: str) -> list[UUID]:
+        """List every `Profile.id` a candidate has had, oldest first.
+
+        A new extraction gives the profile a new id, and matches and employers'
+        intents keep the id they were made with, so this finds them all.
+
+        Parameters
+        ----------
+        name : str
+            The candidate.
+
+        Returns
+        -------
+        list of UUID
+            Each id once, the current profile's last. Empty before the first
+            profile.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate.
+        """
+        with self.transaction() as s:
+            row = _candidate(s, name)
+            query = (
+                select(CandidateHistoryRow.profile)
+                .filter_by(candidate_id=row.id)
+                .order_by(CandidateHistoryRow.id)
+            )
+            ids = [UUID(p["id"]) for p in s.scalars(query) if p.get("id")]
+            if row.profile_id is not None:
+                ids.append(row.profile_id)
+            return list(dict.fromkeys(reversed(ids)))[::-1]
+
     def candidate_of(self, profile_id: UUID) -> str | None:
         """Find whose current profile has a given `Profile.id`.
 
@@ -1288,6 +1322,7 @@ def _store_job(s: Session, row: JobRow, job: Job) -> None:
     row.title = job.title
     row.ad_text = job.ad_text
     row.reveal_quota = job.reveal_quota
+    row.vacancies = job.vacancies
     row.created_at = job.created_at
     row.rubric_version = job.rubric.version
 
@@ -1378,6 +1413,7 @@ def _load_job(s: Session, row: JobRow) -> Job | None:
             "ad_text": row.ad_text,
             "rubric": _load_rubric(s, version_row),
             "reveal_quota": row.reveal_quota,
+            "vacancies": row.vacancies,
             "created_at": row.created_at,
         }
     )

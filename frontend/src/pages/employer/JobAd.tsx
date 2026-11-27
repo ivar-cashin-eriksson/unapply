@@ -19,16 +19,28 @@ export function JobAd() {
   const [ad, setAd] = useState(summary.ad.ad)
   const [company, setCompany] = useState(summary.ad.company ?? '')
   const [title, setTitle] = useState(summary.ad.title ?? '')
+  const [openings, setOpenings] = useState(String(summary.ad.vacancies))
   const [busy, setBusy] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const fixed = summary.demo
+  const count = Number(openings)
+  const validCount = Number.isInteger(count) && count >= 1 && count <= 1000
+  const countChanged = validCount && count !== summary.ad.vacancies
 
   async function extract() {
     setBusy(true)
     setError(null)
     try {
       if (!fixed) {
-        await api.setAd(name, { ad, company: company.trim() || null, title: title.trim() || null })
+        await api.setAd(name, {
+          ad,
+          company: company.trim() || null,
+          title: title.trim() || null,
+          vacancies: count,
+        })
+      } else if (countChanged) {
+        await api.setAd(name, { ...summary.ad, vacancies: count })
       }
       const result = await api.extractRubric(name)
       const r = result.job.rubric
@@ -41,6 +53,22 @@ export function JobAd() {
     } catch (e) {
       setError(e)
       setBusy(false)
+    }
+  }
+
+  /** Save only the vacancies: they show on the job board at once. */
+  async function saveVacancies() {
+    setSaving(true)
+    setError(null)
+    try {
+      const base = fixed ? summary.ad : { ad, company: company.trim() || null, title: title.trim() || null }
+      await api.setAd(name, { ...base, vacancies: count })
+      toast.success(`Saved: ${count === 1 ? '1 vacancy' : `${count} vacancies`}.`)
+      await refresh()
+    } catch (e) {
+      setError(e)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -68,6 +96,28 @@ export function JobAd() {
             {(id) => <Input id={id} value={company} disabled={fixed} onChange={(e) => setCompany(e.target.value)} />}
           </Field>
         </div>
+        <Field label="Vacancies" hint="How many people you hire for this job. Candidates see it on the job board.">
+          {(id) => (
+            <div className="flex items-center gap-2">
+              <Input
+                id={id}
+                type="number"
+                min={1}
+                max={1000}
+                step={1}
+                value={openings}
+                aria-invalid={!validCount}
+                className="w-24"
+                onChange={(e) => setOpenings(e.target.value)}
+              />
+              {summary.has_rubric && countChanged && (
+                <Button variant="outline" size="sm" disabled={saving} onClick={saveVacancies}>
+                  Save vacancies
+                </Button>
+              )}
+            </div>
+          )}
+        </Field>
         <Field label="Ad">
           {(id) => (
             <Textarea
@@ -83,7 +133,7 @@ export function JobAd() {
         </Field>
         <ErrorAlert error={error} title="Couldn't draft the rubric" />
         <div className="flex flex-wrap items-center gap-3">
-          <Button size="lg" disabled={!ad.trim() || busy} onClick={extract}>
+          <Button size="lg" disabled={!ad.trim() || !validCount || busy} onClick={extract}>
             <Sparkles aria-hidden />
             {summary.has_rubric ? 'Draft the rubric again' : 'Draft the rubric'}
           </Button>

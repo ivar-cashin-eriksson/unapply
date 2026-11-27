@@ -1,6 +1,6 @@
 // Labels and formats shared by the pages, matching the Streamlit app's wording.
 
-import type { CriterionKind, DatePrecision, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
+import type { CriterionKind, DatePrecision, Seniority, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
 
 /** The shared skill scale, 1 to 5 (`unapply.schemas.SkillLevel`). */
 export const LEVELS: { value: SkillLevel; name: string; meaning: string }[] = [
@@ -33,6 +33,34 @@ export const WORK_MODES: { value: WorkMode; label: string }[] = [
   { value: 'hybrid', label: 'Hybrid' },
   { value: 'remote', label: 'Remote' },
 ]
+
+export function workModeLabel(mode: WorkMode): string {
+  return WORK_MODES.find((m) => m.value === mode)?.label ?? mode
+}
+
+/** Seniority on the job board, read from the job title by the API. */
+export const SENIORITIES: { value: Seniority; label: string }[] = [
+  { value: 'junior', label: 'Junior' },
+  { value: 'mid', label: 'Mid-level' },
+  { value: 'senior', label: 'Senior' },
+  { value: 'lead', label: 'Lead' },
+]
+
+export function seniorityLabel(seniority: Seniority): string {
+  return SENIORITIES.find((s) => s.value === seniority)?.label ?? seniority
+}
+
+/** "1 vacancy", "3 vacancies". */
+export function vacancies(n: number): string {
+  return n === 1 ? '1 vacancy' : `${n} vacancies`
+}
+
+/** An ISO date and time as "27 Nov 2026". */
+export function day(iso: string): string {
+  const [date] = iso.split('T')
+  const [year, m, d] = date.split('-')
+  return `${Number(d)} ${MONTHS[Number(m) - 1]} ${year}`
+}
 
 export const KINDS: { value: CriterionKind; label: string }[] = [
   { value: 'must_have', label: 'Must-have' },
@@ -91,3 +119,13 @@ export function typedName(text: string): string {
 }
 
 export const NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/
+
+/** The first paragraph of an ad that isn't a heading or the company line, for a preview. */
+export function adSummary(text: string): string {
+  for (const block of text.split(/\n\s*\n/)) {
+    const line = block.trim()
+    if (!line || line.startsWith('#') || /^[-*] /.test(line) || /^\*\*.*\*\*/.test(line)) continue
+    return line.replace(/\*\*/g, '').replace(/\s+/g, ' ')
+  }
+  return ''
+}

@@ -1,0 +1,69 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "company": "Øresund Business Academy",
+    "title": "Lecturer in Applied Statistics",
+    "hard_filters": {
+      "locations": [
+        "Copenhagen"
+      ],
+      "work_modes": [
+        "hybrid"
+      ],
+      "required_work_permits": [
+        "EU"
+      ],
+      "min_years_experience": 3
+    },
+    "criteria": [
+      {
+        "kind": "must_have",
+        "description": "Deep knowledge of statistics and statistical modelling",
+        "skill": "statistics",
+        "min_level": 4,
+        "weight": 5,
+        "quote": "Deep knowledge of statistics and statistical modelling"
+      },
+      {
+        "kind": "must_have",
+        "description": "Experience teaching, training or supervising",
+        "skill": "teaching",
+        "min_level": 3,
+        "weight": 5,
+        "quote": "Experience teaching, training or supervising"
+      },
+      {
+        "kind": "must_have",
+        "description": "R for analysis and teaching",
+        "skill": "r",
+        "min_level": 3,
+        "weight": 4,
+        "quote": "R for analysis and teaching"
+      },
+      {
+        "kind": "must_have",
+        "description": "Fluent Danish",
+        "skill": "danish",
+        "min_level": 4,
+        "weight": 4,
+        "quote": "Fluent Danish, as most courses are taught in Danish"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Experience designing experiments or trials",
+        "skill": "randomised controlled trials",
+        "min_level": null,
+        "weight": 2,
+        "quote": "Experience designing experiments or trials"
+      },
+      {
+        "kind": "nice_to_have",
+        "description": "Python",
+        "skill": "python",
+        "min_level": null,
+        "weight": 1,
+        "quote": "Python, as some courses are moving to it"
+      }
+    ]
+  }
+}

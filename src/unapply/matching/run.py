@@ -1,7 +1,8 @@
 """Match a job's candidates from the database, save the matches and rank them.
 
-Used by `unapply match` and the API. Only candidates who approved their profile are
-matched, and only against an approved rubric: matching locks the rubric version, so
+Used by `unapply match` and the API. Only candidates connected to the job
+(`unapply.jobs.board`) who approved their profile are matched, and only against an
+approved rubric: matching locks the rubric version, so
 a draft would be frozen before the recruiter is done with it. Every match and the
 ranking are recorded in the audit log (`unapply.matching.audit`).
 """
@@ -14,6 +15,7 @@ from datetime import date
 from typing import Any
 
 from unapply.db.repository import NotFound, Repository
+from unapply.jobs.board import connected
 from unapply.matching.audit import AuditEntry, match_entry, ranking_entry
 from unapply.matching.scoring import MatchResult, Ranked, Scorer, match_candidate, rank
 from unapply.schemas import Job, Profile
@@ -101,7 +103,7 @@ def approved_job(repo: Repository, name: str) -> Job:
 
 
 def approved_candidates(
-    repo: Repository, names: list[str] | None = None
+    repo: Repository, names: list[str] | None = None, job: str | None = None
 ) -> dict[str, Profile]:
     """Read the candidates whose approved profile can be matched.
 
@@ -110,8 +112,11 @@ def approved_candidates(
     repo : Repository
         The database.
     names : list of str or None, optional
-        Only these candidates; each must have an approved profile. By default
-        every candidate who has one.
+        Only these candidates; each must have an approved profile, and be
+        connected to `job` if it is given. By default every candidate who has
+        one (connected to `job`, if given).
+    job : str or None, optional
+        Only candidates connected to this job (see `unapply.jobs.board.connected`).
 
     Returns
     -------
@@ -123,13 +128,20 @@ def approved_candidates(
     NotFound
         If a named candidate doesn't exist.
     MatchingError
-        If a named candidate has no approved profile.
+        If a named candidate has no approved profile, or isn't connected to `job`.
     """
+    allowed = connected(repo, job) if job is not None else None
+    named = names is not None
+    if names is None:
+        names = allowed if allowed is not None else repo.candidate_names()
     profiles = {}
-    for name in names if names is not None else repo.candidate_names():
+    for name in names:
+        if allowed is not None and name not in allowed:
+            repo.settings(name)  # NotFound if there is no such candidate.
+            raise MatchingError(f"candidate {name!r} isn't connected to job {job!r}")
         profile = repo.profile(name)
         if profile is None or profile.approved_by_candidate_at is None:
-            if names is not None:
+            if named:
                 raise MatchingError(f"candidate {name!r} has no approved profile")
             continue
         profiles[name] = profile
@@ -155,7 +167,8 @@ def match_job(
         Makes each candidate's scorer from their name and settings. All are made
         before anyone is scored.
     candidates : list of str or None, optional
-        Only these candidates, by default everyone with an approved profile.
+        Only these candidates, each connected to the job; by default everyone
+        connected to it with an approved profile.
     today : date or None, optional
         The date current roles run to, for years of experience; by default today.
 
@@ -173,7 +186,7 @@ def match_job(
         If a scorer would make a paid call that isn't allowed; nothing is saved.
     """
     job = approved_job(repo, job_name)
-    profiles = approved_candidates(repo, candidates)
+    profiles = approved_candidates(repo, candidates, job_name)
     scorers = {name: scorer_for(name, repo.settings(name)) for name in profiles}
     results = {
         name: match_candidate(profile, job, scorers[name], today)
