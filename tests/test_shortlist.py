@@ -28,10 +28,15 @@ from unapply.evaluation.pool import (
 from unapply.matching import own_and_estimated
 from unapply.matching.audit import AuditKind, check_ranking
 from unapply.matching.shortlist import (
+    ADJECTIVES,
+    ALIASES,
+    NOUNS,
     Intent,
     IntentKind,
     alias,
     anonymous_candidate,
+    identities,
+    identity,
     rubric_skills,
     skill_levels,
 )
@@ -145,11 +150,83 @@ def rubric(*skills: str | None) -> Rubric:
     )
 
 
-def test_alias_is_short_stable_and_says_nothing_about_the_person():
+ALIAS = r"[A-Z][a-z]+ [A-Z][a-z]+"
+
+# Common first names in Denmark, the EU and elsewhere, and the words in the pool
+# candidates' names: no alias word may be one of them.
+FIRST_NAMES = """
+amber robin jade ruby rose violet hazel olive ivy lily daisy iris fern sage basil
+coral misty sunny rocky sandy stormy willow maple autumn summer skye river jasper
+indigo scarlett ginger honey cherry crystal pearl opal goldie sterling hunter
+mason crane wren jay finch dove raven fox wolf bear lynn sky storm dawn
+ida emma clara freja sofie astrid nadia priya anna maria mia lucas noah oliver
+emil lars jonas henrik mikkel william oscar carl victor august
+""".split()
+
+
+def test_alias_is_two_words_and_stable_for_a_profile():
     profile_id = uuid4()
-    assert alias(profile_id) == alias(profile_id)
-    assert re.fullmatch(r"Candidate [0-9A-F]{4}", alias(profile_id))
-    assert alias(profile_id)[-4:] == profile_id.hex[:4].upper()
+    assert alias(profile_id) == alias(profile_id) == identity(profile_id).alias
+    assert re.fullmatch(ALIAS, alias(profile_id))
+    adjective, noun = alias(profile_id).split()
+    assert adjective in ADJECTIVES and noun in NOUNS
+    assert identity(profile_id) == identity(UUID(str(profile_id)))
+    # A known id always gets the same alias, on any machine and run.
+    fixed = UUID("12345678-1234-5678-1234-567812345678")
+    assert identity(fixed) == identity(fixed)
+    assert 0 <= identity(fixed).avatar < ALIASES
+
+
+def test_every_alias_number_names_a_different_alias():
+    for profile_id in (uuid4() for _ in range(300)):
+        known = identity(profile_id)
+        adjective, noun = known.alias.split()
+        assert ADJECTIVES.index(adjective) * len(NOUNS) + NOUNS.index(noun) == (
+            known.avatar
+        )
+    assert (
+        ALIASES
+        == len(ADJECTIVES) * len(NOUNS)
+        == len(set(ADJECTIVES)) * len(set(NOUNS))
+    )
+
+
+def test_alias_words_are_never_person_names():
+    words = {w.lower() for w in (*ADJECTIVES, *NOUNS)}
+    pool = {part for d in POOL.iterdir() if d.is_dir() for part in d.name.split("-")}
+    assert not words & set(FIRST_NAMES)
+    assert not words & pool
+    for w in words:
+        assert re.fullmatch(r"[a-z]+", w), w
+
+
+def test_identities_are_unique_within_a_job_and_independent_of_order():
+    ids = [uuid4() for _ in range(400)]
+    known = identities(ids)
+    assert len({k.alias for k in known.values()}) == len(ids)
+    assert len({k.avatar for k in known.values()}) == len(ids)
+    assert identities(reversed(ids)) == known
+    # Without clashes, a candidate keeps the alias their id gives on its own.
+    assert identities(ids[:1]) == {ids[0]: identity(ids[0])}
+
+
+def test_a_clash_goes_to_the_candidate_with_the_lower_profile_id(monkeypatch):
+    import unapply.matching.shortlist as shortlist
+
+    low, high = sorted([uuid4(), uuid4()])
+    monkeypatch.setattr(shortlist, "_index", lambda _id: ALIASES - 1)
+    known = identities([high, low])
+    assert known[low].avatar == ALIASES - 1
+    assert known[high].avatar == 0
+    assert known[low].alias != known[high].alias
+
+
+def test_more_candidates_than_aliases_is_refused(monkeypatch):
+    import unapply.matching.shortlist as shortlist
+
+    monkeypatch.setattr(shortlist, "ALIASES", 2)
+    with pytest.raises(ValueError, match="only 2 aliases"):
+        identities([uuid4() for _ in range(3)])
 
 
 def test_rubric_skills_are_canonical_once_each_in_rubric_order():
@@ -194,7 +271,7 @@ def test_the_anonymous_candidate_has_no_names_contacts_or_claim_support():
     text = seen.model_dump_json()
     for leak in ("Jane", "jane@", "janeroe", "12 34 56 78", "jane-cv.md", "claim"):
         assert leak.lower() not in text.lower(), leak
-    assert seen.alias == alias(profile.id)
+    assert (seen.alias, seen.avatar) == (alias(profile.id), identity(profile.id).avatar)
     assert seen.headline == "Analyst, see [redacted]"
     assert seen.experiences[0].organisation == "[redacted] Consulting"
     assert seen.experiences[0].start == date(2020, 1, 1)
@@ -329,7 +406,18 @@ def test_the_shortlist_never_names_a_candidate(client):
         )
         assert "@" not in text and "+45" not in text
         assert "example.com" not in text and ".md" not in text
-        assert re.fullmatch(r"Candidate [0-9A-F]{4}", c["alias"])
+        assert re.fullmatch(ALIAS, c["alias"])
+    aliases = [c["alias"] for c in shortlist["candidates"]]
+    assert len(set(aliases)) == len(aliases) == 12
+    assert len({c["avatar"] for c in shortlist["candidates"]}) == 12
+    ids = [UUID(c["profile_id"]) for c in shortlist["candidates"]]
+    assert aliases == [identities(ids)[i].alias for i in ids]
+    # The same aliases when the shortlist is read again, and with the other scorer.
+    ok(client.post(f"/jobs/{job}/match?scorer=llm"))
+    again = ok(client.get(f"/jobs/{job}/shortlist?scorer=llm"))
+    assert {c["profile_id"]: c["alias"] for c in again["candidates"]} == {
+        c["profile_id"]: c["alias"] for c in shortlist["candidates"]
+    }
     whole = json.dumps(shortlist).lower()
     for folder in (POOL).iterdir():
         if folder.is_dir():

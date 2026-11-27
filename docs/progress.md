@@ -359,6 +359,37 @@ branch, what was done, what was tested, anything to know.
   Reveal and Request application stay enabled on failed cards (task 16 reworks
   those buttons); the own and estimated totals always use the baseline, also
   when the LLM scorer ranks.
+- 2026-11-27 · Task 13, Anonymous candidate identities · `feat/anonymous-identities` ·
+  **Aliases:** `src/unapply/matching/shortlist.py` replaces "Candidate 3F2A" with
+  an adjective and an animal or object ("Cyan Heron", "Quartz Compass"): 48
+  adjectives (colours, weather, textures, patterns) and 40 nouns, 1920 aliases.
+  Left out on purpose: words that are person names (Amber, Robin, Jade, Crane...),
+  that judge (Swift, Clever), or that hint at body, age, gender or skin colour
+  (Tiny, Old, Ivory, Walrus). `identity(profile_id)` picks one from a SHA-256 of the
+  profile id; `identities(ids)` makes them unique within a job (a clash goes to the
+  lower profile id; the other takes the next free alias), independent of order.
+  `AnonymousCandidate` gained `avatar` (the alias's number; not a schema in
+  `schemas/`, no database change). The shortlist route and the MCP server's
+  `list_candidates` and refusals use `identities` over the job's candidates.
+  **Avatars:** drawn in the frontend (`frontend/src/lib/avatar.ts`,
+  `components/CandidateAvatar.tsx`): a 5x5 mirrored grid in one of 8 cool,
+  saturated colours (no skin, hair or pink/blue tones, each 4.5:1 on white) on a
+  light tint; colour and pattern come from the alias number one to one, so two
+  aliases never share an avatar; plain SVG, nothing fetched. Shown beside the alias
+  on each shortlist card. Tested: pytest 329 (stable aliases, alias number and
+  words agree, no alias word is a common first name or in a pool name, unique and
+  order-independent on 400 ids, clash rule, too many candidates refused, the pool
+  shortlist's 12 aliases and avatars unique and the same with both scorers, MCP
+  aliases); Vitest 88 (every one of the 1920 avatars different, mirrored, never
+  empty, contrast, no external reference, avatar on each card); Playwright 5 (the
+  shortlist demo checks two-word aliases and avatars, none shared), screenshots
+  refreshed. All checks pass. To know: uniqueness is over the candidates a view
+  shows (the ranking for the shortlist, those who opted in for the MCP server), so
+  if those sets differ and two candidates' aliases clash, one of them could be
+  named differently in the two views; with 1920 aliases that is rare, and task
+  14's "matching uses only connected candidates" makes the sets the same. A
+  mirrored grid can now and then look a little like a figure; it carries no
+  meaning. The Vitest fixtures keep their "Candidate A1A1" aliases (mock data).
 
 ## Questions for Ivar
 

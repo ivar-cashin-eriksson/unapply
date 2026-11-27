@@ -208,7 +208,7 @@ widen it.
 - Done when: the shortlist demo shows both scores and the divider on the pool, with
   Vitest, pytest and Playwright tests and refreshed screenshots.
 
-### 13. [ ] Anonymous candidate identities
+### 13. [x] Anonymous candidate identities
 
 - Replace aliases such as "Candidate 3F2A" with human-readable ones (adjective and
   animal or object, such as "Amber Otter"; never person names), and give each

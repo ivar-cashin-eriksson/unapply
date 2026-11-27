@@ -39,6 +39,17 @@ describe('shortlist', () => {
     expect(screen.getByText('Reveals: 0 of 10')).toBeInTheDocument()
   })
 
+  it("shows each candidate's own avatar beside the alias", async () => {
+    const data = shortlist()
+    open(data)
+    await screen.findByRole('heading', { name: '3 ranked' })
+    for (const c of data.candidates) {
+      const avatar = card(c.alias).querySelector('svg[data-avatar]')
+      expect(avatar).toHaveAttribute('data-avatar', String(c.avatar))
+      expect(avatar).toHaveAttribute('aria-hidden', 'true')
+    }
+  })
+
   it('shows the scorer’s total beside the own rating and the estimate', async () => {
     open()
     const first = within(await screen.findByRole('heading', { name: 'Candidate B0B0' }).then((h) => h.closest('li') as HTMLElement))

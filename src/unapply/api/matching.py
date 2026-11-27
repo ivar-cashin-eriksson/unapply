@@ -52,6 +52,7 @@ from unapply.matching.shortlist import (
     Intent,
     IntentKind,
     anonymous_candidate,
+    identities,
     rubric_skills,
 )
 from unapply.schemas import Job
@@ -130,19 +131,26 @@ def shortlist(
     """Read the job's anonymised shortlist: the ranking, and who is on it.
 
     The ranking is the one `GET /jobs/<name>/ranking` gives, and is recorded in the
-    audit log the same way. Each ranked candidate comes with an alias, their roles
+    audit log the same way. Each ranked candidate comes with an alias and avatar
+    number, unique on this shortlist, their roles
     and quotes with names and contact details removed (so cited evidence can be
     read), and their own and estimated levels in the rubric's skills, to compare
     candidates on. No model is called.
     """
     job, ranked = _stored(ctx, name, scorer, version)
     ranking = _ranking(ctx, name, job, scorer, ranked, {})
+    known_as = identities(r.profile_id for r in ranking.candidates)
     candidates = []
     for r in ranking.candidates:
         profile = ctx.repo.profile_by_id(r.profile_id)
         if profile is not None:
             candidates.append(
-                anonymous_candidate(profile, job.rubric, _names(ctx, profile.id))
+                anonymous_candidate(
+                    profile,
+                    job.rubric,
+                    _names(ctx, profile.id),
+                    known_as=known_as[profile.id],
+                )
             )
     return Shortlist(
         ranking=ranking,

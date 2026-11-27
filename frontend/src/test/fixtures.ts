@@ -182,6 +182,7 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): A
   return {
     profile_id: id,
     alias: `Candidate ${id.slice(0, 4).toUpperCase()}`,
+    avatar: parseInt(id.slice(0, 4), 16) % 1920,
     headline: `Data scientist ${id}`,
     experiences: [
       {

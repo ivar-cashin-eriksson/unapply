@@ -16,6 +16,7 @@ import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 
+import { CandidateAvatar } from '@/components/CandidateAvatar'
 import { SpiderChart, type Series } from '@/components/SpiderChart'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
@@ -110,7 +111,7 @@ function ShortlistPage() {
         }
       >
         Candidates who approved their profile, ranked against rubric version {summary.rubric_version}. They are
-        anonymised: you see an alias, never a name, until you reveal them.
+        anonymised: you see an alias and a pattern, never a name or a photo, until you reveal them.
       </PageHeader>
       {loaded.data ? (
         <ShortlistView
@@ -375,6 +376,7 @@ function CandidateCard({
           </span>
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
+              <CandidateAvatar avatar={candidate.avatar} className="size-8" />
               <h3 className="font-medium">{candidate.alias}</h3>
               {intents.has('reveal') && (
                 <Badge variant="secondary">
