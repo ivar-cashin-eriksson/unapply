@@ -1,6 +1,16 @@
 // Labels and formats shared by the pages, matching the Streamlit app's wording.
 
-import type { CriterionKind, DatePrecision, FitBand, Place, Seniority, SkillCategory, SkillLevel, WorkMode } from '@/lib/types'
+import type {
+  CriterionKind,
+  DatePrecision,
+  FitBand,
+  HardFilterCheck,
+  Place,
+  Seniority,
+  SkillCategory,
+  SkillLevel,
+  WorkMode,
+} from '@/lib/types'
 
 /** The shared skill scale, 1 to 5 (`unapply.schemas.SkillLevel`). */
 export const LEVELS: { value: SkillLevel; name: string; meaning: string }[] = [
@@ -145,4 +155,12 @@ export function adSummary(text: string): string {
     return line.replace(/\*\*/g, '').replace(/\s+/g, ' ')
   }
   return ''
+}
+
+/** Hard filters by name, as the employer sees them. */
+export const FILTERS: Record<HardFilterCheck['name'], string> = {
+  location: 'Location',
+  work_mode: 'Work mode',
+  work_permit: 'Work permit',
+  min_years_experience: 'Years of experience',
 }

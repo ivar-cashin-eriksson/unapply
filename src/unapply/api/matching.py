@@ -30,7 +30,7 @@ from unapply.api.models import (
 )
 from unapply.app import demo
 from unapply.evaluation.pool import load_pool, match_recording, store_pool
-from unapply.jobs.board import connected_profiles, count
+from unapply.jobs.board import count
 from unapply.llm import (
     API_SWITCH,
     APICallsDisabled,
@@ -40,16 +40,15 @@ from unapply.llm import (
     api_calls_allowed,
 )
 from unapply.matching import (
-    BASELINE_MODEL,
     BaselineScorer,
     LLMScorer,
     Ranked,
     Scorer,
     check_hard_filters,
-    latest,
     own_and_estimated,
     rank,
 )
+from unapply.matching.overview import Overview, job_overview, stored_matches
 from unapply.matching.run import MatchingError, match_job, record_ranking
 from unapply.matching.shortlist import (
     Intent,
@@ -188,6 +187,23 @@ def shortlist(
     )
 
 
+@router.get("/{name}/overview")
+def overview(name: str, ctx: Ctx, scorer: ScorerName = "baseline") -> Overview:
+    """Sum up the job's candidates on the current rubric version, in aggregate.
+
+    How many connected and were matched, how many meet every hard filter and which
+    filters fail most, how the scorer's totals and the baseline's own and estimated
+    scores are spread, which skills candidates have compared with the rubric's, and
+    how far they got against the vacancies. Counts only: no quote, name, alias or
+    profile id. Matches come from `POST /jobs/<name>/match`; nothing is recorded and
+    no model is called.
+    """
+    _need_job(ctx, name)
+    return job_overview(
+        ctx.repo, name, scorer, today=_today(ctx.repo.job_settings(name))
+    )
+
+
 @router.get("/{name}/intents")
 def list_intents(name: str, ctx: Ctx) -> list[Intent]:
     """List the early reveal and application requests on this job, kept as history.
@@ -222,16 +238,7 @@ def _stored(
     rubric = job.rubric if version is None else ctx.repo.rubric(job.id, version)
     if rubric is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No rubric version {version}.")
-    # Candidates who withdrew are left out; their earlier audit entries stay.
-    allowed = connected_profiles(ctx.repo, name)
-    matches = latest(
-        [
-            m
-            for m in ctx.repo.matches(job.id, rubric.version)
-            if m.profile_id in allowed
-            and (m.model == BASELINE_MODEL) == (scorer == "baseline")
-        ]
-    )
+    matches = stored_matches(ctx.repo, name, job, rubric, scorer)
     scored = job.model_copy(update={"rubric": rubric})
     ranked = rank(matches, rubric)
     record_ranking(ctx.repo, scored, ranked, scorer)

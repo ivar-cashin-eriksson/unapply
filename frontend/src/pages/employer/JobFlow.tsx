@@ -37,7 +37,7 @@ export function JobList() {
   )
 }
 
-/** A job's steps: the ad, the rubric, then the shortlist. */
+/** A job's steps: the ad, the rubric, the shortlist, and an overview of the candidates. */
 export function JobFlow() {
   const { name = '' } = useParams()
   const summary = useResource(() => api.job(name), name)
@@ -49,6 +49,7 @@ export function JobFlow() {
     { to: 'ad', label: 'Job ad', done: s.has_rubric },
     { to: 'rubric', label: 'Rubric', done: s.approved, locked: !s.has_rubric },
     { to: 'shortlist', label: 'Shortlist', done: false, locked: !s.approved },
+    { to: 'overview', label: 'Overview', done: false, locked: !s.approved },
   ]
   return (
     <>

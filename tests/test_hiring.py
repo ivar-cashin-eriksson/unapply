@@ -337,7 +337,7 @@ def test_nothing_identifying_or_quoted_reaches_the_employer_before_a_reveal(
             assert response.status_code in (200, 404), (url, response.text)
             found[path] = response.text
             for scorer in ("baseline", "llm"):
-                if path.endswith(("/ranking", "/shortlist")):
+                if path.endswith(("/ranking", "/shortlist", "/overview")):
                     found[f"{path}?{scorer}"] = client.get(
                         f"{url}?scorer={scorer}"
                     ).text

@@ -32,7 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { api, describeError } from '@/lib/api'
 import { MAX_COMPARED, type LevelView } from '@/lib/chart'
-import { day, month } from '@/lib/format'
+import { day, FILTERS, month } from '@/lib/format'
 import type {
   Contact,
   Criterion,
@@ -59,13 +59,6 @@ const VIEWS: { value: LevelView; label: string }[] = [
   { value: 'own', label: 'Own' },
   { value: 'both', label: 'Both' },
 ]
-
-const FILTERS: Record<HardFilterCheck['name'], string> = {
-  location: 'Location',
-  work_mode: 'Work mode',
-  work_permit: 'Work permit',
-  min_years_experience: 'Years of experience',
-}
 
 /** Step 3: the anonymised, ranked shortlist, with reasons, a comparison and next steps. */
 export function Shortlist() {

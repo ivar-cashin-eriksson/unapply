@@ -14,6 +14,7 @@ import { Review } from '@/pages/candidate/Review'
 import { Home } from '@/pages/Home'
 import { JobAd } from '@/pages/employer/JobAd'
 import { JobFlow, JobList } from '@/pages/employer/JobFlow'
+import { Overview } from '@/pages/employer/Overview'
 import { Rubric } from '@/pages/employer/Rubric'
 import { Shortlist } from '@/pages/employer/Shortlist'
 
@@ -42,6 +43,7 @@ export function AppRoutes() {
             <Route path="ad" element={<JobAd />} />
             <Route path="rubric" element={<Rubric />} />
             <Route path="shortlist" element={<Shortlist />} />
+            <Route path="overview" element={<Overview />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
