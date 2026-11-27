@@ -1,0 +1,90 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.7,
+        "rationale": "Maintains a production demand forecast in Python and cleaned sales data and made reports in Python: working to strong Python for a junior.",
+        "evidence": [
+          "E1",
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.55,
+        "rationale": "Writes SQL in Snowflake for the forecasting features: working SQL, below the strong SQL asked for.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.75,
+        "rationale": "Maintains the weekly demand forecast for dairy products in production since early 2025: hands-on, though maintaining rather than building it, and for under two years.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.45,
+        "rationale": "Probabilistic forecasting in the thesis and help with A/B test analysis show some statistics, but nothing solid on its own.",
+        "evidence": [
+          "E5",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.4,
+        "rationale": "Analyses promotion A/B tests together with the senior data scientist: some exposure, not yet independent.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.2,
+        "rationale": "Nothing in the material shows communication with non-technical stakeholders beyond making reports.",
+        "evidence": [
+          "E4"
+        ]
+      },
+      {
+        "criterion": "C7",
+        "score": 0.1,
+        "rationale": "No Spark or other large-data tool beyond Snowflake.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.6,
+        "rationale": "An MSc thesis on probabilistic forecasting of grocery demand with deep learning (DeepAR): directly relevant, but academic.",
+        "evidence": [
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C9",
+        "score": 0.6,
+        "rationale": "Works at a food producer on dairy demand, and the thesis is on grocery demand: close to retail, but not retail itself.",
+        "evidence": [
+          "E1",
+          "E5"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E6"
+        ]
+      }
+    ]
+  }
+}

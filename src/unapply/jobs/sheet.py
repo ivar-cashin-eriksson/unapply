@@ -86,8 +86,8 @@ def export_rubric_sheet(job: Job) -> str:
     out = [
         "# Review the rubric candidates are scored against. Candidates never see it.",
         "#",
-        "# hard_filters: pass/fail, checked before scoring. Leave a filter empty to",
-        "#   not filter on it.",
+        "# hard_filters: pass/fail. A candidate who fails one is still scored, but",
+        "#   ranks after everyone who passes. Leave a filter empty to not filter on it.",
         "# criteria: kind is must_have or nice_to_have; weight 1 (minor) to 5",
         "#   (essential); min_level 1 aware, 2 basic, 3 working, 4 advanced, 5 expert,",
         "#   or empty. Set `keep: false` to remove one. Add new criteria at the end,",

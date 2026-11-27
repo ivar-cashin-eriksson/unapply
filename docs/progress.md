@@ -323,6 +323,42 @@ branch, what was done, what was tested, anything to know.
   "jane.example.com" but leaves the rest of the domain (pre-existing, not changed);
   `scripts/autorun.ps1`, `frontend/package-lock.json` (its name) and `TODO.md` had
   changes not made by this task, left uncommitted.
+- 2026-11-27 · Task 12, Shortlist: own and estimated scores, and failed filters ·
+  `feat/shortlist-scores` · **Failed filters are scored:** `match_candidate` now
+  always calls the scorer, and `Match.total` no longer returns 0 when a hard filter
+  failed: a change to `Match` in `src/unapply/schemas/job.py` (behaviour only, no
+  new field, no database change). `rank` already put failed candidates after
+  everyone who passes; now they are ordered by score among themselves. The audit
+  log's match and ranking entries for them carry their scores. Hand-written
+  stand-in LLM answers for the three pool candidates who fail a filter
+  (`clara-jensen`, `emil-dahl`, `priya-raman`, quotes cited by id from their CVs),
+  added to `docs/to-record.md` (now 36 calls, about $1.60). **Own and estimated
+  scores:** `BaselineScorer(levels="blend"|"own"|"estimated")` and `level(skill,
+  levels)`; a missing level counts as aware (1), as before when neither was there;
+  `own_and_estimated(profile, rubric)` gives both totals. The ranking and shortlist
+  routes return them as `own_total` and `estimated_total` on each `RankedCandidate`
+  (None if the profile changed since the match), worked out at read time, free.
+  **Frontend:** each shortlist card shows the scorer's total ("Baseline total" or
+  "LLM total", which sets the rank), "Own rating" and "Estimated from evidence" as
+  three rows of bars, with a key above the list; candidates who fail a filter come
+  below a "Don't meet the requirements · N" divider, on a light red card with each
+  failed filter named ("Doesn't meet work permit: ..."), and their reasons per
+  criterion. **Evaluation:** the reference keeps the three sharing the last place;
+  the ranking now orders them by score, so tau-b moves: baseline 0.84 to 0.82, LLM
+  stand-ins 1.00 to 0.98 (sqrt(63/66): every pair the reference orders is in
+  order, but it ties three the ranking doesn't); top-k unchanged (1.00/0.80 and
+  1.00/1.00). Tested: pytest 324 (task 5's "isn't scored" test now checks a
+  failed candidate gets the same scores as if they passed; rank ties among failed
+  candidates; audit entries with scores; level modes and the two totals; the
+  overclaimer's own rating 0.3+ above his estimate; the shortlist route on the
+  pool with both scorers: both totals, nine then three, Priya above most who pass
+  but 10th); Vitest 81 (three scores, the divider and its absence, the red card,
+  reasons for a failed candidate); Playwright 5 (the shortlist demo checks the
+  three scores, the divider, three failed cards with four failed filters), with
+  screenshots refreshed and a new `15-shortlist-failed`. All checks pass. To know:
+  Reveal and Request application stay enabled on failed cards (task 16 reworks
+  those buttons); the own and estimated totals always use the baseline, also
+  when the LLM scorer ranks.
 
 ## Questions for Ivar
 

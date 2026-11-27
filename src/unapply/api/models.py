@@ -591,8 +591,15 @@ class RankedCandidate(BaseModel):
     rank : int
         1 for the best; equal totals share a rank.
     total : float
-        Weighted mean of the criterion scores, from 0 to 1; 0 if a hard filter
-        failed.
+        Weighted mean of the criterion scores, from 0 to 1; it sets the rank.
+        Candidates who failed a hard filter are scored too, and ranked after
+        everyone who passed.
+    own_total : float or None
+        The baseline's total on the candidate's own levels only ("Own rating"),
+        or None if the profile has changed since the match.
+    estimated_total : float or None
+        The baseline's total on the estimated levels only ("Estimated from
+        evidence"), or None like `own_total`.
     profile_id : UUID
         The candidate's profile. Candidates are anonymised: no name.
     match_id : UUID
@@ -614,6 +621,8 @@ class RankedCandidate(BaseModel):
 
     rank: int
     total: float
+    own_total: float | None = None
+    estimated_total: float | None = None
     profile_id: UUID
     match_id: UUID
     passed_hard_filters: bool

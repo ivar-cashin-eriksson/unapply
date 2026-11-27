@@ -1,0 +1,85 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "criteria": [
+      {
+        "criterion": "C1",
+        "score": 0.85,
+        "rationale": "Built the delivery volume forecasting models in Python and has run them in production since 2020: strong Python.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C2",
+        "score": 0.7,
+        "rationale": "Writes SQL in Snowflake and dbt; working to strong SQL, with little detail on its depth.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C3",
+        "score": 0.9,
+        "rationale": "Delivery volume forecasting models in production since 2020: hands-on production forecasting, though no measured result is given.",
+        "evidence": [
+          "E1"
+        ]
+      },
+      {
+        "criterion": "C4",
+        "score": 0.7,
+        "rationale": "Statistical analysis of service data for the city council, and statistics behind A/B tests: a solid base, with little detail.",
+        "evidence": [
+          "E4",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C5",
+        "score": 0.85,
+        "rationale": "Designs and analyses A/B tests of delivery options at checkout: hands-on experimentation in e-commerce.",
+        "evidence": [
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C6",
+        "score": 0.3,
+        "rationale": "Nothing in the material shows communication with non-technical stakeholders.",
+        "evidence": []
+      },
+      {
+        "criterion": "C7",
+        "score": 0.2,
+        "rationale": "Snowflake and dbt handle sizeable data, but no Spark or similar tool is named.",
+        "evidence": [
+          "E3"
+        ]
+      },
+      {
+        "criterion": "C8",
+        "score": 0.0,
+        "rationale": "No deep learning is mentioned.",
+        "evidence": []
+      },
+      {
+        "criterion": "C9",
+        "score": 0.9,
+        "rationale": "Ten years in e-commerce logistics, including checkout experiments: e-commerce experience.",
+        "evidence": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "criterion": "C10",
+        "score": 1.0,
+        "rationale": "Danish is stated as native.",
+        "evidence": [
+          "E5"
+        ]
+      }
+    ]
+  }
+}

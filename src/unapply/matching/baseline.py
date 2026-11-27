@@ -16,10 +16,15 @@ candidate's skill, or skills whose evidence counts for it through the taxonomy
 
 Criteria that name no skill, such as "retail experience", aren't scored: the
 baseline can't read them. `Match.total` then averages over the others.
+
+With `levels="own"` or `levels="estimated"` it uses only one of the two levels, so
+the shortlist can show a candidate's score on their own rating beside their score
+on the estimate from their evidence (`own_and_estimated`).
 """
 
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
 from unapply.matching.scoring import ScoringResult
@@ -42,6 +47,10 @@ EVIDENCE_FACTORS = (0.5, 0.9, 1.0)
 # Evidence for a related skill ("dbt" for "sql") counts for less than direct evidence.
 RELATED_FACTOR = 0.75
 
+# Which levels the baseline uses: both, blended by the estimate's confidence, or one.
+Levels = Literal["blend", "own", "estimated"]
+LEVELS: tuple[Levels, ...] = ("blend", "own", "estimated")
+
 
 class BaselineScorer:
     """Score criteria from skill levels and evidence counts, without a model.
@@ -51,13 +60,24 @@ class BaselineScorer:
     taxonomy : Taxonomy or None, optional
         For skills whose evidence counts for a criterion's skill, by default
         `default_taxonomy()`.
+    levels : {"blend", "own", "estimated"}, optional
+        Which levels to use (see `level`): by default both, blended by the
+        estimate's confidence. Only "blend" is used for rankings; the others give
+        the shortlist's own and estimated scores.
     """
 
     name = "baseline"
     model = BASELINE_MODEL
 
-    def __init__(self, taxonomy: Taxonomy | None = None) -> None:
+    def __init__(
+        self, taxonomy: Taxonomy | None = None, levels: Levels = "blend"
+    ) -> None:
+        if levels not in LEVELS:
+            raise ValueError(
+                f"unknown levels {levels!r}; use one of {', '.join(LEVELS)}"
+            )
         self.taxonomy = taxonomy or default_taxonomy()
+        self.levels = levels
 
     def score(self, profile: Profile, rubric: Rubric) -> ScoringResult:
         """Score every criterion that names a skill.
@@ -111,7 +131,7 @@ class BaselineScorer:
             if name != wanted and name not in related:
                 continue
             direct = name == wanted
-            score = _fit(level(s), need) * _evidence_factor(s, documents)
+            score = _fit(level(s, self.levels), need) * _evidence_factor(s, documents)
             if not direct:
                 score *= RELATED_FACTOR
             # Ties go to the skill itself, then to the first in the profile.
@@ -131,27 +151,33 @@ class BaselineScorer:
         return CriterionScore(
             criterion_id=criterion.id,
             score=round(score, 2),
-            rationale=_rationale(skill, wanted, need, direct, documents),
+            rationale=_rationale(skill, wanted, need, direct, documents, self.levels),
             evidence_ids=_evidence(skill),
         )
 
 
-def level(skill: Skill) -> float:
+def level(skill: Skill, levels: Levels = "blend") -> float:
     """Work out the level the baseline uses for a skill.
 
     Parameters
     ----------
     skill : Skill
         The candidate's skill.
+    levels : {"blend", "own", "estimated"}, optional
+        Which levels to use, by default both.
 
     Returns
     -------
     float
-        From 1 to 5: the estimate and the candidate's own level weighted by the
-        estimate's confidence; either alone if only one is there; 1 (aware) if
-        neither is.
+        From 1 to 5. "blend": the estimate and the candidate's own level weighted
+        by the estimate's confidence, either alone if only one is there. "own"
+        or "estimated": only that level. 1 (aware) if the level used is missing.
     """
     own = int(skill.self_level) if skill.self_level else None
+    if levels == "own":
+        return float(own or SkillLevel.AWARE)
+    if levels == "estimated":
+        return float(int(skill.estimate.level) if skill.estimate else SkillLevel.AWARE)
     if skill.estimate is None:
         return float(own or SkillLevel.AWARE)
     estimated = int(skill.estimate.level)
@@ -184,7 +210,12 @@ def _evidence_factor(skill: Skill, documents: set[UUID]) -> float:
 
 
 def _rationale(
-    skill: Skill, wanted: str, need: int, direct: bool, documents: set[UUID]
+    skill: Skill,
+    wanted: str,
+    need: int,
+    direct: bool,
+    documents: set[UUID],
+    levels: Levels = "blend",
 ) -> str:
     own = f"own level {int(skill.self_level)}" if skill.self_level else "no own level"
     if skill.estimate:
@@ -199,5 +230,44 @@ def _rationale(
     via = "" if direct else f" (counts for {wanted}, discounted)"
     return (
         f"{skill.name}{via}: {own}, {estimate}, needs {need}; {quotes}; "
-        f"level used {level(skill):.1f}."
+        f"level used {level(skill, levels):.1f}"
+        f"{'' if levels == 'blend' else f' ({levels} only)'}."
     )
+
+
+def own_and_estimated(
+    profile: Profile, rubric: Rubric, taxonomy: Taxonomy | None = None
+) -> tuple[float, float]:
+    """Score a candidate with the baseline on their own levels, then on the estimate.
+
+    Free and deterministic. Shown beside the ranking's total, which still sets the
+    rank: how the candidate fits on their own rating, and on what their evidence
+    supports.
+
+    Parameters
+    ----------
+    profile : Profile
+        The candidate's profile, with estimates.
+    rubric : Rubric
+        The rubric to score against.
+    taxonomy : Taxonomy or None, optional
+        By default `default_taxonomy()`.
+
+    Returns
+    -------
+    tuple of float
+        The own and the estimated total, each from 0 to 1 and rounded to 4
+        places, weighted as `Match.total` is.
+    """
+    taxonomy = taxonomy or default_taxonomy()
+    return (
+        _total(BaselineScorer(taxonomy, "own").score(profile, rubric), rubric),
+        _total(BaselineScorer(taxonomy, "estimated").score(profile, rubric), rubric),
+    )
+
+
+def _total(result: ScoringResult, rubric: Rubric) -> float:
+    weights = {c.id: c.weight for c in rubric.criteria}
+    scored = [(weights[s.criterion_id], s.score) for s in result.scores]
+    weight = sum(w for w, _ in scored)
+    return round(sum(w * s for w, s in scored) / weight, 4) if weight else 0.0

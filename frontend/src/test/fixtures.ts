@@ -205,10 +205,18 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): A
   }
 }
 
-function ranked(id: string, rank: number, total: number, passed = true): RankedCandidate {
+function ranked(
+  id: string,
+  rank: number,
+  total: number,
+  [own, estimated]: [number | null, number | null],
+  passed = true,
+): RankedCandidate {
   return {
     rank,
     total,
+    own_total: own,
+    estimated_total: estimated,
     profile_id: id,
     match_id: `match-${id}`,
     passed_hard_filters: passed,
@@ -218,27 +226,29 @@ function ranked(id: string, rank: number, total: number, passed = true): RankedC
         ? { name: 'work_permit', outcome: 'unknown', reason: "The profile doesn't say." }
         : { name: 'work_permit', outcome: 'fail', reason: 'No permit to work in the EU.' },
     ],
-    criterion_scores: passed
-      ? [
-          { criterion_id: 'c-python', score: total, rationale: `python: level used for ${id}.`, evidence_ids: [`${id}-e1`] },
-          { criterion_id: 'c-sql', score: 0.5, rationale: 'sql: some evidence.', evidence_ids: [] },
-          { criterion_id: 'c-spark', score: 0.25, rationale: 'spark: no evidence.', evidence_ids: [] },
-        ]
-      : [],
+    criterion_scores: [
+      { criterion_id: 'c-python', score: total, rationale: `python: level used for ${id}.`, evidence_ids: [`${id}-e1`] },
+      { criterion_id: 'c-sql', score: 0.5, rationale: 'sql: some evidence.', evidence_ids: [] },
+      { criterion_id: 'c-spark', score: 0.25, rationale: 'spark: no evidence.', evidence_ids: [] },
+    ],
     model: 'baseline-v1',
     scored_at: '2026-11-27T10:00:00',
     problems: [],
   }
 }
 
-/** A shortlist of three: two ranked, one who fails a hard filter. */
+/** A shortlist of three: two who pass, and one who fails a hard filter with the highest score. */
 export function shortlist(patch: Partial<Shortlist> = {}): Shortlist {
   return {
     ranking: {
       job: 'fjord-grocery',
       rubric_version: 1,
       scorer: 'baseline',
-      candidates: [ranked('a1a1', 1, 0.9), ranked('b0b0', 2, 0.6), ranked('c2c2', 3, 0, false)],
+      candidates: [
+        ranked('a1a1', 1, 0.9, [0.95, 0.85]),
+        ranked('b0b0', 2, 0.6, [0.8, 0.4]),
+        ranked('c2c2', 3, 0.95, [null, null], false),
+      ],
     },
     rubric: {
       version: 1,

@@ -7,7 +7,7 @@
 - `audit`: the append-only log of matches and rankings, and reproducing a ranking.
 """
 
-from unapply.matching.baseline import BASELINE_MODEL, BaselineScorer
+from unapply.matching.baseline import BASELINE_MODEL, BaselineScorer, own_and_estimated
 from unapply.matching.filters import FilterCheck, FilterReport, check_hard_filters
 from unapply.matching.llm_scorer import LLMScorer
 from unapply.matching.scoring import (
@@ -33,5 +33,6 @@ __all__ = [
     "check_hard_filters",
     "latest",
     "match_candidate",
+    "own_and_estimated",
     "rank",
 ]

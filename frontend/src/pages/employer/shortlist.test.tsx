@@ -36,11 +36,58 @@ describe('shortlist', () => {
     expect(within(card('Candidate A1A1')).getByLabelText('Rank 1')).toBeInTheDocument()
     // Unknown filters are said, but don't exclude.
     expect(within(card('Candidate A1A1')).getByText(/Not known: work permit/)).toBeInTheDocument()
-    // A failed hard filter says why, with no score.
-    const failed = card('Candidate C2C2')
-    expect(within(failed).getByText(/No permit to work in the EU/)).toBeInTheDocument()
-    expect(within(failed).queryByRole('meter')).toBeNull()
     expect(screen.getByText('Reveals: 0 of 10')).toBeInTheDocument()
+  })
+
+  it('shows the scorer’s total beside the own rating and the estimate', async () => {
+    open()
+    const first = within(await screen.findByRole('heading', { name: 'Candidate B0B0' }).then((h) => h.closest('li') as HTMLElement))
+    expect(first.getByText('Baseline total')).toBeInTheDocument()
+    expect(first.getByRole('meter', { name: 'Total for Candidate B0B0' })).toHaveAttribute('aria-valuenow', '60')
+    expect(first.getByRole('meter', { name: 'Own rating for Candidate B0B0' })).toHaveAttribute('aria-valuenow', '80')
+    expect(first.getByRole('meter', { name: 'Estimated from evidence for Candidate B0B0' })).toHaveAttribute(
+      'aria-valuenow',
+      '40',
+    )
+    expect(screen.getByText(/sets the rank/)).toBeInTheDocument()
+    // Without the profile the match was made on, the two baseline scores aren't shown.
+    const failed = within(card('Candidate C2C2'))
+    expect(failed.getAllByText('Profile changed since matching')).toHaveLength(2)
+  })
+
+  it('puts candidates who fail a hard filter below a divider, scored and named', async () => {
+    const { user } = open()
+    const divider = await screen.findByRole('separator', { name: /Don't meet the requirements/ })
+    expect(divider).toHaveTextContent('1')
+    const passing = screen.getByRole('list', { name: 'Meet the requirements' })
+    const failing = screen.getByRole('list', { name: "Don't meet the requirements" })
+    expect(within(passing).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Candidate A1A1',
+      'Candidate B0B0',
+    ])
+    const failed = card('Candidate C2C2')
+    expect(failing).toContainElement(failed)
+    expect(failed).not.toBeNull()
+    expect(within(failed).getByText(/Doesn't meet work permit:/).closest('p')).toHaveTextContent(
+      "Doesn't meet work permit: No permit to work in the EU.",
+    )
+    // Scored like the rest, and still last, though its total is the highest.
+    expect(within(failed).getByRole('meter', { name: 'Total for Candidate C2C2' })).toHaveAttribute('aria-valuenow', '95')
+    expect(within(failed).getByLabelText('Rank 3')).toBeInTheDocument()
+    expect(failed.querySelector('[data-failed]')).toHaveClass('bg-destructive/5')
+    expect(card('Candidate A1A1').querySelector('[data-failed]')).toBeNull()
+    // Its reasons are there too.
+    await user.click(within(failed).getByRole('button', { name: /Why/ }))
+    expect(screen.getByRole('region', { name: 'Reasons for Candidate C2C2' })).toHaveTextContent('python: level used for c2c2.')
+  })
+
+  it('has no divider when everyone meets the requirements', async () => {
+    const data = shortlist()
+    data.ranking.candidates = data.ranking.candidates.filter((c) => c.passed_hard_filters)
+    open(data)
+    await screen.findByRole('heading', { name: '2 ranked' })
+    expect(screen.queryByRole('separator', { name: /Don't meet/ })).toBeNull()
+    expect(screen.queryByRole('list', { name: "Don't meet the requirements" })).toBeNull()
   })
 
   it('explains each criterion with the quotes it cites', async () => {

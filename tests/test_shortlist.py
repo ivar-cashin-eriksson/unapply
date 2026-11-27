@@ -25,6 +25,7 @@ from unapply.evaluation.pool import (
     match_recording,
     store_pool,
 )
+from unapply.matching import own_and_estimated
 from unapply.matching.audit import AuditKind, check_ranking
 from unapply.matching.shortlist import (
     Intent,
@@ -49,7 +50,7 @@ from unapply.schemas import (
 )
 
 POOL = Path(__file__).parent / "fixtures" / "pool"
-# The pool's candidates who fail a hard filter, so aren't scored.
+# The pool's candidates who fail a hard filter: scored, but ranked after the rest.
 FAILING = {"clara-jensen", "emil-dahl", "priya-raman"}
 
 
@@ -469,3 +470,46 @@ def test_years_of_experience_count_to_the_pools_date(client, repo, monkeypatch):
         f for f in junior["hard_filters"] if f["name"] == "min_years_experience"
     ]
     assert years["outcome"] == "fail"
+
+
+# Own and estimated scores, and failed filters
+
+
+def test_own_and_estimated_scores_tell_the_overclaimer_apart(pool):
+    totals = {
+        name: own_and_estimated(c.profile, pool.job.rubric)
+        for name, c in pool.candidates.items()
+    }
+    own, estimated = totals["jonas-friis"]
+    # Expert on his own word, a BI analyst on his evidence.
+    assert own - estimated > 0.3
+    # An honest candidate's two scores are close.
+    own, estimated = totals["astrid-holm"]
+    assert abs(own - estimated) < 0.1
+    assert all(0 <= t <= 1 for pair in totals.values() for t in pair)
+
+
+def test_the_shortlist_shows_both_scores_and_failed_candidates_last(client, repo):
+    job = shortlist_demo(client)
+    rubric = repo.job(job).rubric
+    for scorer in ("baseline", "llm"):
+        ok(client.post(f"/jobs/{job}/match?scorer={scorer}"))
+        ranking = ok(client.get(f"/jobs/{job}/shortlist?scorer={scorer}"))["ranking"]
+        candidates = ranking["candidates"]
+        passed = [c["passed_hard_filters"] for c in candidates]
+        # Everyone who passes, then everyone who fails: one divider.
+        assert passed == [True] * 9 + [False] * 3, scorer
+        for c in candidates:
+            profile = repo.profile_by_id(UUID(c["profile_id"]))
+            expected = own_and_estimated(profile, rubric)
+            assert (c["own_total"], c["estimated_total"]) == expected
+        for c in candidates[9:]:
+            # Scored by the scorer too, with the failed filters named.
+            assert c["total"] > 0 and c["criterion_scores"], scorer
+            assert any(f["outcome"] == "fail" for f in c["hard_filters"])
+        # Priya, outside the EU, scores above most who pass but ranks after them.
+        priya = next(
+            c for c in candidates if folder_of(repo, c["profile_id"]) == "priya-raman"
+        )
+        assert priya["total"] > candidates[8]["total"]
+        assert priya["rank"] == 10

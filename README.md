@@ -172,7 +172,8 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   names).
 - **Shortlist** (`/jobs/<name>/shortlist`, `/jobs/<name>/intents`): the ranking
   with each candidate anonymised (an alias, their roles and quotes with names and
-  contact details removed, their own and estimated levels in the rubric's skills),
+  contact details removed, their own and estimated levels in the rubric's skills,
+  and the baseline's totals on own and on estimated levels only),
   and the employer's reveals and application requests, which are only recorded.
 - **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`): John Doe, Fjord
   Grocery, and Fjord Grocery with the synthetic pool, which replay recorded answers
@@ -213,13 +214,17 @@ uv run unapply match fjord-grocery-demo --scorer llm --allow-api   # one paid ca
    and minimum years of work, from experience dates at month precision with
    overlapping roles counted once and education left out. A filter the profile
    says nothing about is "unknown" and doesn't exclude anyone. Candidates who fail
-   one aren't scored.
+   one are still scored, so the employer sees how close they are, but rank after
+   everyone who passes, whatever their score.
 2. **Scores per criterion**, from 0 to 1, each with a reason and cited evidence:
    - `baseline` (default): no model. The candidate's level (the estimate and their
      own level, weighted by the estimate's confidence) against the criterion's
      minimum level, times a factor for how many document quotes back it. Evidence
      for a related skill counts through the taxonomy ("dbt" for "sql"), for less.
-     Criteria that name no skill aren't scored.
+     Criteria that name no skill aren't scored. The shortlist also shows the
+     baseline on the candidate's own levels only ("Own rating") and on the
+     estimated levels only ("Estimated from evidence") beside the total, which
+     still sets the rank.
    - `llm`: one model call per candidate, which sees the criteria and the
      anonymised profile (names, email addresses, phone numbers and links removed)
      but never the hard filters. Cited evidence must be the candidate's.
@@ -253,10 +258,12 @@ uv run unapply evaluate                            # both scorers, top-3 and top
 uv run unapply evaluate --reference shortlist.yaml # a human shortlist instead
 ```
 
-On the pool, the baseline gets top-3 overlap 1.00, top-5 0.80 and tau 0.84: it
+On the pool, the baseline gets top-3 overlap 1.00, top-5 0.80 and tau 0.82: it
 trusts a candidate's own levels where the estimates are unsure, so the overclaimer
 comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ranking
-(tau 1.00), which only shows they are consistent until they are recorded.
+(tau 0.98: the reference has the three who fail a hard filter share the last place,
+while the ranking orders them by score), which only shows they are consistent until
+they are recorded.
 
 ## The MCP server
 

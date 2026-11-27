@@ -61,7 +61,7 @@ def test_evidence_must_point_to_known_source():
         Profile(evidence=[Evidence(source_id=Source(kind=SourceKind.CV).id, quote="x")])
 
 
-def test_match_total_is_weighted_and_zero_when_filtered_out():
+def test_match_total_is_weighted_whether_or_not_filtered_out():
     must = Criterion(kind=CriterionKind.MUST_HAVE, description="Python", weight=3)
     nice = Criterion(kind=CriterionKind.NICE_TO_HAVE, description="Kafka", weight=1)
     rubric = Rubric(criteria=[must, nice])
@@ -78,4 +78,5 @@ def test_match_total_is_weighted_and_zero_when_filtered_out():
         "model": "test",
     }
     assert Match(passed_hard_filters=True, **kw).total(rubric) == pytest.approx(0.75)
-    assert Match(passed_hard_filters=False, **kw).total(rubric) == 0.0
+    # Candidates who fail a hard filter are scored too; ranking puts them last.
+    assert Match(passed_hard_filters=False, **kw).total(rubric) == pytest.approx(0.75)

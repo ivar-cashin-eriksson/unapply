@@ -163,10 +163,10 @@ def test_hard_filters_fail_exactly_the_intended_candidates(pool):
         failed = {k.name for k in report.checks if k.outcome is Outcome.FAIL}
         if name in FAILING:
             assert FAILING[name] in failed, name
-            assert not pool.match_recording(name).exists(), name
         else:
             assert failed == set(), name
-            assert pool.match_recording(name).is_file(), name
+        # Everyone is scored, those who fail a hard filter too.
+        assert pool.match_recording(name).is_file(), name
     # Just under four years: 10 months as a student assistant and 28 since.
     emil = pool.candidates["emil-dahl"].profile
     report = check_hard_filters(emil, pool.job.rubric.hard_filters, pool.today)
@@ -205,7 +205,7 @@ def _order(evaluation):
 def test_the_baseline_against_the_intended_ranking(pool):
     evaluation = evaluate_pool(pool, "baseline")
     assert evaluation.model == "baseline-v1"
-    assert [n for n, _ in evaluation.ranking][:9] == [
+    assert [n for n, _ in evaluation.ranking] == [
         "astrid-holm",
         "mikkel-lund",
         "sofie-krag",
@@ -217,10 +217,18 @@ def test_the_baseline_against_the_intended_ranking(pool):
         "freja-nygaard",
         "ida-thorsen",
         "henrik-mose",
+        # Those who fail a hard filter are scored too, and come after everyone
+        # who passes, by score; the reference has them share the last place.
+        "priya-raman",
+        "clara-jensen",
+        "emil-dahl",
     ]
-    assert {n for n, r in evaluation.ranking if r.rank == 10} == set(FAILING)
+    assert [r.rank for _, r in evaluation.ranking] == list(range(1, 13))
+    failed = {n: r for n, r in evaluation.ranking if not r.match.passed_hard_filters}
+    assert set(failed) == set(FAILING)
+    assert failed["priya-raman"].total > evaluation.ranking[8][1].total
     assert evaluation.top_k == {3: 1.0, 5: 0.8}
-    assert evaluation.tau == pytest.approx(0.8413, abs=1e-4)
+    assert evaluation.tau == pytest.approx(0.8219, abs=1e-4)
 
 
 def test_the_llm_scorer_against_the_intended_ranking(pool):
@@ -228,9 +236,18 @@ def test_the_llm_scorer_against_the_intended_ranking(pool):
     assert evaluation.model == f"replay:{PLACEHOLDER}"
     assert all(r.problems == [] for r in evaluation.results.values())
     intended = {e.candidate: e.rank for e in pool.intended}
-    assert all(intended[n] == r for n, r in _order(evaluation))
+    # The intended order, with the three who fail a hard filter ordered by score
+    # after the rest instead of sharing the last place.
+    assert all(intended[n] == min(r, 10) for n, r in _order(evaluation))
+    assert [n for n, _ in evaluation.ranking][9:] == [
+        "priya-raman",
+        "clara-jensen",
+        "emil-dahl",
+    ]
     assert evaluation.top_k == {1: 1.0, 3: 1.0, 5: 1.0}
-    assert evaluation.tau == 1.0
+    # Every pair the reference orders is in order; tau-b is just under 1 as the
+    # reference ties the last three and the ranking doesn't: sqrt(63 / 66).
+    assert evaluation.tau == pytest.approx((63 / 66) ** 0.5)
 
 
 def test_a_partial_reference_such_as_a_shortlist(pool):
@@ -284,8 +301,8 @@ def test_cli_evaluates_both_scorers(capsys):
     out = capsys.readouterr().out
     assert "12 candidates" in out
     assert "baseline (baseline-v1)" in out
-    assert "top-3 overlap 1.00  top-5 overlap 0.80  Kendall's tau 0.84" in out
-    assert "top-3 overlap 1.00  top-5 overlap 1.00  Kendall's tau 1.00" in out
+    assert "top-3 overlap 1.00  top-5 overlap 0.80  Kendall's tau 0.82" in out
+    assert "top-3 overlap 1.00  top-5 overlap 1.00  Kendall's tau 0.98" in out
     assert out.count("(failed hard filters)") == 6
     assert "problem:" not in out
 
