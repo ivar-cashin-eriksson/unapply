@@ -1,0 +1,471 @@
+"""The employer's shortlist: anonymised candidates, both levels, reveals and requests.
+
+Everything runs on the synthetic pool for Fjord Grocery (`tests/fixtures/pool`),
+which the shortlist demo stores in the database; both scorers replay recordings.
+"""
+
+import json
+import re
+from datetime import date
+from pathlib import Path
+from uuid import UUID, uuid4
+
+import anthropic
+import pytest
+from fastapi.testclient import TestClient
+
+import unapply.matching.filters as filters
+from unapply.api.app import create_app
+from unapply.db.engine import database_url, init_db
+from unapply.db.repository import Repository
+from unapply.evaluation.pool import (
+    DEMO_PREFIX,
+    evaluate_pool,
+    load_pool,
+    match_recording,
+    store_pool,
+)
+from unapply.matching.audit import AuditKind, check_ranking
+from unapply.matching.shortlist import (
+    Intent,
+    IntentKind,
+    alias,
+    anonymous_candidate,
+    rubric_skills,
+    skill_levels,
+)
+from unapply.schemas import (
+    Criterion,
+    CriterionKind,
+    Evidence,
+    Experience,
+    Profile,
+    Rubric,
+    Skill,
+    SkillEstimate,
+    SkillLevel,
+    Source,
+    SourceKind,
+)
+
+POOL = Path(__file__).parent / "fixtures" / "pool"
+# The pool's candidates who fail a hard filter, so aren't scored.
+FAILING = {"clara-jensen", "emil-dahl", "priya-raman"}
+
+
+@pytest.fixture(autouse=True)
+def no_client(monkeypatch):
+    def refuse(*args, **kwargs):
+        raise AssertionError("the API created an Anthropic client")
+
+    monkeypatch.setattr(anthropic, "Anthropic", refuse)
+
+
+@pytest.fixture(scope="module")
+def pool():
+    return load_pool(POOL)
+
+
+@pytest.fixture
+def repo():
+    init_db()
+    repo = Repository.from_url(database_url())
+    yield repo
+    repo.engine.dispose()
+
+
+class NoModel:
+    """A model factory that must never be used: everything here replays."""
+
+    def __call__(self, purpose: str, allow: bool):
+        raise AssertionError(f"a model was asked for ({purpose})")
+
+
+@pytest.fixture
+def client(repo, tmp_path):
+    return TestClient(
+        create_app(repo=repo, uploads=tmp_path / "uploads", llm_factory=NoModel())
+    )
+
+
+def ok(response, code=200):
+    assert response.status_code == code, response.text
+    return response.json() if response.content else None
+
+
+def folder_of(repo, profile_id: str) -> str:
+    """The pool folder of a ranked candidate, from their profile id."""
+    return repo.candidate_of(UUID(profile_id)).removeprefix(DEMO_PREFIX)
+
+
+def shortlist_demo(client) -> str:
+    return ok(client.post("/demos/shortlist"), 201)["name"]
+
+
+# The anonymised view
+
+
+def profile_with(skills: list[Skill], **fields) -> Profile:
+    cv = Source(kind=SourceKind.CV, uri="jane-cv.md")
+    interview = Source(kind=SourceKind.INTERVIEW, uri="interview")
+    evidence = [
+        Evidence(source_id=cv.id, quote="Wrote it with Jane Roe, jane@example.com"),
+        Evidence(source_id=interview.id, quote="I use dbt every day, see @janeroe"),
+    ]
+    return Profile(
+        headline="Analyst, see github.com/janeroe",
+        sources=[cv, interview],
+        evidence=evidence,
+        experiences=[
+            Experience(
+                title="Analyst",
+                organisation="Roe Consulting",
+                start=date(2020, 1, 1),
+                summary="Call +45 12 34 56 78 for references.",
+            )
+        ],
+        skills=skills,
+        **fields,
+    )
+
+
+def estimate(level: int, confidence: float = 0.8) -> SkillEstimate:
+    return SkillEstimate(
+        level=SkillLevel(level), confidence=confidence, rationale="r", model="m"
+    )
+
+
+def rubric(*skills: str | None) -> Rubric:
+    return Rubric(
+        criteria=[
+            Criterion(kind=CriterionKind.MUST_HAVE, description=f"{s}", skill=s)
+            for s in skills
+        ]
+    )
+
+
+def test_alias_is_short_stable_and_says_nothing_about_the_person():
+    profile_id = uuid4()
+    assert alias(profile_id) == alias(profile_id)
+    assert re.fullmatch(r"Candidate [0-9A-F]{4}", alias(profile_id))
+    assert alias(profile_id)[-4:] == profile_id.hex[:4].upper()
+
+
+def test_rubric_skills_are_canonical_once_each_in_rubric_order():
+    assert rubric_skills(rubric("SQL", None, "scikit learn", "sql", "python")) == [
+        "sql",
+        "scikit-learn",
+        "python",
+    ]
+    assert rubric_skills(rubric(None)) == []
+
+
+def test_skill_levels_come_from_the_skill_itself_then_a_related_one():
+    sql = Skill(name="sql", self_level=SkillLevel(4), estimate=estimate(3, 0.6))
+    dbt = Skill(name="dbt", self_level=SkillLevel(5), estimate=estimate(4))
+    postgres = Skill(name="postgresql", self_level=SkillLevel(2))
+
+    direct = skill_levels(profile_with([dbt, sql]), "SQL")
+    assert (direct.skill, direct.own_level, direct.estimated_level) == ("sql", 4, 3)
+    assert (direct.confidence, direct.via) == (0.6, None)
+
+    # Without SQL itself, the related skill with the highest level counts.
+    related = skill_levels(profile_with([postgres, dbt]), "sql")
+    assert (related.own_level, related.estimated_level, related.via) == (5, 4, "dbt")
+
+    none = skill_levels(profile_with([dbt]), "deep learning")
+    assert none.model_dump() == {
+        "skill": "deep learning",
+        "own_level": None,
+        "estimated_level": None,
+        "confidence": None,
+        "via": None,
+    }
+    # An own level without an estimate yet.
+    own = skill_levels(profile_with([postgres]), "postgresql")
+    assert (own.own_level, own.estimated_level, own.confidence) == (2, None, None)
+
+
+def test_the_anonymous_candidate_has_no_names_contacts_or_claim_support():
+    skills = [Skill(name="python", self_level=SkillLevel(4), estimate=estimate(3))]
+    profile = profile_with(skills)
+    seen = anonymous_candidate(profile, rubric("python", "sql"), ["Jane", "Roe"])
+    text = seen.model_dump_json()
+    for leak in ("Jane", "jane@", "janeroe", "12 34 56 78", "jane-cv.md", "claim"):
+        assert leak.lower() not in text.lower(), leak
+    assert seen.alias == alias(profile.id)
+    assert seen.headline == "Analyst, see [redacted]"
+    assert seen.experiences[0].organisation == "[redacted] Consulting"
+    assert seen.experiences[0].start == date(2020, 1, 1)
+    assert [e.source for e in seen.evidence] == ["cv", "candidate statement"]
+    assert [e.id for e in seen.evidence] == [e.id for e in profile.evidence]
+    assert [(s.skill, s.own_level, s.estimated_level) for s in seen.skills] == [
+        ("python", 4, 3),
+        ("sql", None, None),
+    ]
+
+
+# Intents in the database
+
+
+def test_intents_are_recorded_once_and_read_back_in_order(repo):
+    job_id, a, b = uuid4(), uuid4(), uuid4()
+    first, new = repo.record_intent(
+        Intent(job_id=job_id, profile_id=a, kind=IntentKind.REVEAL)
+    )
+    assert new and first.id is not None
+    again, new = repo.record_intent(
+        Intent(job_id=job_id, profile_id=a, kind=IntentKind.REVEAL)
+    )
+    assert not new and again == first
+    request, new = repo.record_intent(
+        Intent(job_id=job_id, profile_id=a, kind=IntentKind.REQUEST_APPLICATION)
+    )
+    assert new
+    repo.record_intent(Intent(job_id=job_id, profile_id=b, kind=IntentKind.REVEAL))
+    repo.record_intent(Intent(job_id=uuid4(), profile_id=a, kind=IntentKind.REVEAL))
+
+    log = repo.intents(job_id)
+    assert [(i.profile_id, i.kind) for i in log] == [
+        (a, IntentKind.REVEAL),
+        (a, IntentKind.REQUEST_APPLICATION),
+        (b, IntentKind.REVEAL),
+    ]
+    assert [i.profile_id for i in repo.intents(job_id, IntentKind.REVEAL)] == [a, b]
+    with pytest.raises(ValueError, match="already stored"):
+        repo.record_intent(first)
+
+
+# Storing the pool
+
+
+def test_store_pool_stores_the_job_and_each_candidate_once(repo, pool):
+    names = store_pool(repo, pool, "shortlist")
+    assert names == sorted(DEMO_PREFIX + n for n in pool.candidates)
+    job = repo.job("shortlist")
+    assert job.rubric.approved_at is not None
+    assert job.rubric == pool.job.rubric
+    settings = repo.job_settings("shortlist")
+    assert settings["demo"] and settings["today"] == "2026-11-26"
+    for folder, candidate in pool.candidates.items():
+        name = DEMO_PREFIX + folder
+        assert repo.settings(name) == {"demo": True, "pool": folder}
+        assert repo.profile(name) == candidate.profile
+
+    # A second pool job ranks the same people: the candidates are kept.
+    profiles = {n: repo.profile(n).id for n in names}
+    assert store_pool(repo, load_pool(POOL), "shortlist-2") == names
+    assert {n: repo.profile(n).id for n in names} == profiles
+    assert repo.job("shortlist-2").id != job.id
+
+    with pytest.raises(ValueError, match="already exists"):
+        store_pool(repo, pool, "shortlist")
+
+
+def test_store_pool_refuses_a_name_taken_by_someone_else(repo, pool):
+    repo.create_candidate(DEMO_PREFIX + "astrid-holm")
+    with pytest.raises(ValueError, match="not from the pool"):
+        store_pool(repo, pool, "shortlist")
+
+
+def test_match_recordings_are_found_without_loading_the_pool(pool):
+    for name in pool.candidates:
+        assert match_recording(name, POOL) == pool.match_recording(name)
+
+
+# The API
+
+
+def test_the_shortlist_demo_ranks_the_pool_as_the_evaluation_does(client, repo, pool):
+    job = shortlist_demo(client)
+    summary = ok(client.get(f"/jobs/{job}"))
+    assert summary["demo"] and summary["approved"]
+    # Pool candidates aren't candidate journeys, so they aren't listed.
+    assert ok(client.get("/candidates")) == []
+
+    for scorer in ("baseline", "llm"):
+        ok(client.post(f"/jobs/{job}/match?scorer={scorer}"))
+        shortlist = ok(client.get(f"/jobs/{job}/shortlist?scorer={scorer}"))
+        ranking = shortlist["ranking"]["candidates"]
+        assert len(ranking) == len(shortlist["candidates"]) == 12
+        # The same ranking as `unapply evaluate`, which works in memory.
+        ranks = {folder_of(repo, c["profile_id"]): c["rank"] for c in ranking}
+        evaluation = evaluate_pool(pool, scorer)
+        assert ranks == {n: r.rank for n, r in evaluation.ranking}, scorer
+        failed = {
+            folder_of(repo, c["profile_id"])
+            for c in ranking
+            if not c["passed_hard_filters"]
+        }
+        assert failed == FAILING
+        # In ranking order, each with the rubric's skills.
+        assert [c["profile_id"] for c in shortlist["candidates"]] == [
+            c["profile_id"] for c in ranking
+        ]
+        assert shortlist["skills"] == rubric_skills(pool.job.rubric)
+        assert shortlist["rubric"]["version"] == shortlist["ranking"]["rubric_version"]
+        assert [c["id"] for c in shortlist["rubric"]["criteria"]] == [
+            str(c.id) for c in repo.job(job).rubric.criteria
+        ]
+        for c in shortlist["candidates"]:
+            assert [s["skill"] for s in c["skills"]] == shortlist["skills"]
+        # Every cited quote is on the shortlist with its candidate.
+        for r, c in zip(ranking, shortlist["candidates"], strict=True):
+            quotes = {e["id"] for e in c["evidence"]}
+            for score in r["criterion_scores"]:
+                assert set(score["evidence_ids"]) <= quotes
+    assert shortlist["intents"] == []
+    assert shortlist["reveal_quota"] == 10
+
+
+def test_the_shortlist_never_names_a_candidate(client):
+    job = shortlist_demo(client)
+    ok(client.post(f"/jobs/{job}/match"))
+    shortlist = ok(client.get(f"/jobs/{job}/shortlist"))
+    for c in shortlist["candidates"]:
+        text = json.dumps(
+            [c["headline"], c["experiences"], [e["quote"] for e in c["evidence"]]]
+        )
+        assert "@" not in text and "+45" not in text
+        assert "example.com" not in text and ".md" not in text
+        assert re.fullmatch(r"Candidate [0-9A-F]{4}", c["alias"])
+    whole = json.dumps(shortlist).lower()
+    for folder in (POOL).iterdir():
+        if folder.is_dir():
+            for part in folder.name.split("-"):
+                assert not re.search(rf"\b{part}\b", whole), folder.name
+
+
+def test_the_shortlist_is_recorded_in_the_audit_log(client, repo):
+    job = shortlist_demo(client)
+    ok(client.post(f"/jobs/{job}/match"))
+    shortlist = ok(client.get(f"/jobs/{job}/shortlist"))
+    log = repo.audit_log(repo.job(job).id)
+    entry = log[-1]
+    assert entry.kind == AuditKind.RANKING
+    assert [m["match"]["id"] for m in entry.payload["ranking"]] == [
+        c["match_id"] for c in shortlist["ranking"]["candidates"]
+    ]
+    assert check_ranking(entry, log) == []
+
+
+def test_shortlist_errors(client):
+    assert client.get("/jobs/nothing/shortlist").status_code == 404
+    ok(client.post("/demos/job"), 201)
+    assert client.get("/jobs/fjord-grocery-demo/shortlist").status_code == 409
+    job = shortlist_demo(client)
+    assert ok(client.get(f"/jobs/{job}/shortlist"))["candidates"] == []
+    assert client.get(f"/jobs/{job}/shortlist?version=7").status_code == 404
+    assert client.get(f"/jobs/{job}/shortlist?scorer=magic").status_code == 422
+
+
+def test_pool_candidates_make_no_model_calls(client):
+    shortlist_demo(client)
+    name = DEMO_PREFIX + "astrid-holm"
+    response = client.post(f"/candidates/{name}/extract")
+    assert response.status_code == 409
+    assert "synthetic pool" in response.json()["detail"]
+    assert client.post(f"/candidates/{name}/questions").status_code == 409
+    # Their profile is there, as candidates see it.
+    assert ok(client.get(f"/candidates/{name}/profile"))["approved_by_candidate_at"]
+
+
+def test_reveal_and_request_an_application_record_the_intent(client, repo):
+    job = shortlist_demo(client)
+    ranking = ok(client.post(f"/jobs/{job}/match"))["candidates"]
+    first, second = ranking[0]["profile_id"], ranking[1]["profile_id"]
+
+    reveal = ok(
+        client.post(
+            f"/jobs/{job}/intents", json={"profile_id": first, "kind": "reveal"}
+        ),
+        201,
+    )
+    assert (reveal["profile_id"], reveal["kind"]) == (first, "reveal")
+    # Asking again changes nothing.
+    again = client.post(
+        f"/jobs/{job}/intents", json={"profile_id": first, "kind": "reveal"}
+    )
+    assert ok(again) == reveal
+    ok(
+        client.post(
+            f"/jobs/{job}/intents",
+            json={"profile_id": second, "kind": "request_application"},
+        ),
+        201,
+    )
+    intents = ok(client.get(f"/jobs/{job}/intents"))
+    assert [(i["profile_id"], i["kind"]) for i in intents] == [
+        (first, "reveal"),
+        (second, "request_application"),
+    ]
+    assert ok(client.get(f"/jobs/{job}/shortlist"))["intents"] == intents
+    # Recording an intent shows no one's identity: the answer has only ids.
+    assert set(reveal) == {"id", "job_id", "profile_id", "kind", "recorded_at"}
+    assert repo.intents(repo.job(job).id)[0].kind == IntentKind.REVEAL
+
+
+def test_intent_errors_and_the_reveal_quota(client):
+    job = shortlist_demo(client)
+    url = f"/jobs/{job}/intents"
+    stranger = str(uuid4())
+    # Nobody is on the shortlist before matching.
+    assert (
+        client.post(url, json={"profile_id": stranger, "kind": "reveal"}).status_code
+        == 404
+    )
+    ranking = ok(client.post(f"/jobs/{job}/match"))["candidates"]
+    assert (
+        client.post(url, json={"profile_id": stranger, "kind": "reveal"}).status_code
+        == 404
+    )
+    assert (
+        client.post(url, json={"profile_id": stranger, "kind": "hire"}).status_code
+        == 422
+    )
+    assert client.get("/jobs/nothing/intents").status_code == 404
+    assert client.post("/jobs/nothing/intents", json={}).status_code == 422
+
+    # Ten reveals, the job's quota; then no more, though asking again still works.
+    ids = [c["profile_id"] for c in ranking]
+    for profile_id in ids[:10]:
+        ok(client.post(url, json={"profile_id": profile_id, "kind": "reveal"}), 201)
+    response = client.post(url, json={"profile_id": ids[10], "kind": "reveal"})
+    assert response.status_code == 409
+    assert "All 10 reveals" in response.json()["detail"]
+    ok(client.post(url, json={"profile_id": ids[0], "kind": "reveal"}))
+    # Application requests have no quota.
+    for profile_id in ids:
+        ok(
+            client.post(
+                url, json={"profile_id": profile_id, "kind": "request_application"}
+            ),
+            201,
+        )
+
+
+def test_years_of_experience_count_to_the_pools_date(client, repo, monkeypatch):
+    """Matching the demo gives the pool's results on any day, not only today."""
+    job = shortlist_demo(client)
+
+    # Years later, the too-junior candidate would have enough years.
+    class Later(date):
+        @classmethod
+        def today(cls):
+            return date(2030, 1, 1)
+
+    monkeypatch.setattr(filters, "date", Later)
+    ranking = ok(client.post(f"/jobs/{job}/match"))["candidates"]
+    failed = {
+        folder_of(repo, c["profile_id"])
+        for c in ranking
+        if not c["passed_hard_filters"]
+    }
+    assert failed == FAILING
+    # The ranking shown works the filters out again, on the same date.
+    shown = ok(client.get(f"/jobs/{job}/ranking"))["candidates"]
+    junior = next(c for c in shown if folder_of(repo, c["profile_id"]) == "emil-dahl")
+    (years,) = [
+        f for f in junior["hard_filters"] if f["name"] == "min_years_experience"
+    ]
+    assert years["outcome"] == "fail"

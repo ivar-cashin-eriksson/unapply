@@ -9,14 +9,20 @@ import type {
   CandidateProfile,
   CandidateSummary,
   Extraction,
+  Intent,
+  IntentKind,
   JobAd,
   JobSummary,
   MaterialFile,
   Questions,
+  Ranking,
   ReviewForm,
   Rubric,
   RubricExtraction,
   RubricForm,
+  Scorer,
+  Shortlist,
+  ShortlistDemo,
 } from '@/lib/types'
 
 export const BASE = '/api'
@@ -140,6 +146,15 @@ export const api = {
   rubric: (name: string) => json<Rubric>('GET', `${j(name)}/rubric`),
   saveRubric: (name: string, form: RubricForm) =>
     json<Rubric>('PUT', `${j(name)}/rubric`, form),
+
+  // Matching and the shortlist
+  createShortlistDemo: () => json<ShortlistDemo>('POST', '/demos/shortlist'),
+  match: (name: string, scorer: Scorer) =>
+    json<Ranking>('POST', `${j(name)}/match?scorer=${scorer}`),
+  shortlist: (name: string, scorer: Scorer) =>
+    json<Shortlist>('GET', `${j(name)}/shortlist?scorer=${scorer}`),
+  recordIntent: (name: string, profileId: string, kind: IntentKind) =>
+    json<Intent>('POST', `${j(name)}/intents`, { profile_id: profileId, kind }),
 }
 
 /** A message for an error, saying what to do about a refused paid call. */

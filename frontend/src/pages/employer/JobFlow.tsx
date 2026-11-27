@@ -1,4 +1,4 @@
-import { Briefcase, PlayCircle } from 'lucide-react'
+import { Briefcase, PlayCircle, Users } from 'lucide-react'
 import { Outlet, useParams } from 'react-router'
 
 import { DemoButton } from '@/components/DemoButton'
@@ -15,7 +15,7 @@ export function JobList() {
   return (
     <StartPage
       title="Jobs"
-      intro="Paste your job ad, check the rubric we draft from it, and approve it. Candidates never see the rubric."
+      intro="Paste your job ad, check the rubric we draft from it, and approve it. Candidates never see the rubric. Then see the anonymised shortlist."
       list={api.jobs}
       create={(name) => api.createJob(name, '')}
       to={(name) => `/jobs/${name}/ad`}
@@ -24,15 +24,20 @@ export function JobList() {
       placeholder="senior-data-scientist"
       empty="Create one on the right, or try the Fjord Grocery demo: it replays a recorded rubric, so it costs nothing."
       demo={
-        <DemoButton create={api.createDemoJob} to={(n) => `/jobs/${n}/ad`} variant="outline">
-          <PlayCircle aria-hidden /> Try the Fjord Grocery demo
-        </DemoButton>
+        <>
+          <DemoButton create={api.createDemoJob} to={(n) => `/jobs/${n}/ad`} variant="outline">
+            <PlayCircle aria-hidden /> Try the Fjord Grocery demo
+          </DemoButton>
+          <DemoButton create={api.createShortlistDemo} to={(n) => `/jobs/${n}/shortlist`} variant="outline">
+            <Users aria-hidden /> Try the shortlist demo
+          </DemoButton>
+        </>
       }
     />
   )
 }
 
-/** A job's steps: the ad, then the rubric. */
+/** A job's steps: the ad, the rubric, then the shortlist. */
 export function JobFlow() {
   const { name = '' } = useParams()
   const summary = useResource(() => api.job(name), name)
@@ -43,6 +48,7 @@ export function JobFlow() {
   const steps = [
     { to: 'ad', label: 'Job ad', done: s.has_rubric },
     { to: 'rubric', label: 'Rubric', done: s.approved, locked: !s.has_rubric },
+    { to: 'shortlist', label: 'Shortlist', done: false, locked: !s.approved },
   ]
   return (
     <>

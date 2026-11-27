@@ -220,3 +220,104 @@ export interface RubricForm {
   hard_filters: HardFilters
   criteria: CriterionEdit[]
 }
+
+// Matching and the employer's shortlist (src/unapply/api/models.py and
+// src/unapply/matching/shortlist.py). Employers see candidates anonymised: an
+// alias, never a name. Unlike candidate types, these carry estimated levels.
+
+export type Scorer = 'baseline' | 'llm'
+export type IntentKind = 'reveal' | 'request_application'
+
+export interface CriterionScore {
+  criterion_id: string
+  /** 0 to 1. */
+  score: number
+  rationale: string
+  evidence_ids: string[]
+}
+
+export interface HardFilterCheck {
+  name: 'location' | 'work_mode' | 'work_permit' | 'min_years_experience'
+  outcome: 'pass' | 'fail' | 'unknown'
+  reason: string
+}
+
+export interface RankedCandidate {
+  rank: number
+  /** Weighted mean of the criterion scores, 0 to 1; 0 if a hard filter failed. */
+  total: number
+  profile_id: string
+  match_id: string
+  passed_hard_filters: boolean
+  /** Null if the profile changed since the match. */
+  hard_filters: HardFilterCheck[] | null
+  criterion_scores: CriterionScore[]
+  model: string
+  scored_at: string
+  problems: string[]
+}
+
+export interface Ranking {
+  job: string
+  rubric_version: number
+  scorer: Scorer
+  candidates: RankedCandidate[]
+}
+
+export interface SkillLevels {
+  skill: string
+  own_level: SkillLevel | null
+  estimated_level: SkillLevel | null
+  confidence: number | null
+  /** The candidate's related skill the levels come from, such as "dbt" for "sql". */
+  via: string | null
+}
+
+export interface AnonymousEvidence {
+  id: string
+  /** "cv", "linkedin", "github", "free_text" or "candidate statement". */
+  source: string
+  quote: string
+}
+
+export interface AnonymousExperience {
+  title: string
+  organisation: string
+  start: string | null
+  end: string | null
+  summary: string
+}
+
+export interface AnonymousCandidate {
+  profile_id: string
+  /** Such as "Candidate 3F2A". */
+  alias: string
+  headline: string
+  experiences: AnonymousExperience[]
+  evidence: AnonymousEvidence[]
+  /** One per rubric skill, in `Shortlist.skills` order. */
+  skills: SkillLevels[]
+}
+
+export interface Intent {
+  id: number
+  job_id: string
+  profile_id: string
+  kind: IntentKind
+  recorded_at: string
+}
+
+export interface Shortlist {
+  ranking: Ranking
+  /** The rubric version ranked against. */
+  rubric: Rubric
+  skills: string[]
+  candidates: AnonymousCandidate[]
+  intents: Intent[]
+  reveal_quota: number
+}
+
+export interface ShortlistDemo {
+  name: string
+  candidates: number
+}

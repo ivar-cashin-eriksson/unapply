@@ -1,4 +1,4 @@
-import { ArrowRight, Briefcase, FileUp, ListChecks, MessagesSquare, PlayCircle, UserRound } from 'lucide-react'
+import { ArrowRight, Briefcase, FileUp, ListChecks, MessagesSquare, PlayCircle, UserRound, Users } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { DemoButton } from '@/components/DemoButton'
@@ -89,6 +89,11 @@ export function Home() {
               You edit and approve the rubric. Candidates never see it, so they can't
               tailor their profile to it.
             </p>
+            <p>
+              Then you get an anonymised shortlist: each candidate's score per
+              criterion with the quotes behind it, and a chart to compare them.
+              Reveal the ones you want, or ask them to apply.
+            </p>
           </CardContent>
           <CardFooter className="flex flex-wrap gap-2">
             <Button asChild>
@@ -102,6 +107,13 @@ export function Home() {
               variant="outline"
             >
               <PlayCircle aria-hidden /> Try the Fjord Grocery demo
+            </DemoButton>
+            <DemoButton
+              create={api.createShortlistDemo}
+              to={(name) => `/jobs/${name}/shortlist`}
+              variant="outline"
+            >
+              <Users aria-hidden /> Try the shortlist demo
             </DemoButton>
           </CardFooter>
         </Card>

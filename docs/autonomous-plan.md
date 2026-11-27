@@ -164,7 +164,7 @@ Mark a task done by changing `[ ]` to `[x]` in the same merge that finishes it.
 - Done when: both demos work end to end in the browser, checked with screenshots, and
   all checks pass.
 
-### 9. [ ] Employer views (M5)
+### 9. [x] Employer views (M5)
 
 - In the new frontend: an anonymised, ranked shortlist with per-criterion
   explanations and cited evidence; a spider chart comparing selected candidates on the

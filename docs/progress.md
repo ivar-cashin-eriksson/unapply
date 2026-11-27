@@ -209,6 +209,49 @@ branch, what was done, what was tested, anything to know.
   push and wasn't checked here); `npm run e2e` needs `npx playwright install
   chromium` once; the build warns that the bundle is over 500 kB (not split yet);
   there is no matching or ranking page yet, which is task 9.
+- 2026-11-27 · Task 9, Employer views (M5) · `feat/employer-views` · Added the
+  Shortlist step to the frontend (`frontend/src/pages/employer/Shortlist.tsx`, step 3
+  of a job, unlocked once the rubric is approved): candidates ranked and anonymised
+  (an alias from the profile id, such as "Candidate 3F2A"), the total as a bar, failed
+  and unknown hard filters, and behind "Why" each criterion's score, reason and cited
+  quotes, the hard filter outcomes and the roles; a scorer switch (baseline or LLM),
+  "Match candidates"/"Match again", and "Reveal" and "Request application", which
+  only record the intent. A spider chart (`frontend/src/components/SpiderChart.tsx`,
+  plain SVG, no chart library) compares up to three candidates on the rubric's skills:
+  estimated levels solid, own levels dashed, or both; fixed colour slots from a
+  palette checked for colour-blind readers, kept per candidate (and across scorers);
+  a legend, a hover tooltip and a table of every value. Backend:
+  `src/unapply/matching/shortlist.py` (the anonymised candidate: headline, roles and
+  quotes through `anonymise.redact`, and own and estimated level per rubric skill,
+  from a related skill through the taxonomy when the candidate lacks the skill
+  itself; `Intent`), `GET /jobs/<name>/shortlist` (the ranking, recorded in the audit
+  log like `/ranking`, plus the rubric version, skills, candidates, intents and
+  reveal quota), `GET`/`POST /jobs/<name>/intents` (recorded once per job,
+  candidate and kind; only candidates matched to the job; reveals limited to the
+  job's `reveal_quota`, 10), and `POST /demos/shortlist`, which stores the synthetic
+  pool (`evaluation.pool.store_pool`) with a Fjord Grocery job whose rubric is
+  approved. New table `intents` (migration `0004`, a database schema change; the
+  Pydantic schemas in `schemas/` are unchanged) and `Repository.record_intent`,
+  `intents` and `candidate_of`. Tested: 16 new pytest tests (273 in all): the alias,
+  rubric skills, levels direct and through a related skill, redaction of names,
+  emails, phones, links and file names, intents stored once, storing the pool
+  (twice, and a clashing name), the shortlist demo ranking exactly as `unapply
+  evaluate` does with both scorers, no pool candidate's name anywhere in the
+  shortlist, the audit entry, errors, refused model calls for pool candidates, the
+  reveal quota, and years of experience counted to the pool's date; 13 new Vitest
+  tests (76 in all) and a Playwright run of the shortlist demo (5 in all), with
+  screenshots `11-shortlist` to `14-shortlist-llm` in `docs/screenshots/` (the others
+  refreshed). All checks pass. Decisions to check (conservative, small): "Reveal"
+  shows no identity, only records the intent and counts against the quota, since
+  revealing needs payment and consent; the employer sees organisations and role
+  summaries (as the LLM scorer does), with names and contacts removed; pool
+  candidates are stored once as demo candidates named `pool-<name>`, are hidden from
+  `GET /candidates` and refuse model calls (409), and are matched by every job, so a
+  Fjord Grocery demo job ranks them too; a pool job stores its `today`
+  (2026-11-26) so years of experience don't drift; a demo job with a pool candidate
+  replays that candidate's recording with the LLM scorer. To know: no new stand-in
+  recordings (the pool's are already in `docs/to-record.md`); the build still warns
+  the bundle is over 500 kB.
 
 ## Questions for Ivar
 

@@ -1,12 +1,16 @@
 // Small synthetic API answers for the component tests, shaped like John Doe's demo
 // and the Fjord Grocery job. No real person's data.
 import type {
+  AnonymousCandidate,
   CandidateProfile,
   CandidateSummary,
   JobSummary,
   Questions,
+  RankedCandidate,
   ReviewForm,
   Rubric,
+  Shortlist,
+  SkillLevel,
 } from '@/lib/types'
 
 export function candidate(patch: Partial<CandidateSummary> = {}): CandidateSummary {
@@ -166,6 +170,85 @@ export function rubric(patch: Partial<Rubric> = {}): Rubric {
       },
     ],
     approved_at: null,
+    ...patch,
+  }
+}
+
+const SHORTLIST_SKILLS = ['python', 'sql', 'spark']
+
+function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): AnonymousCandidate {
+  return {
+    profile_id: id,
+    alias: `Candidate ${id.slice(0, 4).toUpperCase()}`,
+    headline: `Data scientist ${id}`,
+    experiences: [
+      { title: 'Data Scientist', organisation: 'Example Retail', start: '2019-03-01', end: null, summary: 'Forecasts demand.' },
+    ],
+    evidence: [{ id: `${id}-e1`, source: 'cv', quote: `Built forecasts in Python (${id})` }],
+    skills: SHORTLIST_SKILLS.map((skill, i) => ({
+      skill,
+      own_level: levels[i][0],
+      estimated_level: levels[i][1],
+      confidence: levels[i][1] === null ? null : 0.8,
+      via: skill === 'sql' && id === 'b0b0' ? 'dbt' : null,
+    })),
+  }
+}
+
+function ranked(id: string, rank: number, total: number, passed = true): RankedCandidate {
+  return {
+    rank,
+    total,
+    profile_id: id,
+    match_id: `match-${id}`,
+    passed_hard_filters: passed,
+    hard_filters: [
+      { name: 'location', outcome: 'pass', reason: 'Lives in Copenhagen.' },
+      passed
+        ? { name: 'work_permit', outcome: 'unknown', reason: "The profile doesn't say." }
+        : { name: 'work_permit', outcome: 'fail', reason: 'No permit to work in the EU.' },
+    ],
+    criterion_scores: passed
+      ? [
+          { criterion_id: 'c-python', score: total, rationale: `python: level used for ${id}.`, evidence_ids: [`${id}-e1`] },
+          { criterion_id: 'c-sql', score: 0.5, rationale: 'sql: some evidence.', evidence_ids: [] },
+          { criterion_id: 'c-spark', score: 0.25, rationale: 'spark: no evidence.', evidence_ids: [] },
+        ]
+      : [],
+    model: 'baseline-v1',
+    scored_at: '2026-11-27T10:00:00',
+    problems: [],
+  }
+}
+
+/** A shortlist of three: two ranked, one who fails a hard filter. */
+export function shortlist(patch: Partial<Shortlist> = {}): Shortlist {
+  return {
+    ranking: {
+      job: 'fjord-grocery',
+      rubric_version: 1,
+      scorer: 'baseline',
+      candidates: [ranked('a1a1', 1, 0.9), ranked('b0b0', 2, 0.6), ranked('c2c2', 3, 0, false)],
+    },
+    rubric: {
+      version: 1,
+      hard_filters: { locations: ['Copenhagen'], work_modes: [], required_work_permits: ['EU'], min_years_experience: null },
+      criteria: [
+        { id: 'c-python', kind: 'must_have', description: 'Strong Python', skill: 'python', min_level: 4, weight: 5, source_quote: null },
+        { id: 'c-sql', kind: 'must_have', description: 'SQL', skill: 'sql', min_level: null, weight: 3, source_quote: null },
+        { id: 'c-spark', kind: 'nice_to_have', description: 'Spark', skill: 'spark', min_level: null, weight: 1, source_quote: null },
+        { id: 'c-retail', kind: 'nice_to_have', description: 'Retail experience', skill: null, min_level: null, weight: 2, source_quote: null },
+      ],
+      approved_at: '2026-11-27T09:00:00',
+    },
+    skills: SHORTLIST_SKILLS,
+    candidates: [
+      person('a1a1', [[5, 4], [4, 4], [2, 1]]),
+      person('b0b0', [[4, 3], [3, 3], [null, null]]),
+      person('c2c2', [[3, 3], [3, 2], [3, 3]]),
+    ],
+    intents: [],
+    reveal_quota: 10,
     ...patch,
   }
 }

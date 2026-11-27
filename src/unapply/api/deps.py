@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import Depends, Query, Request
+from fastapi import Depends, HTTPException, Query, Request, status
 
 from unapply.app import demo
 from unapply.db.repository import Repository
@@ -118,7 +118,15 @@ class Context:
         APICallsDisabled
             If the call would be paid and isn't allowed. Raised before anything
             is done, so a refused request changes nothing.
+        HTTPException
+            409 for a candidate from the synthetic pool, whose profile is fixed.
         """
+        if settings.get("pool"):
+            # Pool candidates have recordings only for their finished journey.
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "This candidate is from the synthetic pool: their profile is fixed.",
+            )
         if settings.get("demo"):
             return demo.demo_llm(purpose, profile)
         if not may_call(settings, allow):

@@ -1,4 +1,6 @@
-"""SQLAlchemy tables for candidates, profiles, jobs, rubrics, matches and the audit log.
+"""SQLAlchemy tables: candidates, profiles, jobs, rubrics, matches, audit, intents.
+
+Intents are employers' reveals and application requests.
 
 The tables mirror the Pydantic schemas in `unapply.schemas`; `unapply.db.repository`
 converts between the two, so nothing else needs to know about the tables.
@@ -420,3 +422,21 @@ def _refuse_changes(
         Always: the audit log is append-only.
     """
     raise ValueError(f"audit log entry {target.id} can't be changed or deleted")
+
+
+class IntentRow(Base):
+    """An employer's request about a shortlisted candidate (`Intent`).
+
+    "reveal" or "request_application", recorded once per job and candidate: asking
+    again changes nothing. Like matches, `job_id` and `profile_id` are plain ids
+    rather than foreign keys, so the record outlives a profile that is replaced.
+    """
+
+    __tablename__ = "intents"
+    __table_args__ = (UniqueConstraint("job_id", "profile_id", "kind"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    job_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    profile_id: Mapped[UUID] = mapped_column(Uuid)
+    kind: Mapped[str] = mapped_column(String(32))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime)
