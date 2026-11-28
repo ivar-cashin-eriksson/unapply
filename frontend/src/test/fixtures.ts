@@ -491,7 +491,33 @@ export function candidateJobs(patch: Partial<CandidateJobs> = {}): CandidateJobs
         connected_at: '2026-11-27T10:00:00',
         stage: 'connected',
         fit: fit({ job: 'board-smoerblomst-dairy', band: 'good', connected: true }),
-        revealed_skills: { missing: ['kafka', 'dbt'], lower: ['sql'] },
+        groups: [
+          {
+            group: 'revealed',
+            skills: [
+              { skill: 'python', own_level: 4, median: 3 },
+              { skill: 'sql', own_level: 2, median: 4 },
+              { skill: 'kafka', own_level: null, median: 3.5 },
+              { skill: 'dbt', own_level: null, median: 3 },
+            ],
+            higher: ['python'],
+            rare: ['lightgbm'],
+            missing: ['kafka', 'dbt'],
+            lower: ['sql'],
+          },
+          {
+            group: 'requested',
+            skills: [
+              { skill: 'python', own_level: 4, median: 4 },
+              { skill: 'sql', own_level: 2, median: 4 },
+              { skill: 'kafka', own_level: null, median: 4 },
+            ],
+            higher: [],
+            rare: ['lightgbm', 'retail analytics'],
+            missing: ['kafka'],
+            lower: ['sql'],
+          },
+        ],
       },
       {
         job: 'board-fjord-grocery',
@@ -499,7 +525,7 @@ export function candidateJobs(patch: Partial<CandidateJobs> = {}): CandidateJobs
         connected_at: '2026-11-27T09:30:00',
         stage: 'requested',
         fit: fit({ connected: true }),
-        revealed_skills: null,
+        groups: [],
       },
       {
         job: 'board-lynfjord-power',
@@ -507,7 +533,7 @@ export function candidateJobs(patch: Partial<CandidateJobs> = {}): CandidateJobs
         connected_at: '2026-11-27T09:00:00',
         stage: 'connected',
         fit: null,
-        revealed_skills: null,
+        groups: [],
       },
     ],
     connected: 3,

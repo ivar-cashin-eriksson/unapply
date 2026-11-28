@@ -535,11 +535,30 @@ export interface Fit {
   place: Place | null
 }
 
-/** Skills common among the candidates a job revealed, which the candidate lacks: names only. */
-export interface RevealedSkills {
-  /** Common skills the profile doesn't list. */
+/** A group of the other candidates on a job, by how far they got; the groups overlap. */
+export type Group = 'revealed' | 'requested' | 'applied'
+
+/** One skill on a group's chart: the candidate's own level and the group's median. */
+export interface GroupSkill {
+  skill: string
+  /** Null where the candidate doesn't list it or gave no level. */
+  own_level: SkillLevel | null
+  /** The median of the group's own levels, 1 to 5, over at least `min_group` of them. */
+  median: number
+}
+
+/** The candidate next to one group of others on a job, in aggregate: own levels only. */
+export interface GroupComparison {
+  group: Group
+  /** The chart's skills: those the group lists most. */
+  skills: GroupSkill[]
+  /** Skills the candidate rated above the group's median. */
+  higher: string[]
+  /** Skills the candidate lists that few of the group do. */
+  rare: string[]
+  /** Skills common in the group that the profile doesn't list. */
   missing: string[]
-  /** Common skills the candidate rated lower than most of the revealed did. */
+  /** Common skills the candidate rated below the group's median. */
   lower: string[]
 }
 
@@ -551,8 +570,8 @@ export interface JobOutcome {
   connected_at: string
   stage: Stage
   fit: Fit | null
-  /** Only where they weren't revealed and at least `min_group` others were. */
-  revealed_skills: RevealedSkills | null
+  /** Each group of others with at least `min_group` of them, whatever the candidate's stage. */
+  groups: GroupComparison[]
 }
 
 /** The candidate's jobs and their success rate (`GET /candidates/<name>/jobs`). */

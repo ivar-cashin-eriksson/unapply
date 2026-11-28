@@ -5,22 +5,26 @@ revealed, asked to apply, applied or declined) and their fit (`unapply.jobs.fit`
 Over all of them, a **success rate**: the share of jobs where the employer revealed
 them, and where the employer asked them to apply.
 
-For a job where they weren't revealed, they also see **skills common among the
-candidates who were**, which they don't list or rated lower than most of them did.
-These come from the revealed candidates' own levels only (`candidate_view`, so
-nothing from the assessment), and are shown only when at least `MIN_GROUP` others
-were revealed. They name skills and nothing else: never a level, a count, a weight,
-a minimum level or a criterion, and never anything about one of the revealed. A
-level is compared only where at least `MIN_GROUP` of the revealed rated the skill.
+For each job they can also **compare themselves with groups** of the other
+candidates on it, whatever their own stage: those the employer revealed, those it
+asked to apply, and those who applied. A group is shown only when it has at least
+`MIN_GROUP` others, and only as aggregates: the median of the group's own levels in
+the skills it lists most, next to the candidate's own level (a spider chart), and
+the skills where the candidate stands out (rated higher than most of them, or lists
+what few of them do) or is behind (lacks a common skill, or rated it lower). A
+group's level in a skill is used only where at least `MIN_GROUP` of them rated it.
 
-Everything is worked out in plain code each time it is asked for; no model is
-called and nothing is stored.
+Everything comes from the candidates' own levels (`candidate_view`, so nothing from
+the assessment), names skills and never a criterion, weight or minimum level from a
+rubric, nor anything about one of the others. It is worked out in plain code each
+time it is asked for; no model is called and nothing is stored.
 """
 
 from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import datetime
+from enum import StrEnum
 from statistics import median
 from typing import TYPE_CHECKING
 
@@ -31,35 +35,93 @@ from unapply.dashboard import MIN_GROUP
 from unapply.jobs.board import Listing, connected, find_listing
 from unapply.jobs.fit import Fit, fit
 from unapply.jobs.hiring import Stage
-from unapply.schemas import Profile
+from unapply.schemas import Profile, SkillLevel
 from unapply.taxonomy import Taxonomy, default_taxonomy
 
 if TYPE_CHECKING:
     from unapply.db.repository import Repository
 
-# A skill is common among the revealed when at least this share of them list it.
+# A skill is common in a group when at least this share of them list it.
 COMMON_SHARE = 0.5
-# The most skills each list of tips names.
+# A skill is rare in a group when at most this share of them list it.
+RARE_SHARE = 0.2
+# The most skills each list names.
 MAX_TIPS = 5
+# The most skills a group's chart has, those the group lists most.
+MAX_AXES = 8
 
 # The stages at or past each step.
 REVEALED = {Stage.REVEALED, Stage.REQUESTED, Stage.APPLIED, Stage.DECLINED}
 REQUESTED = {Stage.REQUESTED, Stage.APPLIED, Stage.DECLINED}
 
 
-class RevealedSkills(BaseModel):
-    """Skills common among the candidates a job revealed, which the candidate lacks.
+class Group(StrEnum):
+    """A group of other candidates on a job, by how far they got.
+
+    The groups overlap: everyone asked to apply was revealed, and everyone who
+    applied was asked to.
+    """
+
+    REVEALED = "revealed"
+    REQUESTED = "requested"
+    APPLIED = "applied"
+
+
+# The stages each group takes in.
+GROUP_STAGES = {
+    Group.REVEALED: REVEALED,
+    Group.REQUESTED: REQUESTED,
+    Group.APPLIED: {Stage.APPLIED},
+}
+
+
+class GroupSkill(BaseModel):
+    """One skill on a group's chart: the candidate's own level and the group's.
 
     Parameters
     ----------
-    missing : list of str
-        Common skills the candidate's profile doesn't list, and that don't follow
-        from its skills in the taxonomy; most common first.
-    lower : list of str
-        Common skills the candidate rated lower than most of the revealed who rated
-        it did; most common first.
+    skill : str
+        Canonical name.
+    own_level : SkillLevel or None
+        The candidate's own level; None when they don't list it or gave none.
+    median : float
+        The median of the group's own levels in it, from 1 to 5, over at least
+        `MIN_GROUP` of them.
     """
 
+    skill: str
+    own_level: SkillLevel | None = None
+    median: float
+
+
+class GroupComparison(BaseModel):
+    """The candidate next to one group of the others on a job, in aggregate.
+
+    Parameters
+    ----------
+    group : Group
+        Which group.
+    skills : list of GroupSkill
+        The chart: up to `MAX_AXES` of the skills the group lists most that at
+        least `MIN_GROUP` of them rated; most listed first.
+    higher : list of str
+        Skills the candidate rated above the group's median; furthest above first.
+    rare : list of str
+        Skills the candidate lists that at most `RARE_SHARE` of the group list;
+        highest own level first.
+    missing : list of str
+        Skills at least `COMMON_SHARE` of the group list that the candidate's
+        profile doesn't, and that don't follow from its skills in the taxonomy;
+        most common first.
+    lower : list of str
+        Common skills the candidate rated below the group's median; most common
+        first.
+    """
+
+    group: Group
+    skills: list[GroupSkill] = Field(default_factory=list)
+    higher: list[str] = Field(default_factory=list)
+    rare: list[str] = Field(default_factory=list)
     missing: list[str] = Field(default_factory=list)
     lower: list[str] = Field(default_factory=list)
 
@@ -80,10 +142,9 @@ class JobOutcome(BaseModel):
         How far they got.
     fit : Fit or None
         Their fit, while the job is on the board.
-    revealed_skills : RevealedSkills or None
-        For a job where they weren't revealed, the skills common among those who
-        were; None when they were revealed, or when fewer than `MIN_GROUP` others
-        were.
+    groups : list of GroupComparison
+        The candidate next to each group of others on the job that has at least
+        `MIN_GROUP` of them, in `Group` order; empty when none has.
     """
 
     job: str
@@ -91,7 +152,7 @@ class JobOutcome(BaseModel):
     connected_at: datetime
     stage: Stage
     fit: Fit | None = None
-    revealed_skills: RevealedSkills | None = None
+    groups: list[GroupComparison] = Field(default_factory=list)
 
 
 class CandidateJobs(BaseModel):
@@ -116,7 +177,7 @@ class CandidateJobs(BaseModel):
     requested_rate : float or None
         `requested` out of `connected`, from 0 to 1; None with no connections.
     min_group : int
-        The fewest other revealed candidates skills are suggested from.
+        The fewest others a group is shown with.
     """
 
     candidate: str
@@ -149,8 +210,10 @@ def connected_jobs(repo: Repository, candidate: str) -> list[str]:
     return [job for job in repo.job_names() if candidate in connected(repo, job)]
 
 
-def revealed_profiles(repo: Repository, job: str, candidate: str) -> list[Profile]:
-    """Find the profiles of the other candidates a job revealed.
+def group_profiles(
+    repo: Repository, job: str, candidate: str
+) -> dict[Group, list[Profile]]:
+    """Find the profiles of the other candidates on a job, by group.
 
     Parameters
     ----------
@@ -159,80 +222,99 @@ def revealed_profiles(repo: Repository, job: str, candidate: str) -> list[Profil
     job : str
         The job.
     candidate : str
-        The candidate asking, who is left out.
+        The candidate asking, who is left out of every group.
 
     Returns
     -------
-    list of Profile
-        Their current profiles as candidates see them (without the assessment).
-        Copies of the John Doe demo never count: they are John again.
+    dict of Group to list of Profile
+        Every group, empty or not, with their current profiles as candidates see
+        them (without the assessment). Copies of the John Doe demo never count:
+        they are John again.
 
     Raises
     ------
     NotFound
         If there is no such job.
     """
-    found = []
+    found: dict[Group, list[Profile]] = {g: [] for g in Group}
     for p in repo.progresses(job=job):
-        if p.revealed_at is None or p.candidate == candidate:
+        if p.candidate == candidate or not any(
+            p.stage in stages for stages in GROUP_STAGES.values()
+        ):
             continue
         settings = repo.settings(p.candidate)
         if settings.get("demo") and not settings.get("pool"):
             continue
-        if (profile := repo.profile(p.candidate)) is not None:
-            found.append(candidate_view(profile))
+        if (profile := repo.profile(p.candidate)) is None:
+            continue
+        shown = candidate_view(profile)
+        for group, stages in GROUP_STAGES.items():
+            if p.stage in stages:
+                found[group].append(shown)
     return found
 
 
-def revealed_skills(
-    profile: Profile, revealed: list[Profile], taxonomy: Taxonomy
-) -> RevealedSkills | None:
-    """Find the skills common among revealed candidates that a profile lacks.
+def compare_group(
+    profile: Profile, group: Group, others: list[Profile], taxonomy: Taxonomy
+) -> GroupComparison | None:
+    """Compare a candidate's own levels with a group of others'.
 
     Parameters
     ----------
     profile : Profile
         The candidate's profile; only skill names and own levels are used.
-    revealed : list of Profile
-        The other candidates the job revealed; only their skill names and own
-        levels are used.
+    group : Group
+        Which group `others` is.
+    others : list of Profile
+        The group; only their skill names and own levels are used.
     taxonomy : Taxonomy
         To canonicalise names, and for the skills that follow from the candidate's.
 
     Returns
     -------
-    RevealedSkills or None
-        None for fewer than `MIN_GROUP` revealed. A skill is common when at least
-        `COMMON_SHARE` of them list it. It is lower when the candidate's own level
-        is below the median of the revealed who rated it, and at least
-        `MIN_GROUP` of them did.
+    GroupComparison or None
+        None for fewer than `MIN_GROUP` others. A group's median in a skill is
+        used only where at least `MIN_GROUP` of them rated it.
     """
-    if len(revealed) < MIN_GROUP:
+    if len(others) < MIN_GROUP:
         return None
     listed: Counter[str] = Counter()
     levels: dict[str, list[int]] = defaultdict(list)
-    for other in revealed:
+    for other in others:
         skills = {taxonomy.canonical(s.name): s.self_level for s in other.skills}
         listed.update(skills.keys())
         for skill, level in skills.items():
             if level is not None:
                 levels[skill].append(int(level))
-    common = sorted(
-        (s for s, n in listed.items() if n >= COMMON_SHARE * len(revealed)),
-        key=lambda s: (-listed[s], s),
-    )
+    medians = {s: float(median(v)) for s, v in levels.items() if len(v) >= MIN_GROUP}
+    by_listed = sorted(listed, key=lambda s: (-listed[s], s))
+    common = [s for s in by_listed if listed[s] >= COMMON_SHARE * len(others)]
 
     own = {taxonomy.canonical(s.name): s.self_level for s in profile.skills}
+    rated = {s: int(v) for s, v in own.items() if v is not None}
     implied = set().union(*(taxonomy.implied(s) for s in own)) if own else set()
-    missing = [s for s in common if s not in own and s not in implied]
-    lower = [
-        s
-        for s in common
-        if own.get(s) is not None
-        and len(levels[s]) >= MIN_GROUP
-        and int(own[s]) < median(levels[s])  # type: ignore[arg-type]
-    ]
-    return RevealedSkills(missing=missing[:MAX_TIPS], lower=lower[:MAX_TIPS])
+
+    axes = [s for s in by_listed if s in medians][:MAX_AXES]
+    higher = sorted(
+        (s for s in rated if s in medians and rated[s] > medians[s]),
+        key=lambda s: (medians[s] - rated[s], s),
+    )
+    rare = sorted(
+        (s for s in own if listed[s] <= RARE_SHARE * len(others)),
+        key=lambda s: (-rated.get(s, 0), listed[s], s),
+    )
+    return GroupComparison(
+        group=group,
+        skills=[
+            GroupSkill(skill=s, own_level=own.get(s), median=medians[s]) for s in axes
+        ],
+        higher=higher[:MAX_TIPS],
+        rare=rare[:MAX_TIPS],
+        missing=[s for s in common if s not in own and s not in implied][:MAX_TIPS],
+        lower=[
+            s for s in common if s in rated and s in medians and rated[s] < medians[s]
+        ][:MAX_TIPS],
+    )
 
 
 def candidate_jobs(
@@ -279,11 +361,11 @@ def candidate_jobs(
                 if listing
                 else (posted.created_at if posted else datetime.now())
             )
-        tips = None
-        if stage not in REVEALED and profile is not None:
-            tips = revealed_skills(
-                profile, revealed_profiles(repo, job, candidate), taxonomy
-            )
+        groups = []
+        if profile is not None:
+            for group, others in group_profiles(repo, job, candidate).items():
+                if found := compare_group(profile, group, others, taxonomy):
+                    groups.append(found)
         jobs.append(
             JobOutcome(
                 job=job,
@@ -291,7 +373,7 @@ def candidate_jobs(
                 connected_at=connected_at,
                 stage=stage,
                 fit=fit(repo, candidate, job),
-                revealed_skills=tips,
+                groups=groups,
             )
         )
     jobs.sort(key=lambda j: (-j.connected_at.timestamp(), j.job))

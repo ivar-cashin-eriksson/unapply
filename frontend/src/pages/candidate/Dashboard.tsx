@@ -1,7 +1,9 @@
-import { Briefcase, FileUp, Lightbulb, Sprout, Users } from 'lucide-react'
-import { Link } from 'react-router'
+import { type ReactNode, useId, useState } from 'react'
+import { ArrowDown, ArrowUp, Briefcase, FileUp, Lightbulb, Sprout, Users } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router'
 
 import { FitBadge } from '@/components/FitBadge'
+import { GroupSpider } from '@/components/GroupSpider'
 import { LevelChip } from '@/components/LevelChips'
 import { LevelDistribution } from '@/components/LevelDistribution'
 import { StageBadge } from '@/components/StageBadge'
@@ -9,9 +11,19 @@ import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { api } from '@/lib/api'
 import { categoryLabel } from '@/lib/format'
-import type { CandidateJobs, Dashboard as DashboardData, DashboardSkill, JobOutcome } from '@/lib/types'
+import type {
+  CandidateJobs,
+  Dashboard as DashboardData,
+  DashboardSkill,
+  Group,
+  GroupComparison,
+  JobOutcome,
+} from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { TRANSPARENCY, useCandidate } from '@/pages/candidate/context'
 
@@ -36,24 +48,66 @@ export function Dashboard() {
   return <DashboardPage />
 }
 
+/** The dashboard's sheets, kept in the address as `?sheet=` so they can be linked. */
+const SHEETS = ['profile', 'jobs', 'compare'] as const
+type Sheet = (typeof SHEETS)[number]
+
 function DashboardPage() {
   const { name, summary } = useCandidate()
-  const loaded = useResource(() => api.dashboard(name), `${name}:${summary.history.length}`)
+  const key = `${name}:${summary.history.length}`
+  const loaded = useResource(() => api.dashboard(name), key)
+  const jobs = useResource(() => api.candidateJobs(name), key)
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('sheet') as Sheet | null
+  const sheet: Sheet = asked && SHEETS.includes(asked) ? asked : 'profile'
+  const open = (next: Sheet, job?: string) => {
+    const p = new URLSearchParams(params)
+    p.set('sheet', next)
+    if (job) p.set('job', job)
+    else if (next !== 'compare') p.delete('job')
+    setParams(p, { replace: true })
+  }
+  const jobsOr = (view: (data: CandidateJobs) => ReactNode) =>
+    jobs.data ? (
+      view(jobs.data)
+    ) : jobs.error ? (
+      <ErrorAlert error={jobs.error} title="Couldn't load your jobs" />
+    ) : (
+      <Loading label="Loading your jobs" />
+    )
   return (
     <div className="space-y-8">
       <PageHeader title="Your dashboard">
         Your skills by area with your own levels and how often your material mentions each, how your levels compare
-        with other candidates&apos; own levels, skills worth developing, and how far you got on the jobs you connected
-        to.
+        with other candidates&apos; own levels, how far you got on the jobs you connected to, and how you compare with
+        the others on each job.
       </PageHeader>
-      {loaded.data ? (
-        <DashboardView data={loaded.data} />
-      ) : loaded.error ? (
-        <ErrorAlert error={loaded.error} title="Couldn't load your dashboard" />
-      ) : (
-        <Loading label="Loading your dashboard" />
-      )}
-      <YourJobs />
+      <Tabs value={sheet} onValueChange={(v) => open(v as Sheet)}>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="profile">Your profile</TabsTrigger>
+          <TabsTrigger value="jobs">Your jobs</TabsTrigger>
+          <TabsTrigger value="compare">Compared on jobs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile" className="space-y-8 pt-4">
+          {loaded.data ? (
+            <DashboardView data={loaded.data} />
+          ) : loaded.error ? (
+            <ErrorAlert error={loaded.error} title="Couldn't load your dashboard" />
+          ) : (
+            <Loading label="Loading your dashboard" />
+          )}
+        </TabsContent>
+        <TabsContent value="jobs" className="space-y-4 pt-4">
+          {jobsOr((data) => (
+            <JobsView data={data} onCompare={(job) => open('compare', job)} />
+          ))}
+        </TabsContent>
+        <TabsContent value="compare" className="space-y-6 pt-4">
+          {jobsOr((data) => (
+            <CompareView data={data} job={params.get('job')} onJob={(job) => open('compare', job)} />
+          ))}
+        </TabsContent>
+      </Tabs>
       <p className="text-sm text-muted-foreground">{TRANSPARENCY}</p>
     </div>
   )
@@ -197,40 +251,8 @@ function Tips({ data }: { data: DashboardData }) {
 }
 
 /** The jobs the candidate connected to, how far they got, and their success rate. */
-function YourJobs() {
-  const { name, summary } = useCandidate()
-  const loaded = useResource(() => api.candidateJobs(name), `${name}:${summary.history.length}`)
-  return (
-    <section aria-labelledby="your-jobs-title" className="space-y-4">
-      <h2 id="your-jobs-title" className="text-lg font-semibold">
-        Your jobs
-      </h2>
-      {loaded.data ? (
-        <JobsView data={loaded.data} />
-      ) : loaded.error ? (
-        <ErrorAlert error={loaded.error} title="Couldn't load your jobs" />
-      ) : (
-        <Loading label="Loading your jobs" />
-      )}
-    </section>
-  )
-}
-
-function JobsView({ data }: { data: CandidateJobs }) {
-  if (!data.jobs.length) {
-    return (
-      <p className="flex items-start gap-2 text-sm text-muted-foreground">
-        <Briefcase className="mt-0.5 size-4 shrink-0" aria-hidden />
-        <span>
-          You haven&apos;t connected to a job yet. Find one on the{' '}
-          <Link to="../jobs" className="underline">
-            job board
-          </Link>
-          .
-        </span>
-      </p>
-    )
-  }
+function JobsView({ data, onCompare }: { data: CandidateJobs; onCompare: (job: string) => void }) {
+  if (!data.jobs.length) return <NoJobs />
   return (
     <>
       <dl aria-label="Your success rate" className="grid gap-4 sm:grid-cols-3">
@@ -244,50 +266,177 @@ function JobsView({ data }: { data: CandidateJobs }) {
       </dl>
       <ul aria-label="Jobs you connected to" className="space-y-3">
         {data.jobs.map((j) => (
-          <JobRow key={j.job} outcome={j} min={data.min_group} />
+          <JobRow key={j.job} outcome={j} onCompare={() => onCompare(j.job)} />
         ))}
       </ul>
     </>
   )
 }
 
-function JobRow({ outcome: j, min }: { outcome: JobOutcome; min: number }) {
-  const tips = j.revealed_skills
+function NoJobs() {
   return (
-    <li className="space-y-3 rounded-xl border bg-card p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-medium">
-            <Link to={`../jobs/${encodeURIComponent(j.job)}`} className="hover:underline">
-              {j.listing?.title ?? j.job}
-            </Link>
-          </p>
-          <p className="text-sm text-muted-foreground">{j.listing?.company ?? 'No longer on the board'}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {j.fit?.band && <FitBadge band={j.fit.band} />}
-          <StageBadge stage={j.stage} />
-        </div>
+    <p className="flex items-start gap-2 text-sm text-muted-foreground">
+      <Briefcase className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span>
+        You haven&apos;t connected to a job yet. Find one on the{' '}
+        <Link to="../jobs" className="underline">
+          job board
+        </Link>
+        .
+      </span>
+    </p>
+  )
+}
+
+function JobRow({ outcome: j, onCompare }: { outcome: JobOutcome; onCompare: () => void }) {
+  const title = j.listing?.title ?? j.job
+  return (
+    <li className="flex flex-wrap items-start justify-between gap-2 rounded-xl border bg-card p-4">
+      <div className="min-w-0">
+        <p className="font-medium">
+          <Link to={`../jobs/${encodeURIComponent(j.job)}`} className="hover:underline">
+            {title}
+          </Link>
+        </p>
+        <p className="text-sm text-muted-foreground">{j.listing?.company ?? 'No longer on the board'}</p>
       </div>
-      {tips ? (
-        <div role="group" aria-label={`Common among those revealed: ${j.listing?.title ?? j.job}`} className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Skills common among the candidates this job revealed, from their own levels:
-          </p>
-          <SkillList label="Not in your profile" skills={tips.missing} />
-          <SkillList label="You rated lower than most of them" skills={tips.lower} />
-          {!tips.missing.length && !tips.lower.length && (
-            <p className="text-sm text-muted-foreground">None: you list them all, at their levels or higher.</p>
-          )}
-        </div>
-      ) : (
-        j.stage === 'connected' && (
-          <p className="text-xs text-muted-foreground">
-            Skills common among the candidates revealed show once at least {min} others are revealed.
-          </p>
-        )
-      )}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {j.fit?.band && <FitBadge band={j.fit.band} />}
+        <StageBadge stage={j.stage} />
+        {j.groups.length > 0 && (
+          <Button variant="outline" size="sm" onClick={onCompare} aria-label={`Compare with others: ${title}`}>
+            Compare with others
+          </Button>
+        )}
+      </div>
     </li>
+  )
+}
+
+/** What each group of others on a job is called, and how a sentence names them. */
+const GROUPS: { value: Group; label: string; them: string }[] = [
+  { value: 'revealed', label: 'Revealed', them: 'those the employer revealed' },
+  { value: 'requested', label: 'Asked to apply', them: 'those the employer asked to apply' },
+  { value: 'applied', label: 'Applied', them: 'those who applied' },
+]
+
+/** The candidate next to the groups of others on one job at a time. */
+function CompareView({ data, job, onJob }: { data: CandidateJobs; job: string | null; onJob: (job: string) => void }) {
+  const id = useId()
+  const [picked, setPicked] = useState<Group>('revealed')
+  if (!data.jobs.length) return <NoJobs />
+  const comparable = data.jobs.filter((j) => j.groups.length)
+  const rule = `A group shows once at least ${data.min_group} others on the job are in it, so no one can be singled out.`
+  if (!comparable.length) {
+    return (
+      <p role="note" className="flex items-start gap-2 text-sm text-muted-foreground">
+        <Users className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <span>
+          Nothing to compare yet. Here you&apos;ll see yourself next to the other candidates a job revealed, asked to
+          apply, or who applied, whatever your own stage. {rule}
+        </span>
+      </p>
+    )
+  }
+  const current = comparable.find((j) => j.job === job) ?? comparable[0]
+  const group = current.groups.find((g) => g.group === picked) ?? current.groups[0]
+  const names = GROUPS.find((g) => g.value === group.group)!
+  return (
+    <>
+      <p className="text-sm text-muted-foreground">
+        You next to the other candidates on a job, whatever your own stage, from everyone&apos;s own levels. {rule}
+      </p>
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="min-w-64 space-y-1.5">
+          <Label htmlFor={id}>Job</Label>
+          <select
+            id={id}
+            value={current.job}
+            onChange={(e) => onJob(e.target.value)}
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {comparable.map((j) => (
+              <option key={j.job} value={j.job}>
+                {j.listing ? `${j.listing.title} · ${j.listing.company}` : j.job}
+              </option>
+            ))}
+          </select>
+        </div>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          spacing={1}
+          aria-label="Compare with"
+          value={group.group}
+          onValueChange={(v) => v && setPicked(v as Group)}
+        >
+          {GROUPS.map((g) => {
+            const there = current.groups.some((x) => x.group === g.value)
+            return (
+              <ToggleGroupItem
+                key={g.value}
+                value={g.value}
+                disabled={!there}
+                title={there ? undefined : `Fewer than ${data.min_group} others`}
+                className="rounded-full px-3"
+              >
+                {g.label}
+              </ToggleGroupItem>
+            )
+          })}
+        </ToggleGroup>
+      </div>
+      <GroupView group={group} label={names.label} them={names.them} />
+    </>
+  )
+}
+
+function GroupView({ group: g, label, them }: { group: GroupComparison; label: string; them: string }) {
+  return (
+    <div role="group" aria-label={`Compared with: ${label}`} className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowUp className="size-4 text-primary" aria-hidden /> Where you stand out
+            </CardTitle>
+            <CardDescription>Compared with {them}.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <SkillList label="You rated higher than most of them" skills={g.higher} />
+            <SkillList label="You list, few of them do" skills={g.rare} />
+            {!g.higher.length && !g.rare.length && (
+              <p className="text-sm text-muted-foreground">
+                Nothing yet: most of them list your skills, at your levels or higher.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowDown className="size-4 text-primary" aria-hidden /> Where they&apos;re ahead
+            </CardTitle>
+            <CardDescription>Skills common among {them}.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <SkillList label="Not in your profile" skills={g.missing} />
+            <SkillList label="You rated lower than most of them" skills={g.lower} />
+            {!g.missing.length && !g.lower.length && (
+              <p className="text-sm text-muted-foreground">None: you list them all, at their levels or higher.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      <section aria-labelledby={`${g.group}-chart`} className="space-y-2">
+        <h3 id={`${g.group}-chart`} className="text-sm font-medium">
+          Your levels next to theirs
+        </h3>
+        <p className="text-xs text-muted-foreground">The skills they list most, where enough of them gave a level.</p>
+        <GroupSpider skills={g.skills} label={label} />
+      </section>
+    </div>
   )
 }
 

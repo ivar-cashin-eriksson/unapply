@@ -146,10 +146,10 @@ def list_connections(name: str, ctx: Ctx) -> list[Connection]:
 def list_candidate_jobs(name: str, ctx: Ctx) -> CandidateJobs:
     """List the jobs a candidate is connected to, how far they got, and the rate.
 
-    Each job has its stage and the candidate's fit. Where they weren't revealed, it
-    names the skills common among the candidates who were that they don't list or
-    rated lower, from own levels only, once at least five others were revealed.
-    Never a level, weight, criterion or anything about one other candidate.
+    Each job has its stage, the candidate's fit, and how they compare with the
+    others it revealed, asked to apply, or who applied, whatever their own stage:
+    from own levels only, and only for a group of at least five others. Never a
+    weight, criterion or anything about one other candidate.
     """
     return candidate_jobs(ctx.repo, name)
 

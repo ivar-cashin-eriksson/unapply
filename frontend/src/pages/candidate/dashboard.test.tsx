@@ -8,13 +8,13 @@ import { renderApp } from '@/test/render'
 // The assessment and the rubric: neither is ever shown on a candidate page.
 const HIDDEN_FROM_CANDIDATES = /estimat|confidence|claim support|overclaim|rubric|criteri|weight|min.?level/i
 
-function open(data = dashboard(), jobs = candidateJobs()) {
+function open(data = dashboard(), jobs = candidateJobs(), sheet = '') {
   vi.spyOn(api, 'candidate').mockResolvedValue(
     candidate({ has_profile: true, approved: true, history: ['extracted', 'reviewed'] }),
   )
   const get = vi.spyOn(api, 'dashboard').mockResolvedValue(data)
   const getJobs = vi.spyOn(api, 'candidateJobs').mockResolvedValue(jobs)
-  const rendered = renderApp('/candidates/john-doe/dashboard')
+  const rendered = renderApp(`/candidates/john-doe/dashboard${sheet && `?sheet=${sheet}`}`)
   return { get, getJobs, ...rendered }
 }
 
@@ -85,12 +85,23 @@ describe('the dashboard', () => {
   })
 })
 
+describe('the sheets of the dashboard', () => {
+  it('opens on the profile and switches sheets', async () => {
+    open()
+    expect(await screen.findByRole('list', { name: 'Technology' })).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Jobs you connected to' })).toBeNull()
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Your jobs' }))
+    expect(await screen.findByRole('list', { name: 'Jobs you connected to' })).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Technology' })).toBeNull()
+  })
+})
+
 describe('your jobs on the dashboard', () => {
   it('shows each job with its stage and fit, and the success rate', async () => {
-    const { getJobs } = open()
+    const { getJobs } = open(dashboard(), candidateJobs(), 'jobs')
     const jobs = await screen.findByRole('list', { name: 'Jobs you connected to' })
     expect(getJobs).toHaveBeenCalledWith('john-doe')
-    const rows = within(jobs).getAllByRole('listitem').filter((li) => li.parentElement === jobs)
+    const rows = within(jobs).getAllByRole('listitem')
     expect(rows).toHaveLength(3)
     expect(rows[0]).toHaveTextContent('Smørblomst Mejeri')
     expect(rows[0]).toHaveTextContent('Good fit')
@@ -106,30 +117,74 @@ describe('your jobs on the dashboard', () => {
     expect(rate).toHaveTextContent('Connected3jobs')
     expect(rate).toHaveTextContent('Revealed33%1 of 3')
     expect(rate).toHaveTextContent('Asked to apply33%1 of 3')
-  })
-
-  it('names the skills common among those revealed, where they were not', async () => {
-    open()
-    const group = await screen.findByRole('group', { name: /Common among those revealed: Junior Data Scientist/ })
-    expect(within(group).getByRole('list', { name: 'Not in your profile' })).toHaveTextContent('kafkadbt')
-    expect(within(group).getByRole('list', { name: 'You rated lower than most of them' })).toHaveTextContent('sql')
-    // Too few revealed: only a note, and nothing for a job where they were revealed.
-    expect(screen.getAllByText(/show once at least 5 others are revealed/)).toHaveLength(1)
-    expect(screen.getAllByRole('group', { name: /Common among those revealed/ })).toHaveLength(1)
+    // Only a job with a group to compare with links to the comparison.
+    expect(screen.getAllByRole('button', { name: /Compare with others/ })).toHaveLength(1)
   })
 
   it('points to the board before any connection', async () => {
     open(
       dashboard(),
       candidateJobs({ jobs: [], connected: 0, revealed: 0, requested: 0, revealed_rate: null, requested_rate: null }),
+      'jobs',
     )
     expect(await screen.findByText(/You haven't connected to a job yet/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'job board' })).toHaveAttribute('href', '/candidates/john-doe/jobs')
     expect(screen.queryByLabelText('Your success rate')).toBeNull()
   })
+})
 
-  it('never shows a level, weight or other assessment word in the jobs', async () => {
-    open()
+describe('compared on jobs', () => {
+  it('opens the comparison for a job from its row', async () => {
+    open(dashboard(), candidateJobs(), 'jobs')
+    fireEvent.click(await screen.findByRole('button', { name: 'Compare with others: Junior Data Scientist' }))
+    expect(await screen.findByRole('group', { name: 'Compared with: Revealed' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Job')).toHaveValue('board-smoerblomst-dairy')
+  })
+
+  it('shows where the candidate stands out and where the others are ahead', async () => {
+    open(dashboard(), candidateJobs(), 'compare')
+    const group = await screen.findByRole('group', { name: 'Compared with: Revealed' })
+    expect(within(group).getByRole('list', { name: 'You rated higher than most of them' })).toHaveTextContent('python')
+    expect(within(group).getByRole('list', { name: 'You list, few of them do' })).toHaveTextContent('lightgbm')
+    expect(within(group).getByRole('list', { name: 'Not in your profile' })).toHaveTextContent('kafkadbt')
+    expect(within(group).getByRole('list', { name: 'You rated lower than most of them' })).toHaveTextContent('sql')
+  })
+
+  it('draws a spider chart of own levels against the group median, with a table', async () => {
+    open(dashboard(), candidateJobs(), 'compare')
+    expect(await screen.findByRole('img', { name: /Your own levels and the median of revealed in 4 skills/ })).toBeVisible()
+    expect(screen.getByTestId('shape-you')).toBeInTheDocument()
+    expect(screen.getByTestId('shape-group')).toBeInTheDocument()
+    const rows = within(screen.getByRole('table')).getAllByRole('row')
+    expect(rows[1]).toHaveTextContent('python43')
+    expect(rows[3]).toHaveTextContent('kafka–3.5')
+  })
+
+  it('switches between the groups there are enough of', async () => {
+    open(dashboard(), candidateJobs(), 'compare')
+    await screen.findByRole('group', { name: 'Compared with: Revealed' })
+    const groups = screen.getByLabelText('Compare with')
+    expect(within(groups).getByRole('radio', { name: 'Applied' })).toBeDisabled()
+    fireEvent.click(within(groups).getByRole('radio', { name: 'Asked to apply' }))
+    const group = await screen.findByRole('group', { name: 'Compared with: Asked to apply' })
+    expect(within(group).queryByRole('list', { name: 'You rated higher than most of them' })).toBeNull()
+    expect(within(group).getByRole('list', { name: 'You list, few of them do' })).toHaveTextContent(
+      'lightgbmretail analytics',
+    )
+  })
+
+  it('explains the group-size rule when there is nothing to compare', async () => {
+    const jobs = candidateJobs()
+    open(dashboard(), { ...jobs, jobs: jobs.jobs.map((j) => ({ ...j, groups: [] })) }, 'compare')
+    expect(await screen.findByText(/Nothing to compare yet/)).toHaveTextContent('at least 5 others')
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('never shows an assessment word or anything from a rubric', async () => {
+    open(dashboard(), candidateJobs(), 'compare')
+    await screen.findByRole('group', { name: 'Compared with: Revealed' })
+    expect(document.body.textContent).not.toMatch(HIDDEN_FROM_CANDIDATES)
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Your jobs' }))
     await screen.findByRole('list', { name: 'Jobs you connected to' })
     expect(document.body.textContent).not.toMatch(HIDDEN_FROM_CANDIDATES)
   })
