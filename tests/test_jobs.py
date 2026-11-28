@@ -155,6 +155,21 @@ def test_edits_add_remove_and_raise_the_version():
     assert r.hard_filters.min_years_experience == 5
 
 
+def test_country_codes_and_plain_words_stay_text():
+    # YAML 1.1 reads NO (Norway) as false; the sheet reads only true/false as booleans.
+    job = _job()
+    sheet = export_rubric_sheet(job).replace(
+        "required_work_permits: []", "required_work_permits: [NO, SE, yes]"
+    )
+    sheet = sheet.replace("approve: false", "approve: True")
+    edited = apply_rubric_sheet(job, sheet)
+    assert edited.rubric.hard_filters.required_work_permits == ["NO", "SE", "yes"]
+    assert edited.rubric.approved_at is not None  # `True` is still a boolean.
+    # In a boolean field, the sheet's model still reads `no` as false.
+    sheet = export_rubric_sheet(job).replace("approve: false", "approve: no")
+    assert apply_rubric_sheet(job, sheet).rubric.approved_at is None
+
+
 @pytest.mark.parametrize(
     ("change", "message"),
     [

@@ -103,6 +103,22 @@ def test_levels_removals_corrections_additions_and_approval(profile):
     assert "Danish (fluent)" not in [e.quote for e in reviewed.evidence]
 
 
+def test_plain_words_stay_text(profile):
+    # YAML 1.1 reads yes/no/on as booleans; the sheet reads only true/false as them.
+    sheet = export_review_sheet(profile)
+    sheet = sheet.replace(
+        'summary: "Pipelines with \\"quotes\\": and colons"', "summary: yes"
+    ).replace("approve: false", "approve: TRUE")
+    sheet += "- name: Matlab\n  category: technology\n  note: on\n"
+    reviewed = apply_review_sheet(profile, sheet)
+    assert reviewed.experiences[0].summary == "yes"
+    assert reviewed.approved_by_candidate_at is not None
+    [note] = [
+        e for e in reviewed.evidence if e.id in reviewed.skill("matlab").evidence_ids
+    ]
+    assert note.quote == "on"
+
+
 def test_deleting_a_row_removes_the_item(profile):
     def change(d):
         d["skills"] = [s for s in d["skills"] if s["name"] != "danish"]

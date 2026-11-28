@@ -28,6 +28,7 @@ from unapply.schemas import (
     Source,
     SourceKind,
 )
+from unapply.sheet_yaml import load_sheet
 from unapply.taxonomy import canonical_skill, normalise_skill_name
 
 LEVELS = "1 aware, 2 basic, 3 working, 4 advanced, 5 expert"
@@ -307,7 +308,7 @@ def _merged(skills: list[Skill]) -> list[Skill]:
 
 def _parse(sheet_text: str) -> _Sheet:
     try:
-        data: Any = yaml.safe_load(sheet_text)
+        data: Any = load_sheet(sheet_text)
     except yaml.YAMLError as e:
         raise ReviewError(f"the sheet isn't valid YAML: {e}") from e
     if not isinstance(data, dict):
