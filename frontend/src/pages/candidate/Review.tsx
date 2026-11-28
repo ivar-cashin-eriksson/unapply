@@ -1,4 +1,4 @@
-import { BadgeCheck, FileUp, Plus, Search, Trash2, Wand2 } from 'lucide-react'
+import { BadgeCheck, ChevronRight, FileUp, Plus, Search, Trash2, Wand2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { categoryBorder } from '@/lib/categoryColour'
 import { byKind, EXPERIENCE_KINDS } from '@/lib/experienceKind'
 import { api, describeError } from '@/lib/api'
-import { CATEGORIES, LEVELS } from '@/lib/format'
+import { CATEGORIES, categoryLabel, LEVELS } from '@/lib/format'
 import type { ExperienceEdit, NewSkill, ReviewForm, SkillCategory, SkillEdit } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
@@ -163,14 +163,31 @@ function ReviewEditor({ initial }: { initial: ReviewForm }) {
   )
 }
 
+/** The categories in the app's fixed order, with "Other" (no category) last. */
+const SKILL_GROUPS: (SkillCategory | null)[] = [...CATEGORIES.map((c) => c.value), null]
+
 function Skills({ skills, onChange }: { skills: SkillEdit[]; onChange: (s: SkillEdit[]) => void }) {
   const [filter, setFilter] = useState('')
-  const shown = useMemo(
-    () => skills.map((s, i) => [s, i] as const).filter(([s]) => s.name.includes(filter.trim().toLowerCase())),
-    [skills, filter],
-  )
+  const [folded, setFolded] = useState<ReadonlySet<SkillCategory | null>>(new Set())
+  const filtering = filter.trim() !== ''
+  const groups = useMemo(() => {
+    const needle = filter.trim().toLowerCase()
+    const indexed = skills.map((s, i) => [s, i] as const)
+    return SKILL_GROUPS.map((category) => ({
+      category,
+      all: indexed.filter(([s]) => (s.category ?? null) === category),
+    }))
+      .map((g) => ({ ...g, shown: g.all.filter(([s]) => s.name.includes(needle)) }))
+      .filter((g) => g.shown.length)
+  }, [skills, filter])
   const set = (i: number, patch: Partial<SkillEdit>) =>
     onChange(skills.map((s, j) => (j === i ? { ...s, ...patch } : s)))
+  const toggle = (category: SkillCategory | null) => {
+    const next = new Set(folded)
+    if (next.has(category)) next.delete(category)
+    else next.add(category)
+    setFolded(next)
+  }
 
   return (
     <div className="space-y-4">
@@ -191,45 +208,76 @@ function Skills({ skills, onChange }: { skills: SkillEdit[]; onChange: (s: Skill
           />
         </div>
       </div>
-      {shown.length === 0 && (
+      {groups.length === 0 && (
         <p className="py-6 text-center text-sm text-muted-foreground">No skill matches “{filter}”.</p>
       )}
-      <ul className="space-y-2">
-        {shown.map(([s, i]) => (
-          <li key={s.name}>
-            <Card className={cn('py-0 transition-opacity', categoryBorder(s.category), !s.keep && 'opacity-55')}>
-              <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-start">
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <Checkbox
-                    className="mt-0.5"
-                    checked={s.keep}
-                    aria-label={`Keep ${s.name}`}
-                    onCheckedChange={(v) => set(i, { keep: v === true })}
-                  />
-                  <div className="min-w-0 space-y-1.5">
-                    <p className={cn('font-medium', !s.keep && 'line-through')}>{s.name}</p>
-                    <Quotes lines={s.evidence} label="From your material" />
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                  <CategorySelect
-                    value={s.category}
-                    label={`Category of ${s.name}`}
-                    disabled={!s.keep}
-                    onChange={(category) => set(i, { category })}
-                  />
-                  <LevelChips
-                    value={s.level}
-                    label={`Your level in ${s.name}`}
-                    disabled={!s.keep}
-                    onChange={(level) => set(i, { level })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </li>
-        ))}
-      </ul>
+      {groups.map(({ category, all, shown }) => {
+        const label = categoryLabel(category)
+        const kept = all.filter(([s]) => s.keep)
+        const rated = kept.filter(([s]) => s.level !== null).length
+        // A filter shows every match, so a folded group opens while filtering.
+        const open = filtering || !folded.has(category)
+        const listId = `skill-group-${category ?? 'other'}`
+        return (
+          <section key={label} aria-label={label} data-category={category ?? 'other'} className="space-y-2">
+            <h3>
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={listId}
+                disabled={filtering}
+                onClick={() => toggle(category)}
+                className="flex w-full items-center gap-2 rounded-md py-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
+              >
+                <ChevronRight className={cn('size-4 transition-transform', open && 'rotate-90')} aria-hidden />
+                <CategoryDot category={category} />
+                {label}{' '}
+                <span className="font-normal">
+                  · {all.length} {all.length === 1 ? 'skill' : 'skills'}, {rated} of {kept.length} rated
+                </span>
+              </button>
+            </h3>
+            {open && (
+              <ul id={listId} className="space-y-2">
+                {shown.map(([s, i]) => (
+                  <li key={s.name}>
+                    <Card className={cn('py-0 transition-opacity', categoryBorder(s.category), !s.keep && 'opacity-55')}>
+                      <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-start">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={s.keep}
+                            aria-label={`Keep ${s.name}`}
+                            onCheckedChange={(v) => set(i, { keep: v === true })}
+                          />
+                          <div className="min-w-0 space-y-1.5">
+                            <p className={cn('font-medium', !s.keep && 'line-through')}>{s.name}</p>
+                            <Quotes lines={s.evidence} label="From your material" />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                          <CategorySelect
+                            value={s.category}
+                            label={`Category of ${s.name}`}
+                            disabled={!s.keep}
+                            onChange={(category) => set(i, { category })}
+                          />
+                          <LevelChips
+                            value={s.level}
+                            label={`Your level in ${s.name}`}
+                            disabled={!s.keep}
+                            onChange={(level) => set(i, { level })}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 }

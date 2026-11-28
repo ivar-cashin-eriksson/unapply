@@ -144,6 +144,27 @@ describe('review', () => {
     expect(screen.getByText('No skill matches “rust”.')).toBeInTheDocument()
   })
 
+  it('groups skills by category, in a fixed order, and folds a group away', async () => {
+    const { user } = openReview()
+    await screen.findByRole('checkbox', { name: 'Keep python' })
+    const groups = screen.getAllByRole('region').filter((r) => r.hasAttribute('data-category'))
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Technology', 'Method'])
+    const technology = screen.getByRole('region', { name: 'Technology' })
+    expect(within(technology).getByRole('checkbox', { name: 'Keep cobol' })).toBeInTheDocument()
+    const fold = within(technology).getByRole('button', { name: /Technology · 2 skills, 0 of 2 rated/ })
+
+    await user.click(fold)
+    expect(fold).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('checkbox', { name: 'Keep python' })).toBeNull()
+    expect(screen.getByRole('checkbox', { name: 'Keep forecasting' })).toBeInTheDocument()
+    // A filter shows every match, folded or not.
+    await user.type(screen.getByLabelText('Filter skills'), 'py')
+    expect(screen.getByRole('checkbox', { name: 'Keep python' })).toBeInTheDocument()
+    await user.clear(screen.getByLabelText('Filter skills'))
+    await user.click(fold)
+    expect(screen.getByRole('checkbox', { name: 'Keep python' })).toBeInTheDocument()
+  })
+
   it('shows the quotes behind a skill when asked', async () => {
     const { user } = openReview()
     const python = (await screen.findByRole('checkbox', { name: 'Keep python' })).closest('li')!
