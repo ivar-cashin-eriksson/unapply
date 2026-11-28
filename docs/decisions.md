@@ -17,8 +17,10 @@ are on its GitHub issue. Add a line here when a decision becomes a lasting rule.
 - **Anonymous until revealed.** Before a reveal, employers see no name, contact
   details, quotes or role summaries; connecting to a job is the candidate's consent to
   be ranked and revealed.
-- **Asking about a revealed candidate (LLM)** (2026-11-27): the candidate app doesn't
-  mention it; the privacy notice says revealed candidates' material is used for
+- **Asking about a revealed candidate (LLM)** (2026-11-27): only after a reveal, and
+  the model sees only that candidate's own material, never the rubric's hidden parts
+  beyond what the employer already sees, nor other candidates. The candidate app
+  doesn't mention it; the privacy notice says revealed candidates' material is used for
   employers' conversations with an assistant. Conversations aren't saved and aren't
   part of a candidate's export.
 - **Aliases are per job** (2026-11-27, task 21): a candidate's alias and avatar come
@@ -26,5 +28,6 @@ are on its GitHub issue. Add a line here when a decision becomes a lasting rule.
   two employers can't link them; within one job they're the same in every view.
 - **Messages only after a reveal** (2026-11-28, task 25): an employer and a
   candidate they revealed can message each other, one thread per candidate and job;
-  there is no thread before the reveal, and no email or push notifications.
+  there is no thread before the reveal, and no email or push notifications. A
+  revealed candidate can't withdraw from the job (task 14), so the thread stays.
   Messages are the candidate's personal data and part of their export.

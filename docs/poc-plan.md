@@ -118,7 +118,7 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   read-only tools scoped to the candidates who opted in to it and to the sections
   each shared (`get_experiences`, `get_skills`, `search_evidence(query)`,
   `get_preferences`, plus `get_rubric` and `list_candidates`); anonymised as on the
-  shortlist. Consent per job is `unapply consent grant|withdraw|list`. No agent
+  job's shortlist, with the same per-job aliases (task 21). Consent per job is `unapply consent grant|withdraw|list`. No agent
   scores over it yet: the LLM scorer still gets the anonymised profile in one call.
 
 ### M5: Recruiter view
