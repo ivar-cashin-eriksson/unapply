@@ -155,7 +155,10 @@ export function JobBoard() {
     setChangeError(null)
     try {
       await changeConnection(name, x.name, x.company, connect)
-      await Promise.all([connections.reload(), fits.reload()])
+      // The card's action is ready again once the connection shows. Working out the
+      // fit for every listing can take a while, so it updates on its own afterwards.
+      void fits.reload()
+      await connections.reload()
     } catch (e) {
       setChangeError({ job: x.name, error: e })
     } finally {

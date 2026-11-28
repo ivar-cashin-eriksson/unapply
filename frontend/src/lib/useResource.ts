@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export interface Resource<T> {
   /** The data for the current key, or undefined until it has loaded. */
@@ -26,6 +26,8 @@ interface State<T> {
 export function useResource<T>(load: () => Promise<T>, key: string): Resource<T> {
   const [state, setState] = useState<State<T> | null>(null)
   const [reloading, setReloading] = useState(false)
+  // Counts reloads, so an earlier one that finishes last can't replace newer data.
+  const latest = useRef(0)
 
   useEffect(() => {
     let current = true
@@ -46,13 +48,15 @@ export function useResource<T>(load: () => Promise<T>, key: string): Resource<T>
     error: fresh?.error ?? null,
     loading: fresh === null || reloading,
     reload: async () => {
+      const run = ++latest.current
       setReloading(true)
       try {
-        setState({ key, data: await load(), error: null })
+        const data = await load()
+        if (run === latest.current) setState({ key, data, error: null })
       } catch (error) {
-        setState((s) => ({ key, data: s?.key === key ? s.data : undefined, error }))
+        if (run === latest.current) setState((s) => ({ key, data: s?.key === key ? s.data : undefined, error }))
       } finally {
-        setReloading(false)
+        if (run === latest.current) setReloading(false)
       }
     },
     set: (data: T) => setState({ key, data, error: null }),
