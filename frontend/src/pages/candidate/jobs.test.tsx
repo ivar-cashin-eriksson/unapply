@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { AdText } from '@/components/AdText'
 import { api, ApiError } from '@/lib/api'
@@ -141,6 +141,21 @@ describe('the job board', () => {
     await waitFor(() => expect(search).toHaveBeenLastCalledWith({}))
     expect(screen.getByLabelText('Search')).toHaveValue('')
     expect(await screen.findByText('2 jobs')).toBeInTheDocument()
+  })
+
+  it('keeps filters cleared when another is set right after clearing', async () => {
+    approved()
+    const search = vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    renderApp('/candidates/john-doe/jobs?seniority=junior&work_permit=EU')
+
+    await screen.findByRole('list', { name: 'Jobs' })
+    expect(search).toHaveBeenLastCalledWith({ seniority: 'junior', work_permit: 'EU' })
+    // Both at once, before the router has shown the cleared address.
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+    fireEvent.change(screen.getByLabelText('Work mode'), { target: { value: 'hybrid' } })
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith({ work_mode: 'hybrid' }))
+    expect(search).not.toHaveBeenCalledWith(expect.objectContaining({ work_mode: 'hybrid', seniority: 'junior' }))
   })
 
   it('filters by work permit, vacancies and skills in the advanced section', async () => {
