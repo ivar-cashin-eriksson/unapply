@@ -83,6 +83,9 @@ describe('material', () => {
 
     expect(await screen.findByText(/No files yet/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Build my profile' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Build my profile' })).toHaveAccessibleDescription(
+      'Add a file or your GitHub first',
+    )
     await user.upload(screen.getByTestId('file-input'), new File(['# CV'], 'cv.md'))
     expect(upload).toHaveBeenCalledWith('jane', [expect.objectContaining({ name: 'cv.md' })])
     expect(await screen.findByRole('button', { name: 'Remove cv.md' })).toBeInTheDocument()

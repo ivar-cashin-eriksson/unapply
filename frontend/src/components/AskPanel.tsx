@@ -2,6 +2,7 @@ import { CircleHelp, Loader2, Quote, Sparkles } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { ErrorAlert, Loading } from '@/components/states'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -104,17 +105,18 @@ export function AskPanel({ job, profileId, who }: Props) {
           <p className="text-xs text-muted-foreground">Demo questions, answered for free:</p>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Suggested questions">
             {suggested.map((q) => (
-              <Button
-                key={q}
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-auto whitespace-normal py-1.5 text-left"
-                disabled={busy || asked.has(q)}
-                onClick={() => void ask(q)}
-              >
-                {q}
-              </Button>
+              <WhyDisabled key={q} reason={asked.has(q) && 'Already asked; the answer is above'}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-auto whitespace-normal py-1.5 text-left"
+                  disabled={busy || asked.has(q)}
+                  onClick={() => void ask(q)}
+                >
+                  {q}
+                </Button>
+              </WhyDisabled>
             ))}
           </div>
         </div>

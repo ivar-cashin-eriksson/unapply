@@ -46,6 +46,7 @@ describe('job ad', () => {
 
     const draft = await screen.findByRole('button', { name: 'Draft the rubric' })
     expect(draft).toBeDisabled()
+    expect(draft).toHaveAccessibleDescription('Paste the job ad first')
     await user.type(screen.getByLabelText('Ad'), 'Analyst wanted in Oslo.')
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.click(draft)

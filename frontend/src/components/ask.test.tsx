@@ -71,6 +71,9 @@ describe('asking about a revealed candidate', () => {
     expect(within(answers).queryByText("The material doesn't answer this")).toBeNull()
     // A question asked once can't be asked again from its button.
     expect(within(suggested).getByRole('button', { name: PRODUCTION })).toBeDisabled()
+    expect(within(suggested).getByRole('button', { name: PRODUCTION })).toHaveAccessibleDescription(
+      'Already asked; the answer is above',
+    )
 
     await user.click(within(suggested).getByRole('button', { name: TEAM }))
     expect(ask).toHaveBeenLastCalledWith('fjord-grocery', id, TEAM, [

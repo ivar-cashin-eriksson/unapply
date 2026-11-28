@@ -191,6 +191,9 @@ describe('shortlist', () => {
       await user.click(screen.getByRole('checkbox', { name: `Compare Candidate ${alias}` }))
     }
     expect(screen.getByRole('checkbox', { name: 'Compare Candidate D3D3' })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: 'Compare Candidate D3D3' })).toHaveAccessibleDescription(
+      'You can compare at most 3 people',
+    )
     await user.click(screen.getByRole('checkbox', { name: 'Compare Candidate B0B0' }))
     expect(screen.getByRole('checkbox', { name: 'Compare Candidate D3D3' })).toBeEnabled()
   })
@@ -245,7 +248,7 @@ describe('shortlist', () => {
     expect(screen.queryByRole('region', { name: 'Application from Sam Lund' })).toBeNull()
     const other = screen.getByRole('button', { name: 'Reveal: Candidate C2C2' })
     expect(other).toBeDisabled()
-    expect(other).toHaveAttribute('title', 'All reveals for this job are used')
+    expect(other).toHaveAccessibleDescription('All reveals for this job are used')
   })
 
   it('says why a step was refused', async () => {

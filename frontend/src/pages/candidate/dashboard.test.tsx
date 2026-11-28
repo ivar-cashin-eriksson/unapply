@@ -165,6 +165,7 @@ describe('compared on jobs', () => {
     await screen.findByRole('group', { name: 'Compared with: Revealed' })
     const groups = screen.getByLabelText('Compare with')
     expect(within(groups).getByRole('radio', { name: 'Applied' })).toBeDisabled()
+    expect(within(groups).getByRole('radio', { name: 'Applied' })).toHaveAccessibleDescription('Fewer than 5 others')
     fireEvent.click(within(groups).getByRole('radio', { name: 'Asked to apply' }))
     const group = await screen.findByRole('group', { name: 'Compared with: Asked to apply' })
     expect(within(group).queryByRole('list', { name: 'You rated higher than most of them' })).toBeNull()
