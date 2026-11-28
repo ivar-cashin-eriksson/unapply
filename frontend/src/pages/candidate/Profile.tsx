@@ -87,10 +87,11 @@ export function Profile() {
           </CardHeader>
           <CardContent>
             {profile.experiences.length ? (
-              <ol className="relative space-y-6 border-l pl-6">
+              <ol data-testid="timeline" className="relative space-y-6 border-l pl-6">
                 {profile.experiences.map((x) => (
                   <li key={x.id} className="relative">
-                    <span className="absolute top-1.5 -left-[1.95rem] size-3 rounded-full border-2 border-background bg-primary" aria-hidden />
+                    {/* Centred on the 1px line: pl-6 back, then half the line's width. */}
+                    <span className="absolute top-1.5 left-[calc(-1.5rem-0.5px)] size-3 -translate-x-1/2 rounded-full border-2 border-background bg-primary" aria-hidden />
                     <p className="font-medium">
                       {x.title} <span className="font-normal text-muted-foreground">· {x.organisation}</span>
                     </p>

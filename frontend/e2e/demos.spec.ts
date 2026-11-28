@@ -86,6 +86,20 @@ test('the John Doe demo: material, review, questions, profile and dashboard', as
   await expect(page.getByText('looker', { exact: true })).toBeVisible()
   await expect(steps.getByRole('link', { name: /Questions/ })).toContainText('(done)')
   expect(await page.locator('main').textContent()).not.toMatch(ASSESSMENT)
+  // Each experience's dot sits centred on the timeline's line (issue #47).
+  const timeline = page.getByTestId('timeline')
+  const line = await timeline.evaluate((ol) => {
+    const box = ol.getBoundingClientRect()
+    return box.left + ol.clientLeft / 2
+  })
+  const dots = await timeline.locator('li > span[aria-hidden]').evaluateAll((spans) =>
+    spans.map((s) => {
+      const box = s.getBoundingClientRect()
+      return box.left + box.width / 2
+    }),
+  )
+  expect(dots.length).toBeGreaterThan(0)
+  for (const dot of dots) expect(Math.abs(dot - line)).toBeLessThan(0.5)
   await shot(page, '06-candidate-profile')
 
   // Step 5: the dashboard. With the demo jobs on the board, the synthetic pool is
