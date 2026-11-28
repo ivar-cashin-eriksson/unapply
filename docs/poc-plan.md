@@ -156,6 +156,16 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   sees and downloads the application. Progress is stored per candidate and job
   (`job_progress`, `application_files`, migration `0008`). The early intents stay
   as history.
+- Done (task 26, `src/unapply/jobs/ask.py`, `src/unapply/api/ask.py`): **Ask** on a
+  revealed candidate's card: the employer asks in plain language and a model answers
+  from that candidate's own material only (headline, roles, skills with their own
+  levels, quotes; never the rubric, estimates, claim support, preferences or anyone
+  else), citing quotes. Cited ids are checked to be the candidate's; an answer
+  citing none counts as not answered, and the card says when the material doesn't
+  answer. Refused before the reveal (409) and, unless allowed, as a paid call (403).
+  Nothing is stored: the page keeps the conversation and sends it back with each
+  question. Pool candidates replay hand-written stand-ins for two demo questions
+  (`tests/fixtures/pool/questions.yaml`), recorded with `unapply ask`.
 
 ### M6: Candidate view
 - "You're #4 of 37 for this role." The profile, without the assessment.

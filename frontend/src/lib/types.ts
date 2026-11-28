@@ -688,3 +688,39 @@ export interface Dashboard {
   in_demand: string[]
   following: FollowingSkill[]
 }
+
+/** An earlier question about a revealed candidate and its answer, sent with the next. */
+export interface Turn {
+  question: string
+  answer: string
+}
+
+/** A quote from a revealed candidate's material that an answer rests on. */
+export interface CitedQuote {
+  id: string
+  /** "cv", "github", ..., or "candidate statement". */
+  source: string
+  quote: string
+}
+
+/** A model's answer to an employer's question about a revealed candidate. */
+export interface CandidateAnswer {
+  question: string
+  answer: string
+  /** Whether the candidate's material answers the question. */
+  answered: boolean
+  evidence: CitedQuote[]
+  model: string
+  /** What was wrong with the model's answer and dropped. */
+  problems: string[]
+  asked_at: string
+}
+
+/** The free demo questions about a revealed candidate; empty for anyone not a demo. */
+export interface AskOptions {
+  suggested: string[]
+}
+
+/** The longest question and the most earlier turns the API takes. */
+export const MAX_QUESTION_CHARS = 500
+export const MAX_HISTORY = 10

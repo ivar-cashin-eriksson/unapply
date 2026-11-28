@@ -6,9 +6,11 @@
 
 import type {
   Answers,
+  AskOptions,
   Board,
   BoardDemo,
   BoardQuery,
+  CandidateAnswer,
   CandidateJobs,
   CandidateProfile,
   CandidateSummary,
@@ -35,6 +37,7 @@ import type {
   Shortlist,
   ShortlistDemo,
   Thread,
+  Turn,
 } from '@/lib/types'
 
 export const BASE = '/api'
@@ -228,6 +231,16 @@ export const api = {
     json<Message>('POST', `${c(name)}/messages/${encodeURIComponent(job)}`, { text }),
   candidateRead: (name: string, job: string) =>
     json<Thread>('POST', `${c(name)}/messages/${encodeURIComponent(job)}/read`),
+  // Questions about a revealed candidate, answered by a model from their material.
+  // Never with allow_api: demo questions replay; others are refused unless the
+  // server allows paid calls. Nothing is stored, so the page sends the history.
+  askOptions: (name: string, profileId: string) => json<AskOptions>('GET', ask(name, profileId)),
+  ask: (name: string, profileId: string, question: string, history: Turn[]) =>
+    json<CandidateAnswer>('POST', ask(name, profileId), { question, history }),
+}
+
+function ask(name: string, profileId: string): string {
+  return `${j(name)}/candidates/${encodeURIComponent(profileId)}/ask`
 }
 
 function employerThread(name: string, profileId: string): string {

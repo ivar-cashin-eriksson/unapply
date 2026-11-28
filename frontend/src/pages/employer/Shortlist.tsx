@@ -14,6 +14,7 @@ import {
   Phone,
   Quote,
   RefreshCw,
+  Sparkles,
   Users,
   X,
   type LucideIcon,
@@ -22,6 +23,7 @@ import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 
+import { AskPanel } from '@/components/AskPanel'
 import { CandidateAvatar } from '@/components/CandidateAvatar'
 import { Counts } from '@/components/Counts'
 import { MessageThread, UnreadBadge } from '@/components/MessageThread'
@@ -371,6 +373,9 @@ function CandidateCard({
   const { name: job } = useJob()
   const [open, setOpen] = useState(false)
   const [talking, setTalking] = useState(false)
+  // Questions stay mounted once opened, so closing them keeps the conversation.
+  const [asking, setAsking] = useState(false)
+  const [askOpened, setAskOpened] = useState(false)
   const [busy, setBusy] = useState(false)
   const stage = candidate.progress.stage
   const step = NEXT[stage]
@@ -381,6 +386,7 @@ function CandidateCard({
   const detailsId = `details-${candidate.profile_id}`
   const compareId = `compare-${candidate.profile_id}`
   const threadId = `thread-${candidate.profile_id}`
+  const askId = `ask-${candidate.profile_id}`
   const who = candidate.contact?.name ?? candidate.alias
 
   async function act() {
@@ -478,6 +484,21 @@ function CandidateCard({
               <MessagesSquare aria-hidden /> Messages
             </Button>
           )}
+          {revealed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-expanded={asking}
+              aria-controls={askId}
+              aria-label={`Ask about ${who}`}
+              onClick={() => {
+                setAsking(!asking)
+                setAskOpened(true)
+              }}
+            >
+              <Sparkles aria-hidden /> Ask
+            </Button>
+          )}
           <span className="flex-1" />
           <Button
             size="sm"
@@ -504,6 +525,12 @@ function CandidateCard({
               send={(text) => api.employerSend(job, candidate.profile_id, text)}
               onRead={onRead}
             />
+          </div>
+        )}
+
+        {revealed && askOpened && (
+          <div id={askId} hidden={!asking} className="border-t px-5 py-4">
+            <AskPanel job={job} profileId={candidate.profile_id} who={who} />
           </div>
         )}
 
