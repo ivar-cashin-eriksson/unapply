@@ -12,6 +12,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from unapply.jobs.ask import MAX_HISTORY, MAX_QUESTION_CHARS, Turn
 from unapply.jobs.board import Listing, ListingCounts
 from unapply.jobs.hiring import ApplicationFile, Contact, Progress, Stage
 from unapply.jobs.messages import MAX_MESSAGE_CHARS, Message
@@ -867,3 +868,33 @@ class CandidateThread(Thread):
     company: str | None = None
     title: str | None = None
     revealed_at: datetime
+
+
+class QuestionForm(BaseModel):
+    """A question about a revealed candidate, with the conversation so far.
+
+    Parameters
+    ----------
+    question : str
+        What the employer asks, in plain language.
+    history : list of Turn
+        Earlier questions and answers in the same conversation, oldest first, so
+        follow-ups have their context. The server keeps no conversation: the page
+        sends it each time.
+    """
+
+    question: str = Field(min_length=1, max_length=MAX_QUESTION_CHARS + 100)
+    history: list[Turn] = Field(default_factory=list, max_length=MAX_HISTORY)
+
+
+class AskOptions(BaseModel):
+    """What an employer can ask about a revealed candidate for free.
+
+    Parameters
+    ----------
+    suggested : list of str
+        Demo questions with a recorded answer, which replay for free. Empty for
+        everyone but demo candidates; any other question is a paid call.
+    """
+
+    suggested: list[str]

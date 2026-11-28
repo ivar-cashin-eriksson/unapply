@@ -38,6 +38,14 @@ are personal data under GDPR. These principles are product features, not afterth
 5. **Anonymised until revealed.** This limits bias from names, photos and similar proxies.
 6. **Everything is logged** (rubric version, model, scores) so rankings can be audited.
 
+### Privacy notice
+
+Until there is a proper privacy notice, this is it. Once an employer reveals a
+candidate, the employer can ask an assistant (a language model, Claude) questions
+about them. The assistant answers from that candidate's approved profile, roles and
+evidence quotes only, and cites the quotes it rests on. These conversations aren't
+saved, so they aren't part of what a candidate can export.
+
 ## Status
 
 Early proof of concept. See [docs/poc-plan.md](docs/poc-plan.md).
@@ -129,7 +137,10 @@ npm run dev                   # http://localhost:5173
   intent is recorded; limited to the job's reveal quota, 10), then **Request
   application**, then waits, then shows **Applied** with the application (letter
   and files to download) or **Declined**. A revealed candidate's card has
-  **Messages**, a thread with them, and counts their unread messages. Until a
+  **Messages**, a thread with them, and counts their unread messages, and **Ask**:
+  questions in plain language, answered by a model from that candidate's own
+  material only, with the quotes cited, and saying when the material doesn't answer
+  (not saved; demo candidates have suggested questions that replay for free). Until a
   reveal, no quotes and no role
   summaries are shown. The job's counts sit above the list, beside its vacancies.
   The **overview** sums up the job's candidates in aggregate, never one of them:
@@ -273,6 +284,12 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   up to 5,000 characters, and are marked read when the app shows them; the
   shortlist and the candidate's connections count those unread. A candidate's
   `GET /candidates/<name>/messages` lists every thread in full: their export.
+- **Ask** (`/jobs/<name>/candidates/<profile id>/ask`): `POST` a question (and the
+  conversation so far) about a revealed candidate; a model answers from their own
+  material only, citing their quotes, checked to be theirs. One paid call per
+  question, refused (403) unless allowed; refused (409) before a reveal. `GET` lists
+  the free demo questions (pool candidates only; 404 before a reveal). Nothing is
+  stored.
 - **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`, `/demos/board`):
   John Doe, Fjord Grocery, Fjord Grocery with the synthetic pool, and the eleven
   demo jobs on the board, which replay recorded answers for free. The pool's
@@ -420,6 +437,7 @@ didn't opt in get the same answer. The server's instructions to the agent are in
 | `uv run unapply consent grant john-doe acme [--sections ...]` | Opt a candidate in to a job, choosing what its agent may read (`withdraw`, `list` too) |
 | `uv run unapply mcp acme` | Serve a job's matching agent over MCP (stdio), scoped to the candidates who opted in |
 | `uv run unapply audit acme` | List a job's rankings from the audit log and check that each reproduces |
+| `uv run unapply ask astrid-holm production --replay tests/fixtures/pool/astrid-holm/ask_production.json` | Ask a demo question about a pool candidate, as an employer does after a reveal (`--allow-api --record FILE` records a real answer) |
 | `uv run unapply evaluate` | Rank the synthetic pool with both scorers and compare with its intended ranking (`--reference FILE` for another) |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |

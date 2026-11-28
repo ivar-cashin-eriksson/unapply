@@ -1,0 +1,8 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "answered": false,
+    "answer": "Nothing in the material says she has managed a team. It shows her explaining forecast uncertainty to the trading desk and to management in a monthly review, and writing most of her team's analytical SQL, but not leading people.",
+    "evidence": ["E5", "E4"]
+  }
+}

@@ -1,0 +1,9 @@
+# Demo questions an employer can ask about a revealed pool candidate for free.
+# Read by unapply.jobs.ask: each candidate folder with an `ask_<id>.json` has a
+# recorded answer to that question, which the API replays. Until recorded, those
+# are hand-written stand-ins (see docs/to-record.md).
+questions:
+- id: production
+  text: Has this candidate deployed models to production?
+- id: team
+  text: Has this candidate managed a team?

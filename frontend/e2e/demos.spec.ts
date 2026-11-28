@@ -272,6 +272,57 @@ test('the shortlist demo: ranked, explained, compared, revealed', async ({ page 
   await expect(stats).toContainText('Matched12')
 })
 
+test('asking about a revealed candidate: demo questions replay, with their quotes', async ({ page }) => {
+  await page.goto('/jobs')
+  await page.getByRole('button', { name: 'Try the shortlist demo' }).click()
+  await expect(page).toHaveURL(/\/jobs\/fjord-grocery-shortlist[-\d]*\/shortlist$/)
+  await page.getByRole('button', { name: 'Match candidates' }).click()
+  await expect(page.getByRole('heading', { name: '12 ranked' })).toBeVisible()
+  const first = page.getByRole('listitem').filter({ has: page.getByLabel('Rank 1') }).first()
+
+  // Nothing to ask before the reveal, in the app or the API.
+  await expect(page.getByRole('button', { name: /^Ask about/ })).toHaveCount(0)
+  const job = page.url().split('/jobs/')[1].split('/')[0]
+  const ranking = await (await page.request.get(`/api/jobs/${job}/ranking`)).json()
+  const id = ranking.candidates[0].profile_id
+  const before = await page.request.post(`/api/jobs/${job}/candidates/${id}/ask`, {
+    data: { question: 'Has this candidate deployed models to production?' },
+  })
+  expect(before.status()).toBe(409)
+
+  // Revealed: Astrid Holm, whom the baseline ranks first, has two demo questions.
+  await first.getByRole('button', { name: /^Reveal: / }).click()
+  await expect(first.getByRole('heading', { level: 3 })).toContainText('Astrid Holm')
+  await first.getByRole('button', { name: 'Ask about Astrid Holm' }).click()
+  const region = first.getByRole('region', { name: 'Questions about Astrid Holm' })
+  await expect(region).toContainText("Answers come from Astrid Holm's own material only")
+  const suggested = region.getByRole('group', { name: 'Suggested questions' })
+  await suggested.getByRole('button', { name: 'Has this candidate deployed models to production?' }).click()
+  const answers = region.getByRole('list', { name: 'Answers' })
+  await expect(answers.getByRole('listitem')).toHaveCount(1)
+  await expect(answers).toContainText('Yes.')
+  await expect(answers.locator('blockquote').first()).toContainText('in production since 2022')
+  await suggested.getByRole('button', { name: 'Has this candidate managed a team?' }).click()
+  await expect(answers.getByRole('listitem')).toHaveCount(2)
+  const team = answers.getByRole('listitem').nth(1)
+  await expect(team).toContainText("The material doesn't answer this")
+  await expect(team).toContainText('Nothing in the material')
+  await expect(team.locator('blockquote').first()).toContainText('Mentor three data scientists.')
+
+  // A question of one's own would be a paid call, which is off.
+  await region.getByLabel('Question about Astrid Holm').fill('Has she used Kubernetes?')
+  await region.getByRole('button', { name: 'Ask', exact: true }).click()
+  await expect(region.getByRole('alert')).toContainText('needs a paid model call')
+  await region.evaluate((el) => el.scrollIntoView({ block: 'end' }))
+  await shot(page, '30-shortlist-ask', { fullPage: false })
+
+  // Nothing is kept: a fresh page has no answers.
+  await page.reload()
+  await first.getByRole('button', { name: 'Ask about Astrid Holm' }).click()
+  await expect(first.getByRole('group', { name: 'Suggested questions' })).toBeVisible()
+  await expect(first.getByRole('list', { name: 'Answers' })).toHaveCount(0)
+})
+
 test('the job board in John Doe\'s demo: search, read, connect and withdraw', async ({ page }) => {
   // John approves his profile first: only approved profiles connect.
   await page.goto('/candidates')

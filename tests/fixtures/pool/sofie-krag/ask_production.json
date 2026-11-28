@@ -1,0 +1,8 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "answered": true,
+    "answer": "Yes. She owns hourly electricity demand forecasts for 400,000 customers that have been in production since 2021, built with gradient boosting and SARIMA models in Python. The CV says they cut the day-ahead forecast error from 7.9% to 5.1% MAPE.",
+    "evidence": ["E1", "E2"]
+  }
+}

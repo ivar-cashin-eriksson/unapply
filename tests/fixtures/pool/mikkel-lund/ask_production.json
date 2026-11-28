@@ -1,0 +1,8 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "answered": true,
+    "answer": "Yes. At the online fashion retailer he built time series prediction models for weekly sales of 9,000 styles that run in production every night. He also moved the nightly feature jobs from pandas to Apache Spark, cutting the run from five hours to forty minutes. The material doesn't say whether his earlier models for consulting clients, such as the electricity load prediction, were deployed.",
+    "evidence": ["E2", "E4", "E8"]
+  }
+}

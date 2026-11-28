@@ -236,6 +236,19 @@ def main(argv: list[str] | None = None) -> int:
         "--url", help="SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite."
     )
 
+    ask_pool = commands.add_parser(
+        "ask",
+        help="Ask a demo question about a candidate of the synthetic pool, as an "
+        "employer does once they reveal them, to record its answer.",
+    )
+    ask_pool.add_argument(
+        "candidate", help="The candidate's folder in the pool, such as astrid-holm."
+    )
+    ask_pool.add_argument(
+        "question", help="A question's id in the pool's questions.yaml, or any text."
+    )
+    _add_model_options(ask_pool)
+
     evaluate = commands.add_parser(
         "evaluate",
         help="Rank a synthetic candidate pool with each scorer and compare the "
@@ -340,6 +353,8 @@ def _run(args: argparse.Namespace) -> int:
         return _mcp(args)
     if args.command == "evaluate":
         return _evaluate(args)
+    if args.command == "ask":
+        return _ask(args)
     if args.command == "ingest":
         return _ingest(args)
     if args.command == "review":
@@ -721,6 +736,32 @@ def _evaluate(args: argparse.Namespace) -> int:
             for name, result in evaluation.results.items():
                 for p in result.problems:
                     print(f"  problem: {name}: {p}")
+    return 0
+
+
+def _ask(args: argparse.Namespace) -> int:
+    import yaml
+
+    from unapply.evaluation import load_pool
+    from unapply.jobs.ask import DEMO_QUESTIONS, ask_candidate, check_question
+
+    # Before anything else, so a refused paid call costs no time.
+    llm = _llm(args)
+    spec = yaml.safe_load(DEMO_QUESTIONS.read_text(encoding="utf-8")) or {}
+    texts = {q["id"]: q["text"] for q in spec.get("questions", [])}
+    question = check_question(texts.get(args.question, args.question), [])
+    pool = load_pool()
+    if args.candidate not in pool.candidates:
+        print(f"No candidate {args.candidate!r} in the pool.", file=sys.stderr)
+        return 2
+    answer = ask_candidate(pool.candidates[args.candidate].profile, question, llm)
+    print(f"Q: {answer.question}")
+    print(f"A: {answer.answer}")
+    print(f"Answered by the material: {'yes' if answer.answered else 'no'}")
+    for quote in answer.evidence:
+        print(f"  [{quote.source}] {quote.quote}")
+    for problem in answer.problems:
+        print(f"  problem: {problem}")
     return 0
 
 
