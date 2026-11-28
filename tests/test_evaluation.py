@@ -10,10 +10,15 @@ import json
 import re
 import shutil
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
+from sqlalchemy import update
 
 from unapply.cli import main
+from unapply.db.engine import database_url, init_db
+from unapply.db.models import AuditEntryRow
+from unapply.db.repository import NotFound, Repository
 from unapply.evaluation import (
     DEFAULT_POOL,
     ReferenceEntry,
@@ -24,13 +29,17 @@ from unapply.evaluation import (
     load_reference,
     mean_comparison,
     rater_agreement,
+    stored_ranking,
     top_k_overlap,
 )
+from unapply.evaluation.pool import DEMO_PREFIX, store_pool
 from unapply.ingest.extract import normalise_quote
 from unapply.llm import LLMError
-from unapply.matching import check_hard_filters
+from unapply.matching import BaselineScorer, check_hard_filters
+from unapply.matching.audit import AuditKind
 from unapply.matching.filters import Outcome
 from unapply.matching.llm_scorer import render_match_prompt
+from unapply.matching.run import match_job
 
 PLACEHOLDER = "hand-written placeholder, not a model answer: re-record with --record"
 FAILING = {
@@ -472,3 +481,133 @@ def test_cli_reports_a_broken_pool(tmp_path, capsys):
     assert main(["evaluate", str(tmp_path)]) == 2
     assert "Can't evaluate" in capsys.readouterr().err
     assert main(["evaluate", "--k", "0"]) == 2
+
+
+# A job's ranking from the database
+
+
+@pytest.fixture
+def ranked_db(pool):
+    """A database with the pool stored as job "fjord", matched twice by the baseline.
+
+    The first ranking is of the first six candidates only, the second of all.
+    """
+    init_db()
+    repo = Repository.from_url(database_url())
+    names = store_pool(repo, pool, "fjord")
+    match_job(repo, "fjord", lambda n, s: BaselineScorer(), names[:6], pool.today)
+    match_job(repo, "fjord", lambda n, s: BaselineScorer(), today=pool.today)
+    yield repo
+    repo.engine.dispose()
+
+
+def _intended_in_db(pool, path: Path) -> Path:
+    """The pool's intended ranking, naming candidates as they are in the database."""
+    path.write_text(
+        "ranking:\n"
+        + "".join(
+            f"  - {{candidate: {DEMO_PREFIX}{e.candidate}, rank: {e.rank}}}\n"
+            for e in pool.intended
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_stored_ranking_names_each_candidate_as_in_the_database(pool, ranked_db):
+    stored = stored_ranking(ranked_db, "fjord")
+    evaluated = evaluate_pool(pool, "baseline")
+    # The same candidates, places and totals as ranking the pool directly.
+    assert [(n, r.rank, r.total) for n, r in stored.ranking] == [
+        (DEMO_PREFIX + n, r.rank, r.total) for n, r in evaluated.ranking
+    ]
+    assert (stored.scorer, stored.model, stored.rubric_version) == (
+        "baseline",
+        "baseline-v1",
+        pool.job.rubric.version,
+    )
+    first, latest = ranked_db.audit_log(kind=AuditKind.RANKING)
+    assert stored.entry_id == latest.id
+    assert len(stored_ranking(ranked_db, "fjord", first.id).ranking) == 6
+
+
+def test_stored_ranking_refuses_what_it_cant_read(ranked_db):
+    with pytest.raises(NotFound):
+        stored_ranking(ranked_db, "nothing")
+    with pytest.raises(ValueError, match="no ranking 999 of job 'fjord'"):
+        stored_ranking(ranked_db, "fjord", 999)
+    ranked_db.create_job("empty")
+    with pytest.raises(ValueError, match="has no rubric"):
+        stored_ranking(ranked_db, "empty")
+
+
+def test_a_profile_no_candidate_has_is_named_by_its_id(pool, ranked_db):
+    entry = ranked_db.audit_log(kind=AuditKind.RANKING)[-1]
+    gone = entry.payload["ranking"][0]["match"]["profile_id"]
+    with ranked_db.engine.begin() as connection:
+        entry.payload["ranking"][0]["match"]["profile_id"] = str(uuid4())
+        connection.execute(
+            update(AuditEntryRow)
+            .where(AuditEntryRow.id == entry.id)
+            .values(payload=entry.payload)
+        )
+    name, _ = stored_ranking(ranked_db, "fjord").ranking[0]
+    assert name.startswith("profile ") and gone not in name
+
+
+def test_cli_evaluates_a_stored_ranking(pool, ranked_db, tmp_path, capsys):
+    reference = _intended_in_db(pool, tmp_path / "intended.yaml")
+    before = len(ranked_db.audit_log())
+    assert main(["evaluate", "--job", "fjord", "--reference", str(reference)]) == 0
+    out = capsys.readouterr().out
+    latest = ranked_db.audit_log(kind=AuditKind.RANKING)[-1]
+    assert f"ranking #{latest.id} of " in out and "12 candidates" in out
+    assert "baseline (baseline-v1)" in out
+    # The same ranking as the pool's baseline, so the same agreement.
+    assert "top-3 overlap 1.00  top-5 overlap 0.80  Kendall's tau 0.82" in out
+    assert re.search(r"\n +1 +0\.\d\d +1  pool-astrid-holm\n", out)
+    assert out.count("(failed hard filters)") == 3
+    # Nothing was scored or recorded again.
+    assert len(ranked_db.audit_log()) == before
+
+
+def test_cli_evaluates_an_older_stored_ranking_with_several_references(
+    pool, ranked_db, tmp_path, capsys
+):
+    first_id = ranked_db.audit_log(kind=AuditKind.RANKING)[0].id
+    intended = _intended_in_db(pool, tmp_path / "intended.yaml")
+    other = _write_reference(
+        tmp_path / "other.yaml", "pool-mikkel-lund", "pool-astrid-holm"
+    )
+    args = ["evaluate", "--job", "fjord", "--ranking", str(first_id), "--k", "2"]
+    assert main([*args, "--reference", str(intended), "--reference", str(other)]) == 0
+    out = capsys.readouterr().out
+    assert f"ranking #{first_id} of " in out and "6 candidates" in out
+    assert "Agreement between the references (the ceiling, 1 pair)" in out
+    assert "  ref 1: " in out and "  ref 2: " in out and "  mean: " in out
+
+
+@pytest.mark.parametrize(
+    ("args", "error"),
+    [
+        (["--job", "fjord"], "--job needs at least one --reference"),
+        (["--job", "fjord", "tests/fixtures/pool", "--reference", "r.yaml"], "a pool"),
+        (["--job", "fjord", "--scorer", "llm", "--reference", "r.yaml"], "--scorer"),
+        (["--job", "fjord", "--record", "--reference", "r.yaml"], "--record"),
+        (["--ranking", "1"], "--ranking and --url need --job"),
+        (["--job", "nothing", "--reference", "REF"], "Can't evaluate: "),
+        (
+            ["--job", "fjord", "--ranking", "999", "--reference", "REF"],
+            "no ranking 999",
+        ),
+        (["--job", "fjord", "--reference", "OTHER"], "no candidate in common"),
+    ],
+)
+def test_cli_refuses_a_stored_ranking_it_cant_evaluate(
+    pool, ranked_db, tmp_path, capsys, args, error
+):
+    reference = str(_intended_in_db(pool, tmp_path / "intended.yaml"))
+    other = str(_write_reference(tmp_path / "other.yaml", "astrid-holm"))
+    args = [{"REF": reference, "OTHER": other}.get(a, a) for a in args]
+    assert main(["evaluate", *args]) == 2
+    assert error in capsys.readouterr().err

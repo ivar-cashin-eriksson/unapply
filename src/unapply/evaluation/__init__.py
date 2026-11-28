@@ -4,6 +4,8 @@
   agreement between several references (the ceiling, with human shortlists).
 - `pool`: a job's synthetic candidate pool with its intended ranking, and ranking
   it with the baseline or LLM scorer (`unapply evaluate`).
+- `stored`: a job's ranking from the audit log, the one its employer saw
+  (`unapply evaluate --job`).
 """
 
 from unapply.evaluation.metrics import (
@@ -24,6 +26,7 @@ from unapply.evaluation.pool import (
     evaluate_pool,
     load_pool,
 )
+from unapply.evaluation.stored import StoredRanking, stored_ranking
 
 __all__ = [
     "Agreement",
@@ -32,6 +35,7 @@ __all__ = [
     "Pool",
     "PoolCandidate",
     "ReferenceEntry",
+    "StoredRanking",
     "compare_ranking",
     "evaluate_pool",
     "kendall_tau",
@@ -39,5 +43,6 @@ __all__ = [
     "load_reference",
     "mean_comparison",
     "rater_agreement",
+    "stored_ranking",
     "top_k_overlap",
 ]

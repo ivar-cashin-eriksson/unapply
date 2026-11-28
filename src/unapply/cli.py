@@ -7,6 +7,7 @@ import logging
 import sys
 from datetime import date
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -40,6 +41,10 @@ from unapply.llm import (
 )
 from unapply.review import ReviewError, apply_review_sheet, export_review_sheet
 from unapply.schemas import CriterionKind, Job, Profile
+
+if TYPE_CHECKING:
+    from unapply.evaluation import Agreement, ReferenceEntry
+    from unapply.matching import Ranked
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -252,7 +257,8 @@ def main(argv: list[str] | None = None) -> int:
     evaluate = commands.add_parser(
         "evaluate",
         help="Rank a synthetic candidate pool with each scorer and compare the "
-        "rankings with a reference: top-k overlap and Kendall's tau.",
+        "rankings with a reference: top-k overlap and Kendall's tau. With --job, "
+        "compare a job's ranking from the audit log instead.",
     )
     evaluate.add_argument(
         "pool",
@@ -273,8 +279,23 @@ def main(argv: list[str] | None = None) -> int:
         "--scorer",
         nargs="+",
         choices=["baseline", "llm"],
-        default=["baseline", "llm"],
         help="Scorers to evaluate, by default both. llm replays recorded answers.",
+    )
+    evaluate.add_argument(
+        "--job",
+        help="Instead of a pool: a job's name in the database. Its latest ranking "
+        "in the audit log, as its employer saw it, is compared with --reference, "
+        "which names candidates as in the database. Nothing is scored again.",
+    )
+    evaluate.add_argument(
+        "--ranking",
+        type=int,
+        help="With --job: the ranking's id in the audit log (see unapply audit), "
+        "by default the latest.",
+    )
+    evaluate.add_argument(
+        "--url",
+        help="With --job: SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite.",
     )
     evaluate.add_argument(
         "--k",
@@ -680,13 +701,17 @@ def _evaluate(args: argparse.Namespace) -> int:
         evaluate_pool,
         load_pool,
         load_reference,
-        mean_comparison,
         rater_agreement,
     )
     from unapply.evaluation.pool import LLMFor
 
     if any(k < 1 for k in args.k):
         print("--k must be 1 or more", file=sys.stderr)
+        return 2
+    if args.job is not None:
+        return _evaluate_job(args)
+    if args.ranking is not None or args.url is not None:
+        print("--ranking and --url need --job", file=sys.stderr)
         return 2
     llm_for: LLMFor = ReplayLLM
     if args.record:
@@ -714,28 +739,11 @@ def _evaluate(args: argparse.Namespace) -> int:
     )
     if not paths:
         print("Reference: the pool's intended ranking")
-    elif len(paths) == 1:
-        print(f"Reference: {paths[0]}")
-    else:
-        print("References:")
-        for i, p in enumerate(paths, 1):
-            print(f"  {i}: {p}")
-    if agreement is not None:
-        print(
-            "Agreement between the references (the ceiling, "
-            f"{agreement.pairs} pair{'s' if agreement.pairs > 1 else ''}): "
-            f"{_comparison(agreement.top_k, agreement.tau)}"
-        )
+    _print_references(paths, agreement)
     for name, candidate in pool.candidates.items():
         for p in candidate.problems:
             print(f"  problem: {name}: {p}")
-    wanted = [{e.candidate: e.rank for e in r} for r in references]
-    headers = (
-        ["reference"]
-        if len(references) == 1
-        else [f"ref {i}" for i in range(1, len(references) + 1)]
-    )
-    for kind in dict.fromkeys(args.scorer):
+    for kind in dict.fromkeys(args.scorer or ["baseline", "llm"]):
         try:
             evaluation = evaluate_pool(pool, kind, references[0], ks, llm_for)
             ranks = {n: r.rank for n, r in evaluation.ranking}
@@ -748,27 +756,126 @@ def _evaluate(args: argparse.Namespace) -> int:
             return 2
         print()
         print(f"{kind} ({evaluation.model})")
-        print("  rank  total  " + "  ".join(headers) + "  candidate")
-        for name, ranked in evaluation.ranking:
-            status = (
-                "" if ranked.match.passed_hard_filters else "  (failed hard filters)"
-            )
-            refs = "  ".join(
-                f"{w.get(name, '-')!s:>{len(h)}}"
-                for w, h in zip(wanted, headers, strict=True)
-            )
-            print(f"  {ranked.rank:>4}  {ranked.total:5.2f}  {refs}  {name}{status}")
-        if len(comparisons) == 1:
-            print(f"  {_comparison(*comparisons[0])}")
-        else:
-            for i, c in enumerate(comparisons, 1):
-                print(f"  ref {i}: {_comparison(*c)}")
-            print(f"  mean: {_comparison(*mean_comparison(comparisons))}")
+        _print_evaluated(evaluation.ranking, references, comparisons)
         if args.verbose:
             for name, result in evaluation.results.items():
                 for p in result.problems:
                     print(f"  problem: {name}: {p}")
     return 0
+
+
+def _evaluate_job(args: argparse.Namespace) -> int:
+    """`unapply evaluate --job`: compare a job's ranking from the audit log."""
+    from unapply.db.engine import init_db
+    from unapply.db.repository import NotFound, Repository
+    from unapply.evaluation import (
+        compare_ranking,
+        load_reference,
+        rater_agreement,
+        stored_ranking,
+    )
+
+    given = [
+        option
+        for option, value in (
+            ("a pool", args.pool),
+            ("--scorer", args.scorer),
+            ("--record", args.record),
+            ("--verbose", args.verbose),
+        )
+        if value
+    ]
+    if given:
+        print(
+            f"--job compares a stored ranking; it takes no {', '.join(given)}",
+            file=sys.stderr,
+        )
+        return 2
+    paths: list[Path] = args.reference or []
+    if not paths:
+        print("--job needs at least one --reference", file=sys.stderr)
+        return 2
+    ks = tuple(args.k)
+    try:
+        references = [load_reference(p) for p in paths]
+        agreement = rater_agreement(references, ks) if len(references) > 1 else None
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Can't evaluate: {e}", file=sys.stderr)
+        return 2
+    init_db(args.url)
+    repo = Repository.from_url(args.url)
+    try:
+        job = repo.job(args.job)
+        stored = stored_ranking(repo, args.job, args.ranking)
+    except (NotFound, ValueError) as e:
+        print(f"Can't evaluate: {e}", file=sys.stderr)
+        return 2
+    finally:
+        repo.engine.dispose()
+    assert job is not None  # stored_ranking refuses a job without a rubric.
+    ranks = {n: r.rank for n, r in stored.ranking}
+    order = [n for n, _ in stored.ranking]
+    try:
+        comparisons = [compare_ranking(ranks, order, r, ks) for r in references]
+    except ValueError as e:
+        print(f"Can't evaluate: {e}", file=sys.stderr)
+        return 2
+    print(
+        f"{job.title} at {job.company}: ranking #{stored.entry_id} of "
+        f"{stored.recorded_at:%Y-%m-%d %H:%M:%S}, rubric version "
+        f"{stored.rubric_version}, {len(stored.ranking)} candidates"
+    )
+    _print_references(paths, agreement)
+    print()
+    print(f"{stored.scorer} ({stored.model})")
+    _print_evaluated(stored.ranking, references, comparisons)
+    return 0
+
+
+def _print_references(paths: list[Path], agreement: Agreement | None) -> None:
+    """Print the reference files and, for several, how much they agree."""
+    if len(paths) == 1:
+        print(f"Reference: {paths[0]}")
+    elif paths:
+        print("References:")
+        for i, p in enumerate(paths, 1):
+            print(f"  {i}: {p}")
+    if agreement is not None:
+        print(
+            "Agreement between the references (the ceiling, "
+            f"{agreement.pairs} pair{'s' if agreement.pairs > 1 else ''}): "
+            f"{_comparison(agreement.top_k, agreement.tau)}"
+        )
+
+
+def _print_evaluated(
+    ranking: list[tuple[str, Ranked]],
+    references: list[list[ReferenceEntry]],
+    comparisons: list[tuple[dict[int, float], float | None]],
+) -> None:
+    """Print a ranking beside each reference's ranks, and how it compares."""
+    from unapply.evaluation import mean_comparison
+
+    wanted = [{e.candidate: e.rank for e in r} for r in references]
+    headers = (
+        ["reference"]
+        if len(references) == 1
+        else [f"ref {i}" for i in range(1, len(references) + 1)]
+    )
+    print("  rank  total  " + "  ".join(headers) + "  candidate")
+    for name, ranked in ranking:
+        status = "" if ranked.match.passed_hard_filters else "  (failed hard filters)"
+        refs = "  ".join(
+            f"{w.get(name, '-')!s:>{len(h)}}"
+            for w, h in zip(wanted, headers, strict=True)
+        )
+        print(f"  {ranked.rank:>4}  {ranked.total:5.2f}  {refs}  {name}{status}")
+    if len(comparisons) == 1:
+        print(f"  {_comparison(*comparisons[0])}")
+    else:
+        for i, c in enumerate(comparisons, 1):
+            print(f"  ref {i}: {_comparison(*c)}")
+        print(f"  mean: {_comparison(*mean_comparison(comparisons))}")
 
 
 def _comparison(top_k: dict[int, float], tau: float | None) -> str:

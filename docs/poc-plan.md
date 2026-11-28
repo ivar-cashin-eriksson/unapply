@@ -254,8 +254,9 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   scorer's answers are hand-written stand-ins until recorded. `--reference` can be
   repeated, one file per person who hires: each scorer is compared with each and
   with the mean, beside the mean agreement between the people over every pair (the
-  ceiling; `rater_agreement` in `evaluation/metrics.py`). Still to do: rankings from
-  the database (real matches).
+  ceiling; `rater_agreement` in `evaluation/metrics.py`). `--job` compares a real
+  job's ranking from the audit log, as its employer saw it, with the references
+  instead (`evaluation/stored.py`), without scoring anyone again.
 
 ## Out of scope for the POC
 
