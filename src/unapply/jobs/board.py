@@ -430,6 +430,38 @@ def connected(repo: Repository, job: str) -> list[str]:
     return sorted(names)
 
 
+def is_connected(repo: Repository, candidate: str, job: str) -> bool:
+    """Say whether a candidate is connected to a job, as `connected` lists them.
+
+    Cheaper than looking in `connected`, which reads every candidate for a demo job.
+
+    Parameters
+    ----------
+    repo : Repository
+        The database.
+    candidate : str
+        The candidate.
+    job : str
+        The job.
+
+    Returns
+    -------
+    bool
+        True if they connected, or the job is a demo job and they are a synthetic
+        pool candidate.
+
+    Raises
+    ------
+    NotFound
+        If there is no such candidate or job.
+    """
+    if repo.consent(candidate, job) is not None:
+        return True
+    return bool(
+        repo.job_settings(job).get("demo") and repo.settings(candidate).get("pool")
+    )
+
+
 def count(repo: Repository, job: str) -> ListingCounts:
     """Count how far a job's candidates got.
 
