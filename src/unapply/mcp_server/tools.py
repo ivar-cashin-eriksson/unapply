@@ -354,10 +354,15 @@ class AgentTools:
         Returns
         -------
         list of CandidateEntry
-            Ordered by candidate id, which says nothing about the candidates.
+            Ordered by candidate id, which says nothing about the candidates. Empty
+            for a job without an ad, which candidates can't connect to from the
+            board and which has no id to make their aliases from.
         """
+        job = self.repo.job(self.job)
+        if job is None:
+            return []
         opted_in = self._opted_in()
-        known_as = identities(profile.id for profile, _ in opted_in)
+        known_as = identities((profile.id for profile, _ in opted_in), job.id)
         entries = [
             CandidateEntry(
                 candidate_id=str(profile.id),
@@ -585,9 +590,16 @@ class AgentTools:
         ):
             raise unknown
         if not consent.allows(section):
-            known_as = identities(p.id for p, _ in self._opted_in())
+            job = self.repo.job(self.job)
+            who = (
+                identities((p.id for p, _ in self._opted_in()), job.id)[
+                    profile_id
+                ].alias
+                if job
+                else "This candidate"
+            )
             raise ToolRefused(
-                f"{known_as[profile_id].alias} hasn't shared their {section.value} with this "
+                f"{who} hasn't shared their {section.value} with this "
                 f"job; they shared: {', '.join(consent.sections) or 'nothing yet'}"
             )
         github = self.repo.settings(name).get("github")

@@ -110,8 +110,9 @@ npm run dev                   # http://localhost:5173
   hard filters and weighted criteria. Any change makes a new version. Then the
   **shortlist**: match the candidates with either scorer and see them ranked and
   anonymised (an alias such as "Cobalt Otter" and an abstract, mirrored-pattern
-  avatar, both from the profile id and unique within the job; never a name or a
-  photo), with a score per
+  avatar, both from the profile id and the job's id together, unique within the job
+  and different on every other job, so two employers can't link them; never a name
+  or a photo), with a score per
   criterion, its reason and how many quotes support it, and the hard filter
   outcomes. A **spider chart** compares up to three candidates on the rubric's
   skills, with estimated levels, own levels or both, and a table of every value.

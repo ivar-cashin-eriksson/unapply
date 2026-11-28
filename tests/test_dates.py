@@ -2,6 +2,7 @@
 
 from datetime import date
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 import yaml
@@ -16,7 +17,7 @@ from unapply.ingest.extract import extract_profile
 from unapply.jobs.extract import extract_job
 from unapply.llm import ReplayLLM
 from unapply.matching.llm_scorer import render_match_prompt
-from unapply.matching.shortlist import anonymous_candidate
+from unapply.matching.shortlist import anonymous_candidate, identity
 from unapply.review import ReviewError, apply_review_sheet, export_review_sheet
 from unapply.schemas import DatePrecision, Experience, Profile
 
@@ -148,7 +149,7 @@ def test_the_app_and_the_prompts_write_dates_as_known(john):
     prompt, _, _ = render_match_prompt(john, rubric)
     assert 'from="2017" to="2019"' in prompt
     assert 'from="2018-01" to="2019-07"' in prompt
-    shortlisted = anonymous_candidate(john, rubric)
+    shortlisted = anonymous_candidate(john, rubric, known_as=identity(john.id, uuid4()))
     msc = next(x for x in shortlisted.experiences if x.title.startswith("MSc"))
     assert (msc.start_precision, msc.end_precision) == (YEAR, YEAR)
 

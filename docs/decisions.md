@@ -21,3 +21,6 @@ are on its GitHub issue. Add a line here when a decision becomes a lasting rule.
   mention it; the privacy notice says revealed candidates' material is used for
   employers' conversations with an assistant. Conversations aren't saved and aren't
   part of a candidate's export.
+- **Aliases are per job** (2026-11-27, task 21): a candidate's alias and avatar come
+  from their profile id and the job's id together, so they differ on every job and
+  two employers can't link them; within one job they're the same in every view.

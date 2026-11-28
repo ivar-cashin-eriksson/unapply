@@ -1,8 +1,10 @@
 """What an employer sees of a ranked candidate, and what they ask for next.
 
 The shortlist is anonymised: a candidate is shown by an alias made from their
-profile id (an adjective and an animal or object, such as "Cobalt Otter", unique
-within the job) and an abstract avatar drawn from it, never by name, and every text from the profile goes through
+profile id and the job's id together (an adjective and an animal or object, such as
+"Cobalt Otter", unique within the job) and an abstract avatar drawn from it, never by
+name. The same candidate is known by another alias on every other job, so two
+employers can't link them. Every text from the profile goes through
 `anonymise.redact`, as it does on the way to the LLM scorer. The employer sees what
 the scorer saw: the headline, the roles, the quotes (once the employer reveals the
 candidate) and, for each skill the rubric asks for, the candidate's own level and
@@ -217,36 +219,41 @@ def _identity(index: int) -> Identity:
     return Identity(alias=f"{ADJECTIVES[adjective]} {NOUNS[noun]}", avatar=index)
 
 
-def _index(profile_id: UUID) -> int:
-    """Pick a candidate's preferred alias number from their profile id."""
-    digest = hashlib.sha256(profile_id.bytes).digest()
+def _index(profile_id: UUID, job_id: UUID) -> int:
+    """Pick a candidate's preferred alias number on a job from both ids."""
+    digest = hashlib.sha256(job_id.bytes + profile_id.bytes).digest()
     return int.from_bytes(digest[:8], "big") % ALIASES
 
 
-def identity(profile_id: UUID) -> Identity:
-    """Make a candidate's alias and avatar from their profile id alone.
+def identity(profile_id: UUID, job_id: UUID) -> Identity:
+    """Make a candidate's alias and avatar on a job from the two ids alone.
 
     Parameters
     ----------
     profile_id : UUID
         The candidate's profile.
+    job_id : UUID
+        The job (`Job.id`).
 
     Returns
     -------
     Identity
-        The same for as long as the profile is. Two candidates can share it; use
+        The same for as long as the profile and the job are, and unrelated to the
+        candidate's identity on any other job. Two candidates can share it; use
         `identities` for everyone on a job, which never gives one twice.
     """
-    return _identity(_index(profile_id))
+    return _identity(_index(profile_id, job_id))
 
 
-def identities(profile_ids: Iterable[UUID]) -> dict[UUID, Identity]:
+def identities(profile_ids: Iterable[UUID], job_id: UUID) -> dict[UUID, Identity]:
     """Give each of a job's candidates an alias and avatar no one else on it has.
 
     Parameters
     ----------
     profile_ids : iterable of UUID
         The job's candidates. Up to `ALIASES` of them.
+    job_id : UUID
+        The job (`Job.id`).
 
     Returns
     -------
@@ -266,7 +273,7 @@ def identities(profile_ids: Iterable[UUID]) -> dict[UUID, Identity]:
     taken: set[int] = set()
     found: dict[UUID, Identity] = {}
     for profile_id in ids:
-        index = _index(profile_id)
+        index = _index(profile_id, job_id)
         while index in taken:
             index = (index + 1) % ALIASES
         taken.add(index)
@@ -274,21 +281,24 @@ def identities(profile_ids: Iterable[UUID]) -> dict[UUID, Identity]:
     return found
 
 
-def alias(profile_id: UUID) -> str:
-    """Make the name an employer knows a candidate by before a reveal.
+def alias(profile_id: UUID, job_id: UUID) -> str:
+    """Make the name an employer knows a candidate by on a job before a reveal.
 
     Parameters
     ----------
     profile_id : UUID
         The candidate's profile.
+    job_id : UUID
+        The job (`Job.id`).
 
     Returns
     -------
     str
-        `identity(profile_id).alias`, such as "Cobalt Otter". It says nothing about
-        the person, and stays the same for as long as the profile does.
+        `identity(profile_id, job_id).alias`, such as "Cobalt Otter". It says
+        nothing about the person, and stays the same for as long as the profile and
+        the job do.
     """
-    return identity(profile_id).alias
+    return identity(profile_id, job_id).alias
 
 
 def rubric_skills(rubric: Rubric, taxonomy: Taxonomy | None = None) -> list[str]:
@@ -358,7 +368,8 @@ def anonymous_candidate(
     rubric: Rubric,
     names: list[str] | None = None,
     taxonomy: Taxonomy | None = None,
-    known_as: Identity | None = None,
+    *,
+    known_as: Identity,
     quotes: bool = True,
 ) -> AnonymousCandidate:
     """Build the employer's view of a candidate on a job's shortlist.
@@ -373,9 +384,8 @@ def anonymous_candidate(
         Names to remove from every text, such as the candidate's GitHub username.
     taxonomy : Taxonomy or None, optional
         For synonyms and related skills, by default `default_taxonomy()`.
-    known_as : Identity or None, optional
-        Their alias and avatar on this job (see `identities`), by default
-        `identity(profile.id)`.
+    known_as : Identity
+        Their alias and avatar on this job (see `identities`).
     quotes : bool, optional
         Whether to include their quotes and the summaries of their roles, which
         often repeat the material word for word; by default True. The shortlist
@@ -398,7 +408,6 @@ def anonymous_candidate(
             return "unknown"
         return "candidate statement" if kind == SourceKind.INTERVIEW else kind.value
 
-    known_as = known_as or identity(profile.id)
     return AnonymousCandidate(
         profile_id=profile.id,
         alias=known_as.alias,

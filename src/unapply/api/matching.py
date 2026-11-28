@@ -139,7 +139,7 @@ def shortlist(
 
     The ranking is the one `GET /jobs/<name>/ranking` gives, and is recorded in the
     audit log the same way. Each ranked candidate comes with an alias and avatar
-    number, unique on this shortlist, their roles with names and contact details
+    number, unique on this shortlist and different on every other job, their roles with names and contact details
     removed, their own and estimated levels in the rubric's skills, to compare
     candidates on, and how far they got (revealed, asked to apply, applied or
     declined). Until the employer reveals a candidate, their quotes are left out:
@@ -148,7 +148,7 @@ def shortlist(
     """
     job, ranked = _stored(ctx, name, scorer, version)
     ranking = _ranking(ctx, name, job, scorer, ranked, {})
-    known_as = identities(r.profile_id for r in ranking.candidates)
+    known_as = identities((r.profile_id for r in ranking.candidates), job.id)
     progress = {
         pid: p
         for p in ctx.repo.progresses(job=name)
