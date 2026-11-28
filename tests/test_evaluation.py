@@ -29,6 +29,7 @@ from unapply.evaluation import (
     load_reference,
     mean_comparison,
     rater_agreement,
+    reference_sheet,
     stored_ranking,
     top_k_overlap,
 )
@@ -198,6 +199,7 @@ def test_load_reference(tmp_path):
         ("ranking: []", "no ranking"),
         ("ranking: [{candidate: a}]", "needs `candidate` and `rank`"),
         ("ranking: [{candidate: a, rank: 0}]", "must be 1 or more"),
+        ("ranking: [{candidate: a, rank: null}]", "'a' has no rank yet"),
         ("ranking: [{candidate: a, rank: first}]", "must be 1 or more"),
         ("ranking: [{candidate: a, rank: 1}, {candidate: a, rank: 2}]", "more than"),
     ],
@@ -207,6 +209,35 @@ def test_load_reference_refuses_invalid_files(tmp_path, text, error):
     path.write_text(text, encoding="utf-8")
     with pytest.raises(ValueError, match=error):
         load_reference(path)
+
+
+def test_a_reference_sheet_lists_candidates_alphabetically_unranked(tmp_path):
+    text = reference_sheet(["sofie-krag", "astrid-holm", "a: b"], "Data\nLead at X")
+    assert text.startswith("# A reference ranking for Data Lead at X, to fill in")
+    path = tmp_path / "sheet.yaml"
+    path.write_text(text, encoding="utf-8")
+    # Blank, it is refused, naming the first candidate without a rank.
+    with pytest.raises(ValueError, match="'a: b' has no rank yet"):
+        load_reference(path)
+    filled = (
+        text.replace("rank: null", "rank: 2", 1)
+        .replace("rank: null", "rank: 1", 1)
+        .replace("rank: null\n  reason: ''", "rank: 2\n  reason: Too junior.")
+    )
+    path.write_text(filled, encoding="utf-8")
+    assert load_reference(path) == [
+        ReferenceEntry("astrid-holm", 1),
+        ReferenceEntry("a: b", 2),
+        ReferenceEntry("sofie-krag", 2, "Too junior."),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("names", "error"), [([], "no candidates"), (["a", "a"], "more than once: a")]
+)
+def test_a_reference_sheet_refuses_no_or_repeated_candidates(names, error):
+    with pytest.raises(ValueError, match=error):
+        reference_sheet(names, "X")
 
 
 # The pool
@@ -611,3 +642,74 @@ def test_cli_refuses_a_stored_ranking_it_cant_evaluate(
     args = [{"REF": reference, "OTHER": other}.get(a, a) for a in args]
     assert main(["evaluate", *args]) == 2
     assert error in capsys.readouterr().err
+
+
+# A blank reference sheet
+
+
+def test_cli_writes_a_reference_sheet_of_the_pool(tmp_path, capsys):
+    path = tmp_path / "anna" / "sheet.yaml"
+    assert main(["evaluate", "--sheet", str(path)]) == 0
+    out = capsys.readouterr().out
+    assert (
+        "of 12 candidates for Senior Data Scientist, Pricing and Forecasting at "
+        f"Fjord Grocery ApS to {path}"
+    ) in out
+    names = re.findall(r"- candidate: (\S+)", path.read_text(encoding="utf-8"))
+    assert names == sorted(names) and len(names) == 12 and "astrid-holm" in names
+    # Filled in with the intended ranking, it compares as the intended ranking does.
+    intended = {e.candidate: e.rank for e in load_pool().intended}
+    text = path.read_text(encoding="utf-8")
+    for name in names:
+        text = text.replace(
+            f"candidate: {name}\n  rank: null",
+            f"candidate: {name}\n  rank: {intended[name]}",
+        )
+    path.write_text(text, encoding="utf-8")
+    args = ["evaluate", "--scorer", "baseline", "--reference", str(path)]
+    assert main(args) == 0
+    assert "top-3 overlap 1.00  top-5 overlap 0.80  Kendall's tau 0.82" in (
+        capsys.readouterr().out
+    )
+    # An existing file is never overwritten.
+    before = path.read_text(encoding="utf-8")
+    assert main(["evaluate", "--sheet", str(path)]) == 2
+    assert "already exists" in capsys.readouterr().err
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_cli_writes_a_reference_sheet_of_a_stored_ranking(ranked_db, tmp_path, capsys):
+    first_id = ranked_db.audit_log(kind=AuditKind.RANKING)[0].id
+    latest, older = tmp_path / "latest.yaml", tmp_path / "older.yaml"
+    assert main(["evaluate", "--job", "fjord", "--sheet", str(latest)]) == 0
+    args = ["evaluate", "--job", "fjord", "--ranking", str(first_id)]
+    assert main([*args, "--sheet", str(older)]) == 0
+    assert "of 6 candidates" in capsys.readouterr().out
+    names = re.findall(r"- candidate: (\S+)", latest.read_text(encoding="utf-8"))
+    assert len(names) == 12 and all(n.startswith(DEMO_PREFIX) for n in names)
+    assert names == sorted(names)
+    assert len(re.findall("- candidate: ", older.read_text(encoding="utf-8"))) == 6
+    # Nothing was scored or recorded.
+    assert len(ranked_db.audit_log(kind=AuditKind.RANKING)) == 2
+
+
+@pytest.mark.parametrize(
+    ("args", "error"),
+    [
+        (["--reference", "r.yaml"], "--sheet takes no --reference"),
+        (["--scorer", "llm", "--record"], "--sheet takes no --scorer, --record"),
+        (["--ranking", "1"], "--sheet takes no --ranking"),
+        (["--job", "fjord", "tests/fixtures/pool"], "--sheet takes no a pool"),
+        (["--job", "nothing"], "Can't write a reference sheet: "),
+        (["--job", "fjord", "--ranking", "999"], "no ranking 999"),
+        (["NOWHERE"], "Can't write a reference sheet: "),
+    ],
+)
+def test_cli_refuses_a_reference_sheet_it_cant_write(
+    ranked_db, tmp_path, capsys, args, error
+):
+    path = tmp_path / "sheet.yaml"
+    args = [str(tmp_path / "nowhere") if a == "NOWHERE" else a for a in args]
+    assert main(["evaluate", "--sheet", str(path), *args]) == 2
+    assert error in capsys.readouterr().err
+    assert not path.exists()
