@@ -201,6 +201,9 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   and asked to apply, out of connected), and for a job where they weren't revealed
   the skills common among the candidates who were (at least five) that they lack
   or rated lower, from own levels only.
+- Done (task 22): **Connect my profile** and **Withdraw** on each board card, the
+  same action and rules as on the listing (approved profiles only, no withdrawing
+  once revealed; a revealed card says the connection stays).
 
 ## The key experiment (run alongside M1–M4)
 

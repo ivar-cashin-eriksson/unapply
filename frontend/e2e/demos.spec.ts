@@ -374,6 +374,22 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   const without = (await ranked()).map((c) => c.profile_id)
   expect(without).toHaveLength(12)
   expect(without).not.toContain(profile.id)
+
+  // Connect and withdraw from the card on the board, the same action as on the listing.
+  await page.getByRole('link', { name: 'All jobs' }).click()
+  const title = 'Data Scientist, Energy Demand Forecasting'
+  await card.getByRole('button', { name: `Connect my profile: ${title}` }).click()
+  await expect(page.getByText('Your profile is connected to Lynfjord Power A/S.')).toBeVisible()
+  await expect(card.getByText('Connected', { exact: true })).toBeVisible()
+  await expect(card.getByRole('button', { name: `Withdraw: ${title}` })).toBeEnabled()
+  await expect(card.getByRole('group', { name: 'Your fit' })).toBeVisible()
+  expect((await ranked()).map((c) => c.profile_id)).toContain(profile.id)
+  await card.scrollIntoViewIfNeeded()
+  await shot(page, '20b-job-board-card-connected', { fullPage: false })
+  await card.getByRole('button', { name: `Withdraw: ${title}` }).click()
+  await expect(card.getByRole('button', { name: `Connect my profile: ${title}` })).toBeEnabled()
+  await expect(card.getByText('Connected', { exact: true })).toHaveCount(0)
+  expect((await ranked()).map((c) => c.profile_id)).not.toContain(profile.id)
 })
 
 test('reveal, request and apply: John Doe applies to one job and declines another', async ({ page }) => {

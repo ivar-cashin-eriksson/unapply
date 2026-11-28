@@ -168,6 +168,92 @@ describe('the job board', () => {
     expect(await screen.findByRole('list', { name: 'Jobs' })).toBeInTheDocument()
   })
 
+  it('connects and withdraws from a card, as on the listing', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    const connections = vi.spyOn(api, 'connections').mockResolvedValue([])
+    const fits = vi.spyOn(api, 'fits').mockResolvedValue([])
+    const connect = vi.spyOn(api, 'connect').mockResolvedValue(connection())
+    const withdraw = vi.spyOn(api, 'withdraw').mockResolvedValue(undefined)
+    const { user } = renderApp('/candidates/john-doe/jobs')
+
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    const button = await within(cards[0]).findByRole('button', { name: 'Connect my profile: Senior Data Scientist, Pricing and Forecasting' })
+    expect(button).toHaveTextContent('Connect my profile')
+    expect(within(cards[1]).getByRole('button', { name: /^Connect my profile: / })).toBeEnabled()
+    expect(screen.queryByRole('link', { name: 'go to your review' })).toBeNull()
+
+    connections.mockResolvedValue([connection()])
+    await user.click(button)
+    expect(connect).toHaveBeenCalledWith('john-doe', 'board-fjord-grocery')
+    expect(await screen.findByText('Your profile is connected to Fjord Grocery ApS.')).toBeInTheDocument()
+    expect(await within(cards[0]).findByText('Connected')).toBeInTheDocument()
+    // The fit is asked again, for the place among the connected.
+    expect(fits.mock.calls.length).toBeGreaterThan(1)
+    // The other card is unchanged.
+    expect(within(cards[1]).getByRole('button', { name: /^Connect my profile: / })).toBeEnabled()
+
+    connections.mockResolvedValue([])
+    await user.click(within(cards[0]).getByRole('button', { name: 'Withdraw: Senior Data Scientist, Pricing and Forecasting' }))
+    expect(withdraw).toHaveBeenCalledWith('john-doe', 'board-fjord-grocery')
+    expect(await screen.findByText('You withdrew from Fjord Grocery ApS.')).toBeInTheDocument()
+    expect(
+      await within(cards[0]).findByRole('button', { name: 'Connect my profile: Senior Data Scientist, Pricing and Forecasting' }),
+    ).toBeEnabled()
+    expect(within(cards[0]).queryByText('Connected')).toBeNull()
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('says on the card why a withdrawal was refused', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([connection()])
+    vi.spyOn(api, 'withdraw').mockRejectedValue(new ApiError(409, 'The employer has revealed you for this job.'))
+    const { user } = renderApp('/candidates/john-doe/jobs')
+
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    await user.click(await within(cards[0]).findByRole('button', { name: 'Withdraw: Senior Data Scientist, Pricing and Forecasting' }))
+    expect(await within(cards[0]).findByText("Couldn't withdraw")).toBeInTheDocument()
+    expect(within(cards[0]).getByText('The employer has revealed you for this job.')).toBeInTheDocument()
+    expect(within(cards[1]).queryByText("Couldn't withdraw")).toBeNull()
+  })
+
+  it('offers no withdrawal on a card once revealed', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([progressed('requested')])
+    renderApp('/candidates/john-doe/jobs')
+
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    expect(
+      await within(cards[0]).findByText('Fjord Grocery ApS revealed you on 27 Nov 2026; the connection stays.'),
+    ).toBeInTheDocument()
+    expect(within(cards[0]).queryByRole('button', { name: /Withdraw|Connect my profile/ })).toBeNull()
+    expect(within(cards[1]).getByRole('button', { name: /^Connect my profile: / })).toBeEnabled()
+  })
+
+  it('needs an approved profile to connect from a card', async () => {
+    vi.spyOn(api, 'candidate').mockResolvedValue(candidate({ has_profile: true, approved: false }))
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    renderApp('/candidates/john-doe/jobs')
+
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    for (const card of cards) {
+      expect(await within(card).findByRole('button', { name: /^Connect my profile: / })).toBeDisabled()
+    }
+    expect(screen.getByRole('link', { name: 'go to your review' })).toHaveAttribute('href', '/candidates/john-doe/review')
+  })
+
+  it('shows no card actions until the connections load', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockReturnValue(new Promise(() => {}))
+    renderApp('/candidates/john-doe/jobs')
+    await screen.findByRole('list', { name: 'Jobs' })
+    expect(screen.queryByRole('button', { name: /Connect my profile|Withdraw/ })).toBeNull()
+  })
+
   it('shows an error when the board does not load', async () => {
     approved()
     vi.spyOn(api, 'board').mockRejectedValue(new ApiError(500, 'The server broke.'))

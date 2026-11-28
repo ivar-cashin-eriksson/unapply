@@ -86,7 +86,7 @@ npm run dev                   # http://localhost:5173
   never shown. Then the **job board**: browse and search the jobs (free text over
   title, company and ad; filters for location, work mode and seniority), read a
   listing in full (the ad and its vacancies, never the rubric), and **connect my
-  profile** to a job with one click. Connecting is the candidate's consent for that
+  profile** to a job with one click, from its card on the board or the listing. Connecting is the candidate's consent for that
   job, recorded with its time: only connected candidates are matched and ranked.
   It can be withdrawn, which takes the candidate out of the job's next ranking,
   until the employer reveals them. Each listing shows how many connected, were
