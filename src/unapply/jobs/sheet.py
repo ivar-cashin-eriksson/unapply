@@ -25,6 +25,7 @@ from unapply.schemas import (
     SkillLevel,
     WorkMode,
 )
+from unapply.sheet_yaml import load_sheet
 from unapply.taxonomy import canonical_skill
 
 
@@ -218,7 +219,7 @@ def _content(criteria: list[Criterion]) -> list[tuple]:
 
 def _parse(sheet_text: str) -> _Sheet:
     try:
-        data: Any = yaml.safe_load(sheet_text)
+        data: Any = load_sheet(sheet_text)
     except yaml.YAMLError as e:
         raise RubricError(f"the sheet isn't valid YAML: {e}") from e
     if not isinstance(data, dict):
