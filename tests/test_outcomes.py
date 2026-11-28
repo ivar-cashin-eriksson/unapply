@@ -239,7 +239,10 @@ def test_johns_comparison_matches_a_calculation_by_hand(client, repo, pool):
 
     axes = [s["skill"] for s in found["skills"]]
     assert 3 <= len(axes) <= MAX_AXES and set(axes) <= medians.keys()
-    assert [count[s] for s in axes] == sorted((count[s] for s in axes), reverse=True)
+    # The most listed of the rated skills, drawn by name.
+    assert axes == sorted(axes, key=str.casefold)
+    left_out = medians.keys() - set(axes)
+    assert all(count[s] >= count[o] for s in axes for o in left_out)
     for s in found["skills"]:
         assert s["median"] == medians[s["skill"]]
         assert s["own_level"] == own.get(s["skill"])
@@ -319,9 +322,22 @@ def test_the_chart_has_the_skills_the_group_lists_most():
     others.append(own_levels({names[0]: 3}))
     found = compared(me, others)
     axes = [s.skill for s in found.skills]
-    assert len(axes) == MAX_AXES and axes[0] == names[0]
-    assert found.skills[0].own_level == 2 and found.skills[0].median == 3
-    assert all(s.own_level is None for s in found.skills[1:])
+    assert len(axes) == MAX_AXES and names[0] in axes
+    assert axes == sorted(axes)
+    mine = found.skills[axes.index(names[0])]
+    assert mine.own_level == 2 and mine.median == 3
+    assert all(s.own_level is None for s in found.skills if s is not mine)
+
+
+def test_the_chart_keeps_its_order_across_groups():
+    me = own_levels({"python": 3, "sql": 3, "dbt": 3, "kafka": 3})
+    # One group lists kafka most, the other python; the axes are the same.
+    first = [own_levels({"kafka": 3, "sql": 3, "python": 3, "dbt": 3})] * 5
+    first += [own_levels({"kafka": 3, "sql": 3})] * 2
+    second = [own_levels({"python": 3, "dbt": 3, "sql": 3, "kafka": 3})] * 5
+    second += [own_levels({"python": 3, "dbt": 3})] * 2
+    axes = [[s.skill for s in compared(me, g).skills] for g in (first, second)]
+    assert axes[0] == axes[1] == ["dbt", "kafka", "python", "sql"]
 
 
 # Nothing hidden, nothing about one other candidate
