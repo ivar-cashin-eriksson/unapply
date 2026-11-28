@@ -49,8 +49,10 @@ from unapply.matching.audit import (
 )
 from unapply.matching.baseline import RELATED_FACTOR, level
 from unapply.matching.filters import (
+    ExperienceKind,
     Outcome,
     counts_as_work,
+    experience_kind,
     permit_covers,
     same_place,
     years_of_experience,
@@ -311,6 +313,22 @@ def test_years_skip_education_projects_and_undated_roles():
     assert counts_as_work(_role(None, None, "Data Analyst (student job)"))
     assert not counts_as_work(_role(None, None, "PhD in Physics"))
     assert years_of_experience(_profile(), TODAY) is None
+
+
+def test_experience_kind_tells_work_education_and_projects_apart():
+    assert experience_kind(_role(None, None, "MSc in Statistics", "DTU")) == (
+        ExperienceKind.EDUCATION
+    )
+    assert experience_kind(_role(None, None, "App", "Personal project")) == (
+        ExperienceKind.PROJECT
+    )
+    assert experience_kind(_role(None, None, "Side project: a recipe site")) == (
+        ExperienceKind.PROJECT
+    )
+    assert experience_kind(_role(None, None, "Data Analyst (student job)")) == (
+        ExperienceKind.WORK
+    )
+    assert experience_kind(_role(None, None, "Project Manager")) == ExperienceKind.WORK
 
 
 def test_a_current_role_runs_to_today():

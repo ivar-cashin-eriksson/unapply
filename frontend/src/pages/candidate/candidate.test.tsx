@@ -188,6 +188,26 @@ describe('review', () => {
     expect(sent.add_skills).toEqual([{ name: 'matlab', category: 'technology', level: 3, note: 'Thesis, 2018' }])
   })
 
+  it('groups experience by kind, and edits the right entry', async () => {
+    const work = reviewForm().experiences[0]
+    const degree = { ...work, id: 'exp-2', title: 'MSc in Statistics', organisation: 'DTU', kind: 'education' as const }
+    const save = vi.spyOn(api, 'saveReview').mockResolvedValue(profile({ approved_by_candidate_at: null }))
+    // The degree comes first in the form, but work is shown first.
+    const { user } = openReview(reviewForm({ experiences: [degree, work] }))
+
+    await user.click(await screen.findByRole('tab', { name: /Experience/ }))
+    const groups = screen.getAllByRole('region', { name: /^(Work|Education|Projects)$/ })
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Work', 'Education'])
+    await user.type(within(groups[1]).getByLabelText('End'), '2018')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    const sent = save.mock.calls[0][1] as ReviewForm
+    expect(sent.experiences.map((x) => [x.title, x.end])).toEqual([
+      ['MSc in Statistics', '2018'],
+      ['Data Scientist', null],
+    ])
+  })
+
   it("fills in John's review in the demo", async () => {
     const filled = reviewForm({ approve: true, headline: 'Filled in' })
     vi.spyOn(api, 'demoReview').mockResolvedValue(filled)
@@ -291,6 +311,26 @@ describe('profile', () => {
     expect(screen.getByText('Not rated')).toBeInTheDocument()
     expect(screen.getByText('Copenhagen')).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(ASSESSMENT)
+  })
+
+  it('shows work, education and projects apart, each on its own timeline', async () => {
+    const work = profile().experiences[0]
+    const experiences = [
+      { ...work, id: 'exp-2', title: 'Recipe app (personal project)', organisation: 'GitHub', kind: 'project' as const },
+      { ...work, id: 'exp-3', title: 'MSc in Statistics', organisation: 'DTU', kind: 'education' as const },
+      work,
+    ]
+    vi.spyOn(api, 'candidate').mockResolvedValue(candidate({ has_profile: true, approved: true, history: ['approved'] }))
+    vi.spyOn(api, 'profile').mockResolvedValue(profile({ experiences }))
+    renderApp('/candidates/john-doe/profile')
+
+    await screen.findByRole('heading', { name: 'Data scientist in retail forecasting' })
+    const groups = screen.getAllByRole('region', { name: /^(Work|Education|Projects)$/ })
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Work', 'Education', 'Projects'])
+    expect(within(groups[0]).getByRole('heading', { name: 'Work' })).toBeInTheDocument()
+    expect(groups[1]).toHaveTextContent('MSc in Statistics')
+    expect(groups[2]).toHaveTextContent('Recipe app (personal project)')
+    expect(screen.getAllByTestId('timeline')).toHaveLength(3)
   })
 
   it('sets the contact details an employer sees once they reveal you', async () => {

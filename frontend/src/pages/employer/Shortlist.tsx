@@ -38,6 +38,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { api, describeError } from '@/lib/api'
 import { MAX_COMPARED, type LevelView } from '@/lib/chart'
 import { day, FILTERS, month } from '@/lib/format'
+import { EXPERIENCE_KINDS } from '@/lib/experienceKind'
 import type {
   Contact,
   Criterion,
@@ -728,17 +729,25 @@ function Roles({ candidate }: { candidate: ShortlistCandidate }) {
     <section className="space-y-2" aria-label="Experience">
       <h4 className="text-sm font-medium">Experience</h4>
       <ul className="space-y-2">
-        {candidate.experiences.map((x, i) => (
-          <li key={i} className="text-sm">
-            <span className="font-medium">{x.title}</span>
-            <span className="text-muted-foreground">
-              {' '}
-              · {x.organisation} · {month(x.start, x.start_precision) || '?'} –{' '}
-              {x.end ? month(x.end, x.end_precision) : 'now'}
-            </span>
-            {x.summary && <p className="text-muted-foreground">{x.summary}</p>}
-          </li>
-        ))}
+        {candidate.experiences.map((x, i) => {
+          const look = EXPERIENCE_KINDS[x.kind]
+          const Icon = look.icon
+          return (
+            <li key={i} className="text-sm" data-kind={x.kind}>
+              <span className={cn('mr-1.5 inline-flex items-center gap-1 text-xs font-medium', look.text)}>
+                <Icon className="size-3.5" aria-hidden />
+                {look.label}
+              </span>
+              <span className="font-medium">{x.title}</span>
+              <span className="text-muted-foreground">
+                {' '}
+                · {x.organisation} · {month(x.start, x.start_precision) || '?'} –{' '}
+                {x.end ? month(x.end, x.end_precision) : 'now'}
+              </span>
+              {x.summary && <p className="text-muted-foreground">{x.summary}</p>}
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 
 from unapply.matching.anonymise import redact
 from unapply.matching.baseline import level
+from unapply.matching.filters import ExperienceKind, experience_kind
 from unapply.schemas import DatePrecision, Profile, Rubric, SkillLevel, SourceKind
 from unapply.taxonomy import Taxonomy, default_taxonomy
 
@@ -131,6 +132,8 @@ class AnonymousExperience(BaseModel):
         The same for `end`.
     summary : str
         What the candidate did.
+    kind : ExperienceKind
+        Work, education or a personal project (see `experience_kind`).
     """
 
     title: str
@@ -140,6 +143,7 @@ class AnonymousExperience(BaseModel):
     start_precision: DatePrecision = DatePrecision.MONTH
     end_precision: DatePrecision = DatePrecision.MONTH
     summary: str = ""
+    kind: ExperienceKind = ExperienceKind.WORK
 
 
 class AnonymousCandidate(BaseModel):
@@ -422,6 +426,7 @@ def anonymous_candidate(
                 start_precision=x.start_precision,
                 end_precision=x.end_precision,
                 summary=text(x.summary) if quotes else "",
+                kind=experience_kind(x),
             )
             for x in profile.experiences
         ],

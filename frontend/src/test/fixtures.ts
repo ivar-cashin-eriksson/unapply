@@ -57,6 +57,7 @@ export function reviewForm(patch: Partial<ReviewForm> = {}): ReviewForm {
         end: null,
         summary: 'Demand forecasting for 400 stores.',
         evidence: ['cv: Built demand forecasts for 400 stores'],
+        kind: 'work',
       },
     ],
     skills: [
@@ -101,6 +102,7 @@ export function profile(patch: Partial<CandidateProfile> = {}): CandidateProfile
         summary: 'Demand forecasting for 400 stores.',
         skills: ['forecasting'],
         evidence_ids: ['ev-1'],
+        kind: 'work',
       },
     ],
     skills: [
@@ -203,6 +205,7 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): S
         start_precision: 'month',
         end_precision: 'month',
         summary: '',
+        kind: 'work',
       },
     ],
     evidence: [],

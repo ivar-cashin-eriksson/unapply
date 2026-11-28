@@ -1,4 +1,4 @@
-import { BadgeCheck, Briefcase, Download, FileUp, MapPin, Pencil } from 'lucide-react'
+import { BadgeCheck, Download, FileUp, History, MapPin, Pencil } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { CategoryHeading } from '@/components/CategoryColour'
@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { categoryBorder } from '@/lib/categoryColour'
+import { byKind, EXPERIENCE_KINDS } from '@/lib/experienceKind'
 import { api } from '@/lib/api'
 import { CATEGORIES, period, WORK_MODES } from '@/lib/format'
-import type { CandidateProfile, CandidateSkill } from '@/lib/types'
+import type { CandidateProfile, CandidateSkill, Experience, ExperienceKind } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
 import { TRANSPARENCY, useCandidate } from '@/pages/candidate/context'
@@ -85,26 +86,16 @@ export function Profile() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Briefcase className="size-4 text-primary" aria-hidden /> Experience
+              <History className="size-4 text-primary" aria-hidden /> Experience
             </CardTitle>
           </CardHeader>
           <CardContent>
             {profile.experiences.length ? (
-              <ol data-testid="timeline" className="relative space-y-6 border-l pl-6">
-                {profile.experiences.map((x) => (
-                  <li key={x.id} className="relative">
-                    {/* Centred on the 1px line: pl-6 back, then half the line's width. */}
-                    <span className="absolute top-1.5 left-[calc(-1.5rem-0.5px)] size-3 -translate-x-1/2 rounded-full border-2 border-background bg-primary" aria-hidden />
-                    <p className="font-medium">
-                      {x.title} <span className="font-normal text-muted-foreground">· {x.organisation}</span>
-                    </p>
-                    {period(x.start, x.end, x.start_precision, x.end_precision) && (
-                      <p className="text-sm text-muted-foreground">{period(x.start, x.end, x.start_precision, x.end_precision)}</p>
-                    )}
-                    {x.summary && <p className="mt-1.5 text-sm leading-relaxed">{x.summary}</p>}
-                  </li>
+              <div className="space-y-6">
+                {byKind(profile.experiences).map(({ kind, entries }) => (
+                  <ExperienceGroup key={kind} kind={kind} experiences={entries.map((e) => e.entry)} />
                 ))}
-              </ol>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">No experience listed.</p>
             )}
@@ -124,6 +115,40 @@ export function Profile() {
       </section>
       <p className="mt-8 text-sm text-muted-foreground">{TRANSPARENCY}</p>
     </>
+  )
+}
+
+/** One kind of experience (work, education or projects): a heading and its timeline. */
+function ExperienceGroup({ kind, experiences }: { kind: ExperienceKind; experiences: Experience[] }) {
+  const look = EXPERIENCE_KINDS[kind]
+  const Icon = look.icon
+  return (
+    <section aria-label={look.plural} data-kind={kind}>
+      <h3 className={cn('mb-3 flex items-center gap-2 text-sm font-medium', look.text)}>
+        <Icon className="size-4" aria-hidden /> {look.plural}
+      </h3>
+      <ol data-testid="timeline" className={cn('relative space-y-6 border-l pl-6', look.line)}>
+        {experiences.map((x) => (
+          <li key={x.id} className="relative">
+            {/* Centred on the 1px line: pl-6 back, then half the line's width. */}
+            <span
+              className={cn(
+                'absolute top-1.5 left-[calc(-1.5rem-0.5px)] size-3 -translate-x-1/2 rounded-full border-2 border-background',
+                look.dot,
+              )}
+              aria-hidden
+            />
+            <p className="font-medium">
+              {x.title} <span className="font-normal text-muted-foreground">· {x.organisation}</span>
+            </p>
+            {period(x.start, x.end, x.start_precision, x.end_precision) && (
+              <p className="text-sm text-muted-foreground">{period(x.start, x.end, x.start_precision, x.end_precision)}</p>
+            )}
+            {x.summary && <p className="mt-1.5 text-sm leading-relaxed">{x.summary}</p>}
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 

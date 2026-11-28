@@ -47,6 +47,9 @@ export interface Evidence {
 /** How much of a date is known (`unapply.schemas.DatePrecision`). */
 export type DatePrecision = 'year' | 'month'
 
+/** Work, education or a personal project (`unapply.matching.filters.ExperienceKind`). */
+export type ExperienceKind = 'work' | 'education' | 'project'
+
 export interface Experience {
   id: string
   title: string
@@ -60,6 +63,8 @@ export interface Experience {
   summary: string
   skills: string[]
   evidence_ids: string[]
+  /** Told from the title and organisation; not stored. */
+  kind: ExperienceKind
 }
 
 export interface Preferences {
@@ -106,6 +111,8 @@ export interface ExperienceEdit {
   summary: string
   /** "source: quote" lines; shown only. */
   evidence: string[]
+  /** Shown only. */
+  kind: ExperienceKind
 }
 
 export interface SkillEdit {
@@ -301,6 +308,7 @@ export interface AnonymousExperience {
   start_precision: DatePrecision
   end_precision: DatePrecision
   summary: string
+  kind: ExperienceKind
 }
 
 export interface AnonymousCandidate {
