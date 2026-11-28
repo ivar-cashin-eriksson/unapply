@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 
 from unapply.app.forms import candidate_view
-from unapply.jobs.board import connected, find_listing, listings
+from unapply.jobs.board import Listing, connected, find_listing, listings
 from unapply.matching.audit import AuditKind
 from unapply.matching.baseline import own_total
 from unapply.matching.filters import Outcome, check_hard_filters
@@ -302,3 +302,91 @@ def fits(repo: Repository, candidate: str) -> list[Fit]:
     """
     found = [fit(repo, candidate, x.name) for x in listings(repo)]
     return [f for f in found if f is not None]
+
+
+class FitFilter(StrEnum):
+    """What the board's fit filter keeps: one band, or jobs whose requirements fail.
+
+    A band keeps the jobs where the candidate's band is that band, whatever the hard
+    filters say, so the filter keeps what each card's fit badge says. `NOT_MET`
+    keeps the jobs with at least one hard filter the candidate doesn't meet.
+    """
+
+    STRONG = "strong"
+    GOOD = "good"
+    PARTIAL = "partial"
+    LOW = "low"
+    NOT_MET = "not_met"
+
+
+class BoardSort(StrEnum):
+    """The order of the board's listings: newest first, or best fit first."""
+
+    NEWEST = "newest"
+    FIT = "fit"
+
+
+# Best band first; a job without a band (no profile yet) sorts after every band.
+_BAND_ORDER = {b: i for i, b in enumerate(FitBand)}
+
+
+def keeps(found: Fit | None, wanted: FitFilter) -> bool:
+    """Whether a job's fit passes the board's fit filter.
+
+    Parameters
+    ----------
+    found : Fit or None
+        The candidate's fit for the job; None if it couldn't be worked out, which
+        no fit filter keeps.
+    wanted : FitFilter
+        The filter.
+
+    Returns
+    -------
+    bool
+        True if the job is kept.
+    """
+    if found is None:
+        return False
+    if wanted is FitFilter.NOT_MET:
+        return bool(found.missed)
+    return found.band is not None and found.band.value == wanted.value
+
+
+def arrange(
+    found: list[Listing],
+    by_job: dict[str, Fit],
+    wanted: FitFilter | None = None,
+    order: BoardSort = BoardSort.NEWEST,
+) -> list[Listing]:
+    """Filter listings by the candidate's fit and sort them by it.
+
+    Parameters
+    ----------
+    found : list of Listing
+        Listings in board order: newest first, then by name.
+    by_job : dict of str to Fit
+        The candidate's fit for each job, by job name.
+    wanted : FitFilter or None, optional
+        Keep only the jobs that pass this filter; None keeps every job.
+    order : BoardSort, optional
+        `NEWEST` keeps board order; `FIT` puts the best band first, ties (and jobs
+        without a band, last) in board order, so ties are newest first.
+
+    Returns
+    -------
+    list of Listing
+        The listings kept, in the order asked for.
+    """
+    kept = [x for x in found if wanted is None or keeps(by_job.get(x.name), wanted)]
+    if order is BoardSort.FIT:
+        # A stable sort keeps board order (newest first) within each band.
+        return sorted(kept, key=lambda x: _rank(by_job.get(x.name)))
+    return kept
+
+
+def _rank(found: Fit | None) -> int:
+    """Where a fit's band sorts: 0 for strong, and after every band for none."""
+    if found is None or found.band is None:
+        return len(_BAND_ORDER)
+    return _BAND_ORDER[found.band]

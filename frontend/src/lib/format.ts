@@ -4,6 +4,7 @@ import type {
   CriterionKind,
   DatePrecision,
   FitBand,
+  FitFilter,
   HardFilterCheck,
   Place,
   Seniority,
@@ -65,6 +66,12 @@ export const FIT_BANDS: { value: FitBand; label: string }[] = [
   { value: 'good', label: 'Good fit' },
   { value: 'partial', label: 'Partial fit' },
   { value: 'low', label: 'Low fit' },
+]
+
+/** The board's fit filter: the bands, then the jobs whose requirements the candidate doesn't meet. */
+export const FIT_FILTERS: { value: FitFilter; label: string }[] = [
+  ...FIT_BANDS,
+  { value: 'not_met', label: 'Requirements not met' },
 ]
 
 /** "Strong fit", "Good fit", "Partial fit" or "Low fit". */

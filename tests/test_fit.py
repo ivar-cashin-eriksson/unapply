@@ -17,11 +17,16 @@ from unapply.app.forms import candidate_view
 from unapply.db.engine import database_url, init_db
 from unapply.db.repository import NotFound, Repository
 from unapply.evaluation.pool import load_board, load_pool, store_board
+from unapply.jobs.board import listings
 from unapply.jobs.fit import (
+    BoardSort,
     FitBand,
+    FitFilter,
+    arrange,
     band,
     filter_label,
     fit,
+    fits,
     missed_filters,
     own_band,
     place,
@@ -342,3 +347,104 @@ def test_fit_routes_refuse_unknown_names(client):
     assert client.get(f"/candidates/nobody/fit/{FJORD}").status_code == 404
     name = approved_demo(client)
     assert client.get(f"/candidates/{name}/fit/no-such-job").status_code == 404
+
+
+# Filtering and sorting the board by fit
+
+
+BAND_ORDER = ["strong", "good", "partial", "low"]
+
+
+def test_the_fit_filter_and_sort_on_the_pool(repo, pool):
+    store_board(repo, pool)
+    found = listings(repo)
+    names = [x.name for x in found]
+    for candidate in pool.candidates:
+        by_job = {f.job: f for f in fits(repo, f"pool-{candidate}")}
+        # The default order is board order: newest first.
+        assert arrange(found, by_job) == found
+        kept = {}
+        for wanted in FitFilter:
+            got = [x.name for x in arrange(found, by_job, wanted)]
+            # Each filter keeps what the cards say, in board order.
+            assert got == [n for n in names if n in got]
+            if wanted is FitFilter.NOT_MET:
+                assert got == [n for n in names if by_job[n].missed]
+            else:
+                assert got == [n for n in names if by_job[n].band.value == wanted]
+            kept[wanted] = got
+        # Every job has one band, so the band filters split the board.
+        bands = [n for w in FitFilter if w is not FitFilter.NOT_MET for n in kept[w]]
+        assert sorted(bands) == sorted(names)
+        # Best fit first, and newest first within a band.
+        ordered = arrange(found, by_job, order=BoardSort.FIT)
+        ranks = [BAND_ORDER.index(by_job[x.name].band) for x in ordered]
+        assert ranks == sorted(ranks)
+        for b in FitBand:
+            within = [x.name for x in ordered if by_job[x.name].band is b]
+            assert within == [n for n in names if by_job[n].band is b]
+        # Filter and sort together.
+        assert arrange(found, by_job, FitFilter.NOT_MET, BoardSort.FIT) == [
+            x for x in ordered if by_job[x.name].missed
+        ]
+
+
+def test_the_pool_covers_every_fit_filter(repo, pool):
+    store_board(repo, pool)
+    found = listings(repo)
+    for wanted in FitFilter:
+        assert any(
+            arrange(found, {f.job: f for f in fits(repo, f"pool-{c}")}, wanted)
+            for c in pool.candidates
+        ), wanted
+
+
+def test_the_board_by_fit_in_johns_demo(client):
+    ok(client.post("/demos/board"), 201)
+    name = approved_demo(client)
+    by_job = {f["job"]: f for f in ok(client.get(f"/candidates/{name}/fit"))}
+    board = [x["name"] for x in ok(client.get("/board"))["listings"]]
+    assert len(board) == 11
+
+    def names(**params):
+        body = ok(client.get("/board", params={"candidate": name, **params}))
+        assert body["total"] == 11
+        assert_hidden(body["listings"])
+        return [x["name"] for x in body["listings"]]
+
+    assert names() == board
+    assert names(sort="newest") == board
+    for b in BAND_ORDER:
+        assert names(fit=b) == [n for n in board if by_job[n]["band"] == b]
+    assert names(fit="strong")[0] == FJORD
+    assert "board-kloevermark-supermarkets" in names(fit="low")
+    unmet = names(fit="not_met")
+    assert "board-kaveri-retail" in unmet
+    assert unmet == [n for n in board if by_job[n]["missed"]]
+    ordered = names(sort="fit")
+    assert sorted(ordered) == sorted(board)
+    ranks = [BAND_ORDER.index(by_job[n]["band"]) for n in ordered]
+    assert ranks == sorted(ranks)
+    assert ordered[0] == next(n for n in board if by_job[n]["band"] == "strong")
+    # With the other filters: a search for words in Fjord's ad, by fit.
+    fjord = ok(client.get(f"/board/{FJORD}"))
+    assert FJORD in names(q=fjord["company"], fit="strong", sort="fit")
+    assert names(q=fjord["company"], fit="low") == []
+
+
+def test_the_board_by_fit_needs_a_known_candidate(client, repo):
+    ok(client.post("/demos/board"), 201)
+    assert client.get("/board", params={"fit": "strong"}).status_code == 422
+    assert client.get("/board", params={"sort": "fit"}).status_code == 422
+    assert client.get("/board", params={"fit": "great"}).status_code == 422
+    missing = client.get("/board", params={"candidate": "nobody", "sort": "fit"})
+    assert missing.status_code == 404
+    # A candidate with no profile has no band: nothing passes a band filter, and the
+    # fit order is the board's order.
+    repo.create_candidate("jane")
+    board = ok(client.get("/board"))["listings"]
+    jane = {"candidate": "jane"}
+    assert ok(client.get("/board", params={**jane, "sort": "fit"}))["listings"] == board
+    for wanted in FitFilter:
+        body = ok(client.get("/board", params={**jane, "fit": wanted.value}))
+        assert body["listings"] == []

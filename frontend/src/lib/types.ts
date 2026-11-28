@@ -434,7 +434,17 @@ export interface BoardQuery {
   location?: string
   work_mode?: WorkMode
   seniority?: Seniority
+  /** The candidate whose fit `fit` and `sort: 'fit'` use; needed for either. */
+  candidate?: string
+  fit?: FitFilter
+  sort?: BoardSort
 }
+
+/** The board's fit filter: one band, or the jobs with a requirement the candidate doesn't meet. */
+export type FitFilter = FitBand | 'not_met'
+
+/** The board's order: newest first, or best fit first (ties newest first). */
+export type BoardSort = 'newest' | 'fit'
 
 /** A job the candidate connected their profile to: their consent for it. */
 export interface Connection {

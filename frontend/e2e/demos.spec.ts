@@ -310,6 +310,36 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
   await shot(page, '16-job-board')
 
+  // By fit: a band, the requirements he doesn't meet, and best fit first.
+  const fitOf = async () =>
+    (await jobs.getByRole('group', { name: 'Your fit' }).allTextContents()).map(
+      (t) => ['Strong fit', 'Good fit', 'Partial fit', 'Low fit'].findIndex((b) => t.includes(b)),
+    )
+  await page.getByLabel('Fit', { exact: true }).selectOption('strong')
+  await expect(page.getByText(/· searching…/)).toHaveCount(0)
+  await expect(page.getByText(new RegExp(`^[0-9]+ of ${total} jobs$`))).toBeVisible()
+  await expect(lynfjord).toBeVisible()
+  await expect(jobs.getByRole('listitem').filter({ hasText: 'Kløvermark' })).toHaveCount(0)
+  expect(new Set(await fitOf())).toEqual(new Set([0]))
+  await page.getByLabel('Fit', { exact: true }).selectOption('not_met')
+  await expect(kaveri).toBeVisible()
+  await expect(lynfjord).toHaveCount(0)
+  for (const card of await jobs.getByRole('listitem').all()) {
+    await expect(card.getByRole('group', { name: "Requirements you don't meet" })).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Clear filters' }).first().click()
+  await page.getByLabel('Sort', { exact: true }).selectOption('fit')
+  await expect(page.getByText(/· searching…/)).toHaveCount(0)
+  await expect(jobs.getByRole('listitem').first().getByRole('group', { name: 'Your fit' })).toContainText('Strong fit')
+  await expect(jobs.getByRole('listitem')).toHaveCount(total)
+  const ordered = await fitOf()
+  expect(ordered).toEqual([...ordered].sort((a, b) => a - b))
+  expect(ordered.at(-1)).toBe(3) // Kløvermark is a low fit.
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await shot(page, '16b-job-board-best-fit-first')
+  await page.getByLabel('Sort', { exact: true }).selectOption('newest')
+  await expect(jobs.getByRole('listitem').first().getByRole('group', { name: 'Your fit' })).toBeVisible()
+
   // Search: words, then filters.
   await page.getByLabel('Search').fill('forecasting')
   await expect(page.getByText(new RegExp(`^[0-9]+ of ${total} jobs$`))).toBeVisible()
