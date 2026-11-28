@@ -2,6 +2,7 @@ import { type ReactNode, useId, useState } from 'react'
 import { ArrowDown, ArrowUp, Briefcase, FileUp, Lightbulb, Sprout, Users } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 
+import { CategoryHeading } from '@/components/CategoryColour'
 import { FitBadge } from '@/components/FitBadge'
 import { GroupSpider } from '@/components/GroupSpider'
 import { LevelChip } from '@/components/LevelChips'
@@ -15,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { categoryBorder } from '@/lib/categoryColour'
 import { api } from '@/lib/api'
 import { categoryLabel } from '@/lib/format'
 import type {
@@ -26,6 +28,7 @@ import type {
   JobOutcome,
 } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
+import { cn } from '@/lib/utils'
 import { TRANSPARENCY, useCandidate } from '@/pages/candidate/context'
 
 /** Step 5: the candidate's own profile in overview: skills, how they compare, what to develop. */
@@ -142,9 +145,9 @@ function DashboardView({ data }: { data: DashboardData }) {
         </h2>
         <div className="grid gap-4 lg:grid-cols-2">
           {data.areas.map((a) => (
-            <Card key={a.category ?? 'other'} className="py-0">
+            <Card key={a.category ?? 'other'} className={cn('py-0', categoryBorder(a.category))}>
               <CardContent className="space-y-3 p-5">
-                <h3 className="text-sm font-medium text-muted-foreground">{categoryLabel(a.category)}</h3>
+                <CategoryHeading category={a.category} />
                 <ul aria-label={categoryLabel(a.category)} className="divide-y">
                   {a.skills.map((s) => (
                     <SkillRow key={s.name} skill={s} compared={data.compared_with > 0} min={data.min_group} />
