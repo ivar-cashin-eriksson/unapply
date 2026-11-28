@@ -227,10 +227,14 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   save the recruiter's edit (any change raises the version).
 - **Job board** (`/board`, `/board/<job>`, `/candidates/<name>/connections`):
   search the listings (jobs with an approved rubric) by words, location, work mode
-  and seniority, and with `candidate=<name>` by their fit (`fit=strong|good|partial|low`,
+  and seniority, by work permit (`work_permit=`, jobs asking for none or only for
+  permits it covers, so `DK` covers `EU`), at least so many vacancies
+  (`min_vacancies=`) and skills the ad names (`skill=`, repeatable, every one
+  needed; through the taxonomy, so synonyms match, never a rubric criterion), and
+  with `candidate=<name>` by their fit (`fit=strong|good|partial|low`,
   or `not_met` for jobs with a hard filter they miss) and best fit first
-  (`sort=fit`, ties newest first), read one (the ad and vacancies, never the
-  rubric), and connect an
+  (`sort=fit`, ties newest first), read one (the ad, vacancies, work permits and
+  the skills the ad names, never the rubric), and connect an
   approved profile to a job (`PUT`), list the connections with how far each got
   and withdraw (`DELETE`, refused once the employer revealed the candidate). Each
   listing has its counts: connected, revealed, asked to apply, applied.
@@ -405,7 +409,7 @@ uv run unapply mcp acme                                         # serve over std
 ```
 
 The tools, all read-only: `get_rubric`, `list_candidates` (profile id, alias such as
-"Cobalt Otter", as on the shortlist, and what each shared), `get_experiences`, `get_skills` (own and
+"Cobalt Otter", as on that job's shortlist, and what each shared), `get_experiences`, `get_skills` (own and
 estimated levels with the estimate's confidence), `search_evidence(query)` (quotes
 cited for the skill the query names, or one that counts towards it through the
 taxonomy, first; then quotes with more of its words) and `get_preferences`. Texts go
@@ -456,7 +460,7 @@ didn't opt in get the same answer. The server's instructions to the agent are in
 | `src/unapply/estimation/` | Skill estimation from evidence, and claim support |
 | `src/unapply/interview/` | Follow-up questions (rules choose, a model words them) and the answer sheet |
 | `src/unapply/app/` | The internal developer app (Streamlit): `candidate.py`, `employer.py`, shared helpers and the demos |
-| `src/unapply/jobs/` | Job ads to rubrics, the recruiter's rubric sheet, and the job board (listings, search, connecting) |
+| `src/unapply/jobs/` | Job ads to rubrics, the recruiter's rubric sheet, the job board (listings, search, connecting), the candidate's fit, hiring (reveal, request, apply), messages after a reveal, the candidate's outcomes, and asking a model about a revealed candidate |
 | `src/unapply/workspace.py` | A candidate's folder: material, current profile, history |
 | `src/unapply/db/` | The database: SQLAlchemy tables, Alembic migrations, a repository that saves and loads the schemas, and the workspace import |
 | `src/unapply/api/` | The HTTP API (FastAPI): candidate, job, matching, demo and internal routes |
