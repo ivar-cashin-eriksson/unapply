@@ -414,7 +414,11 @@ export interface Listing {
   vacancies: number
   locations: string[]
   work_modes: WorkMode[]
+  /** Work permits the ad asks for, as ISO country codes or "EU"; empty means none. */
+  work_permits: string[]
   seniority: Seniority
+  /** The taxonomy's skills the ad names, never the rubric's. */
+  skills: string[]
   posted_at: string
   demo: boolean
   counts: ListingCounts | null
@@ -427,6 +431,10 @@ export interface Board {
   locations: string[]
   work_modes: WorkMode[]
   seniorities: Seniority[]
+  work_permits: string[]
+  /** Every number of vacancies on the board, smallest first. */
+  vacancies: number[]
+  skills: string[]
 }
 
 export interface BoardQuery {
@@ -434,6 +442,12 @@ export interface BoardQuery {
   location?: string
   work_mode?: WorkMode
   seniority?: Seniority
+  /** Jobs open to someone with this permit: asking for none, or only for ones it covers. */
+  work_permit?: string
+  /** Jobs hiring at least this many. */
+  min_vacancies?: number
+  /** Jobs whose ad names every one of these skills, by any name the taxonomy knows. */
+  skill?: string[]
   /** The candidate whose fit `fit` and `sort: 'fit'` use; needed for either. */
   candidate?: string
   fit?: FitFilter

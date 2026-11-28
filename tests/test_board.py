@@ -30,6 +30,7 @@ from unapply.jobs.board import (
     ConnectError,
     Listing,
     Seniority,
+    ad_skills,
     connect,
     connected,
     listing,
@@ -305,7 +306,22 @@ def test_a_listing_has_the_ad_and_vacancies_but_not_the_rubric(found):
     assert fjord.ad.startswith("# Senior Data Scientist")
     assert (fjord.vacancies, fjord.seniority) == (1, Seniority.SENIOR)
     assert (fjord.locations, fjord.work_modes) == (["Copenhagen"], [WorkMode.HYBRID])
+    assert fjord.work_permits == ["EU"]
+    assert fjord.skills[:3] == ["demand forecasting", "dbt", "snowflake"]
     assert_no_rubric(fjord.model_dump(mode="json"))
+
+
+def test_the_skills_an_ad_names_come_through_the_taxonomy():
+    text = (
+        "We use sklearn, Python 3 and R, with a little C++ and ML.\n"
+        "Some R&D. Stars, parts and starters are not skills; neither is r or ts."
+    )
+    assert ad_skills(text) == ["scikit-learn", "python", "r", "c++", "machine learning"]
+    assert ad_skills("Time-series forecasting in SQL") == [
+        "time series forecasting",
+        "sql",
+    ]
+    assert ad_skills("Nothing named here.") == []
 
 
 def test_search_by_words_location_work_mode_and_seniority(found):
@@ -346,6 +362,31 @@ def test_search_by_words_location_work_mode_and_seniority(found):
         "Fjord Grocery ApS",
         "Ravnekær Mobility",
     ]
+
+
+def test_search_by_work_permit_vacancies_and_skills(found):
+    def titles(**kwargs) -> list[str]:
+        return [x.company for x in search(found, **kwargs).listings]
+
+    everything = search(found)
+    assert everything.work_permits == ["EU", "IN"]
+    assert everything.vacancies == [1, 2, 3]
+    assert {"python", "sql", "pytorch", "danish"} <= set(everything.skills)
+    # A permit finds the jobs open to its holder: a member state's covers "EU".
+    assert titles(work_permit="IN") == ["Kaveri Retail Pvt Ltd"]
+    assert len(titles(work_permit="eu")) == len(titles(work_permit="DK")) == 10
+    assert "Kaveri Retail Pvt Ltd" not in titles(work_permit="DK")
+    assert titles(min_vacancies=3) == ["Havnelys Logistics ApS"]
+    assert len(titles(min_vacancies=2)) == 6
+    # Skills match by any name the taxonomy knows, and every one must be named.
+    assert titles(skills=["PyTorch"]) == ["Ravnekær Mobility"]
+    assert titles(skills=["typescript", "docker"]) == ["Tidevand Software GmbH"]
+    assert titles(skills=["LightGBM"]) == [
+        "Lynfjord Power A/S",
+        "Kaveri Retail Pvt Ltd",
+    ]
+    assert titles(skills=["pytorch", "typescript"]) == []
+    assert titles(skills=["r", "danish"]) == ["Øresund Business Academy"]
 
 
 def test_only_jobs_with_an_approved_rubric_are_listed(repo, board):
@@ -405,7 +446,22 @@ def test_board_routes_search_and_read_without_the_rubric(client):
     assert one["vacancies"] == 1
     assert "Hands-on PyTorch" in one["ad"]
     assert client.get("/board/nothing").status_code == 404
-    for body in (found, one, ok(client.get("/board"))):
+    assert one["work_permits"] == ["EU"]
+    assert "pytorch" in one["skills"]
+    advanced = ok(
+        client.get(
+            "/board",
+            params={"skill": ["python", "docker"], "work_permit": "DE"},
+        )
+    )
+    assert [x["company"] for x in advanced["listings"]] == [
+        "Ravnekær Mobility",
+        "Tidevand Software GmbH",
+    ]
+    more = ok(client.get("/board", params={"min_vacancies": 3}))
+    assert [x["company"] for x in more["listings"]] == ["Havnelys Logistics ApS"]
+    assert client.get("/board", params={"min_vacancies": 0}).status_code == 422
+    for body in (found, one, advanced, ok(client.get("/board"))):
         assert_no_rubric(body)
 
 

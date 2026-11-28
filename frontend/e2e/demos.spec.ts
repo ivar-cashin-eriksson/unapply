@@ -340,6 +340,38 @@ test('the job board in John Doe\'s demo: search, read, connect and withdraw', as
   await page.getByLabel('Sort', { exact: true }).selectOption('newest')
   await expect(jobs.getByRole('listitem').first().getByRole('group', { name: 'Your fit' })).toBeVisible()
 
+  // Advanced filters: skills the ads name (through the taxonomy), work permit, vacancies.
+  await page.getByRole('button', { name: 'Advanced' }).click()
+  await page.getByLabel('Skills in the ad').selectOption('pytorch')
+  await expect(jobs.getByRole('listitem')).toHaveCount(1)
+  await expect(jobs.getByRole('link', { name: 'Senior Machine Learning Engineer' })).toBeVisible()
+  const chips = page.getByRole('list', { name: 'Active filters' })
+  await expect(chips).toHaveText('Skill: pytorch')
+  await chips.getByRole('button', { name: 'Remove Skill: pytorch' }).click()
+  await expect(chips).toHaveCount(0)
+  await page.getByLabel('Vacancies').selectOption('3')
+  await expect(page.getByText(/· searching…/)).toHaveCount(0)
+  await expect(jobs.getByRole('listitem').filter({ hasText: 'Havnelys' })).toBeVisible()
+  for (const card of await jobs.getByRole('listitem').all()) await expect(card).toContainText(/[3-9] vacancies/)
+  await page.getByRole('button', { name: 'Clear filters' }).first().click()
+  await expect(jobs.getByRole('listitem')).toHaveCount(total)
+
+  // Every pill on a card adds its filter, shown as a chip that can be removed.
+  await kaveri.getByRole('link', { name: 'IN work permit' }).click()
+  await expect(chips).toHaveText('Work permit: IN')
+  await expect(page.getByLabel('Work permit', { exact: true })).toHaveValue('IN')
+  await expect(kaveri).toBeVisible()
+  await expect(lynfjord).toHaveCount(0)
+  await kaveri.getByRole('link', { name: 'Hybrid' }).click()
+  await expect(chips.getByRole('listitem')).toHaveText(['Work mode: Hybrid', 'Work permit: IN'])
+  await expect(kaveri).toBeVisible()
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await shot(page, '17b-job-board-advanced-filters')
+  await chips.getByRole('button', { name: 'Remove Work permit: IN' }).click()
+  await chips.getByRole('button', { name: 'Remove Work mode: Hybrid' }).click()
+  await expect(chips).toHaveCount(0)
+  await expect(jobs.getByRole('listitem')).toHaveCount(total)
+
   // Search: words, then filters.
   await page.getByLabel('Search').fill('forecasting')
   await expect(page.getByText(new RegExp(`^[0-9]+ of ${total} jobs$`))).toBeVisible()

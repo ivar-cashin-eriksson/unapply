@@ -53,6 +53,24 @@ def board(
     seniority: Annotated[
         Seniority | None, Query(description="Jobs at this seniority.")
     ] = None,
+    work_permit: Annotated[
+        str | None,
+        Query(
+            description="Jobs open to someone with this work permit (an ISO "
+            "country code or `EU`): those asking for none, or only for permits it "
+            "covers."
+        ),
+    ] = None,
+    min_vacancies: Annotated[
+        int | None, Query(ge=1, description="Jobs hiring at least this many.")
+    ] = None,
+    skill: Annotated[
+        list[str] | None,
+        Query(
+            description="Jobs whose ad names this skill, by any name the taxonomy "
+            "knows. Repeat for several: the ad must name each."
+        ),
+    ] = None,
     candidate: Annotated[
         str | None,
         Query(description="The candidate whose fit `fit` and `sort=fit` use."),
@@ -74,12 +92,22 @@ def board(
 ) -> Board:
     """Browse and search the job board: jobs whose rubric is approved, newest first.
 
-    Each listing has the ad, vacancies, place, work modes and seniority, never the
-    rubric. With a candidate, it can also keep the jobs by their fit band, or the
-    jobs whose requirements they don't meet, and sort best fit first; the fit is
-    worked out on their own levels and nothing is stored.
+    Each listing has the ad, vacancies, place, work modes, work permits, seniority
+    and the skills the ad names, never the rubric. With a candidate, it can also keep
+    the jobs by their fit band, or the jobs whose requirements they don't meet, and
+    sort best fit first; the fit is worked out on their own levels and nothing is
+    stored.
     """
-    found = search(listings(ctx.repo), q, location, work_mode, seniority)
+    found = search(
+        listings(ctx.repo),
+        q,
+        location,
+        work_mode,
+        seniority,
+        work_permit=work_permit,
+        min_vacancies=min_vacancies,
+        skills=skill,
+    )
     if fit is None and sort is BoardSort.NEWEST:
         return found
     if candidate is None:

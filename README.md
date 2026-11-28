@@ -85,8 +85,9 @@ npm run dev                   # http://localhost:5173
   answer a few questions, and see the profile as employers will. The assessment is
   never shown. Then the **job board**: browse and search the jobs (free text over
   title, company and ad; filters for location, work mode, seniority and their own
-  fit band or the jobs whose requirements they don't meet; newest or best fit
-  first), read a
+  fit band or the jobs whose requirements they don't meet, and under Advanced work
+  permit, vacancies and the skills an ad names; every pill on a card adds its
+  filter as a removable chip; newest or best fit first), read a
   listing in full (the ad and its vacancies, never the rubric), and **connect my
   profile** to a job with one click, from its card on the board or the listing. Connecting is the candidate's consent for that
   job, recorded with its time: only connected candidates are matched and ranked.
