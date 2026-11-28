@@ -143,6 +143,87 @@ describe('the job board', () => {
     expect(await screen.findByText('2 jobs')).toBeInTheDocument()
   })
 
+  it('filters by your fit and sorts best fit first', async () => {
+    approved()
+    const search = vi.spyOn(api, 'board').mockImplementation(async (query = {}) =>
+      query.fit === 'not_met' ? board({ listings: [DAIRY] }) : query.sort === 'fit' ? board({ listings: [DAIRY, listing()] }) : board(),
+    )
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    vi.spyOn(api, 'fits').mockResolvedValue([
+      fit({ band: 'good' }),
+      fit({
+        job: DAIRY.name,
+        band: 'strong',
+        missed: [{ filter: 'work_permit', label: 'Work permit: EU required' }],
+      }),
+    ])
+    const { user } = renderApp('/candidates/john-doe/jobs')
+
+    const fitFilter = await screen.findByLabelText('Fit')
+    expect(within(fitFilter).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Any',
+      'Strong fit',
+      'Good fit',
+      'Partial fit',
+      'Low fit',
+      'Requirements not met',
+    ])
+    const sort = screen.getByLabelText('Sort')
+    expect(sort).toHaveValue('newest')
+    // Newest first asks nothing about the candidate.
+    expect(search).toHaveBeenLastCalledWith({})
+
+    await user.selectOptions(sort, 'fit')
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith({ candidate: 'john-doe', sort: 'fit' }))
+    await waitFor(() => {
+      const cards = within(screen.getByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+      expect(cards[0]).toHaveTextContent('Strong fit')
+    })
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('2 jobs')
+
+    await user.selectOptions(screen.getByLabelText('Fit'), 'not_met')
+    await waitFor(() =>
+      expect(search).toHaveBeenLastCalledWith({ candidate: 'john-doe', fit: 'not_met', sort: 'fit' }),
+    )
+    expect(await screen.findByText('1 of 2 jobs')).toBeInTheDocument()
+
+    // Clearing the filters keeps the order.
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith({ candidate: 'john-doe', sort: 'fit' }))
+    expect(screen.getByLabelText('Fit')).toHaveValue('')
+    expect(screen.getByLabelText('Sort')).toHaveValue('fit')
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('keeps the jobs and the filters on screen while the next search loads', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockImplementation((query = {}) =>
+      query.q ? new Promise(() => {}) : Promise.resolve(board()),
+    )
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    const { user } = renderApp('/candidates/john-doe/jobs')
+    await screen.findByRole('list', { name: 'Jobs' })
+    const input = screen.getByLabelText('Search')
+    await user.type(input, 'milk')
+    expect(await screen.findByText(/searching/)).toBeInTheDocument()
+    // The same input, still focused, and the last results still listed.
+    expect(screen.getByLabelText('Search')).toBe(input)
+    expect(input).toHaveFocus()
+    expect(within(screen.getByRole('list', { name: 'Jobs' })).getAllByRole('listitem')).toHaveLength(2)
+  })
+
+  it('offers no fit filter or sort without a band', async () => {
+    approved()
+    vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    vi.spyOn(api, 'fits').mockResolvedValue([fit({ band: null }), fit({ job: DAIRY.name, band: null })])
+    renderApp('/candidates/john-doe/jobs')
+    await screen.findByRole('list', { name: 'Jobs' })
+    await screen.findByLabelText('Seniority')
+    expect(screen.queryByLabelText('Fit')).toBeNull()
+    expect(screen.queryByLabelText('Sort')).toBeNull()
+  })
+
   it('says when nothing matches', async () => {
     approved()
     vi.spyOn(api, 'board').mockImplementation(async (query = {}) =>

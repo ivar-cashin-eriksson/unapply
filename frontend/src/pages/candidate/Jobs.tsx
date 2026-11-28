@@ -34,8 +34,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
-import { adSummary, day, placeText, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
-import type { BoardQuery, Connection, Fit, Listing, Seniority, WorkMode } from '@/lib/types'
+import { adSummary, day, FIT_FILTERS, placeText, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
+import type { Board, BoardQuery, BoardSort, Connection, Fit, FitFilter, Listing, Seniority, WorkMode } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
 import { useCandidate } from '@/pages/candidate/context'
@@ -67,6 +67,8 @@ export function JobBoard() {
   const [location, setLocation] = useState('')
   const [workMode, setWorkMode] = useState<WorkMode | ''>('')
   const [seniority, setSeniority] = useState<Seniority | ''>('')
+  const [fitFilter, setFitFilter] = useState<FitFilter | ''>('')
+  const [sort, setSort] = useState<BoardSort>('newest')
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<unknown>(null)
 
@@ -80,15 +82,26 @@ export function JobBoard() {
     location: location || undefined,
     work_mode: workMode || undefined,
     seniority: seniority || undefined,
+    // The server works out the fit for these from the candidate's own levels.
+    ...(fitFilter || sort === 'fit'
+      ? { candidate: name, fit: fitFilter || undefined, sort: sort === 'fit' ? sort : undefined }
+      : {}),
   }
-  const board = useResource(() => api.board(query), JSON.stringify(query))
+  const loaded = useResource(() => api.board(query), JSON.stringify(query))
+  // Keep showing the last board while the next search loads, so the filters stay put
+  // (and keep focus) instead of making way for a loading state on every change.
+  const [last, setLast] = useState<Board | undefined>(undefined)
+  if (loaded.data && loaded.data !== last) setLast(loaded.data)
+  const board = { ...loaded, data: loaded.data ?? (loaded.error ? undefined : last) }
   const connections = useResource(() => api.connections(name), name)
   const connectionOf = new Map((connections.data ?? []).map((c) => [c.job, c]))
   const requests = (connections.data ?? []).filter((c) => c.stage === 'requested' && c.listing)
   // How well you fit each job; the board works without it if it can't load.
   const fits = useResource(() => api.fits(name), `${name}:${board.data?.total ?? 0}`)
   const fitOf = new Map((fits.data ?? []).map((f) => [f.job, f]))
-  const filtered = Boolean(q || location || workMode || seniority)
+  // Without a profile there is no band, so nothing to filter or sort by.
+  const byFit = (fits.data ?? []).some((f) => f.band)
+  const filtered = Boolean(q || location || workMode || seniority || fitFilter)
   // The job whose connection is changing, and the error if that failed.
   const [changing, setChanging] = useState<string | null>(null)
   const [changeError, setChangeError] = useState<{ job: string; error: unknown } | null>(null)
@@ -112,6 +125,7 @@ export function JobBoard() {
     setLocation('')
     setWorkMode('')
     setSeniority('')
+    setFitFilter('')
   }
 
   async function addDemoJobs() {
@@ -195,7 +209,14 @@ export function JobBoard() {
           .
         </p>
       )}
-      <div role="search" aria-label="Filter the jobs" className="mb-6 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div
+        role="search"
+        aria-label="Filter the jobs"
+        className={cn(
+          'mb-6 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2',
+          byFit ? 'lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]' : 'lg:grid-cols-[2fr_1fr_1fr_1fr]',
+        )}
+      >
         <div className="space-y-1.5">
           <Label htmlFor="board-q">Search</Label>
           <div className="relative">
@@ -231,6 +252,15 @@ export function JobBoard() {
             </option>
           ))}
         </Filter>
+        {byFit && (
+          <Filter label="Fit" value={fitFilter} onChange={(v) => setFitFilter(v as FitFilter | '')} any="Any">
+            {FIT_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </Filter>
+        )}
       </div>
 
       <div className="mb-3 flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -238,11 +268,14 @@ export function JobBoard() {
           {filtered ? `${b.listings.length} of ${b.total} jobs` : `${b.total} jobs`}
           {board.loading && ' · searching…'}
         </p>
-        {filtered && (
-          <Button variant="ghost" size="sm" onClick={clear}>
-            Clear filters
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {filtered && (
+            <Button variant="ghost" size="sm" onClick={clear}>
+              Clear filters
+            </Button>
+          )}
+          {byFit && <SortBy value={sort} onChange={setSort} />}
+        </div>
       </div>
 
       {b.listings.length === 0 ? (
@@ -255,7 +288,7 @@ export function JobBoard() {
             </Button>
           }
         >
-          Try fewer words, or another location, work mode or seniority.
+          Try fewer words, or another location, work mode, seniority or fit.
         </EmptyState>
       ) : (
         <ul className="space-y-3" aria-label="Jobs">
@@ -313,6 +346,27 @@ function Filter({
       >
         <option value="">{any}</option>
         {children}
+      </select>
+    </div>
+  )
+}
+
+/** The board's order: newest first, or best fit first with ties newest first. */
+function SortBy({ value, onChange }: { value: BoardSort; onChange: (value: BoardSort) => void }) {
+  const id = useId()
+  return (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={id} className="text-muted-foreground">
+        Sort
+      </Label>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value as BoardSort)}
+        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <option value="newest">Newest first</option>
+        <option value="fit">Best fit first</option>
       </select>
     </div>
   )

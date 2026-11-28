@@ -204,6 +204,11 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - Done (task 22): **Connect my profile** and **Withdraw** on each board card, the
   same action and rules as on the listing (approved profiles only, no withdrawing
   once revealed; a revealed card says the connection stays).
+- Done (task 23): the board filters by the candidate's **fit** (a band, or
+  "Requirements not met": jobs with a hard filter they miss) and sorts best fit
+  first, ties newest first (`GET /board?candidate=&fit=&sort=fit`, worked out in
+  `jobs/fit.py`, nothing stored). The board keeps the last results on screen while
+  the next search loads.
 
 ## The key experiment (run alongside M1–M4)
 

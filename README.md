@@ -84,7 +84,9 @@ npm run dev                   # http://localhost:5173
   level and where they were used, in the same Skills tab, set preferences, approve),
   answer a few questions, and see the profile as employers will. The assessment is
   never shown. Then the **job board**: browse and search the jobs (free text over
-  title, company and ad; filters for location, work mode and seniority), read a
+  title, company and ad; filters for location, work mode, seniority and their own
+  fit band or the jobs whose requirements they don't meet; newest or best fit
+  first), read a
   listing in full (the ad and its vacancies, never the rubric), and **connect my
   profile** to a job with one click, from its card on the board or the listing. Connecting is the candidate's consent for that
   job, recorded with its time: only connected candidates are matched and ranked.
@@ -206,7 +208,10 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   save the recruiter's edit (any change raises the version).
 - **Job board** (`/board`, `/board/<job>`, `/candidates/<name>/connections`):
   search the listings (jobs with an approved rubric) by words, location, work mode
-  and seniority, read one (the ad and vacancies, never the rubric), and connect an
+  and seniority, and with `candidate=<name>` by their fit (`fit=strong|good|partial|low`,
+  or `not_met` for jobs with a hard filter they miss) and best fit first
+  (`sort=fit`, ties newest first), read one (the ad and vacancies, never the
+  rubric), and connect an
   approved profile to a job (`PUT`), list the connections with how far each got
   and withdraw (`DELETE`, refused once the employer revealed the candidate). Each
   listing has its counts: connected, revealed, asked to apply, applied.

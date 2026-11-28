@@ -31,7 +31,7 @@ from unapply.jobs.board import (
     search,
     withdraw,
 )
-from unapply.jobs.fit import Fit, fit, fits
+from unapply.jobs.fit import BoardSort, Fit, FitFilter, arrange, fit, fits
 from unapply.jobs.outcomes import CandidateJobs, candidate_jobs
 from unapply.schemas import WorkMode
 
@@ -53,13 +53,44 @@ def board(
     seniority: Annotated[
         Seniority | None, Query(description="Jobs at this seniority.")
     ] = None,
+    candidate: Annotated[
+        str | None,
+        Query(description="The candidate whose fit `fit` and `sort=fit` use."),
+    ] = None,
+    fit: Annotated[
+        FitFilter | None,
+        Query(
+            description="Jobs where the candidate's fit is this band, or `not_met`: "
+            "jobs with a hard filter they don't meet. Needs `candidate`."
+        ),
+    ] = None,
+    sort: Annotated[
+        BoardSort,
+        Query(
+            description="`newest` first, or best `fit` first (ties newest first). "
+            "`fit` needs `candidate`."
+        ),
+    ] = BoardSort.NEWEST,
 ) -> Board:
     """Browse and search the job board: jobs whose rubric is approved, newest first.
 
     Each listing has the ad, vacancies, place, work modes and seniority, never the
-    rubric.
+    rubric. With a candidate, it can also keep the jobs by their fit band, or the
+    jobs whose requirements they don't meet, and sort best fit first; the fit is
+    worked out on their own levels and nothing is stored.
     """
-    return search(listings(ctx.repo), q, location, work_mode, seniority)
+    found = search(listings(ctx.repo), q, location, work_mode, seniority)
+    if fit is None and sort is BoardSort.NEWEST:
+        return found
+    if candidate is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Filtering or sorting by fit needs a candidate.",
+        )
+    by_job = {f.job: f for f in fits(ctx.repo, candidate)}
+    return found.model_copy(
+        update={"listings": arrange(found.listings, by_job, fit, sort)}
+    )
 
 
 @router.get("/board/{job}")
