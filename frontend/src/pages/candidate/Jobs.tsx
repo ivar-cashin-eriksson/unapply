@@ -35,13 +35,29 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
 import { adSummary, day, placeText, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
-import type { BoardQuery, Connection, Fit, Listing, Seniority, Stage, WorkMode } from '@/lib/types'
+import type { BoardQuery, Connection, Fit, Listing, Seniority, WorkMode } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
 import { useCandidate } from '@/pages/candidate/context'
 
 /** Wait this long after the last key before searching, in milliseconds. */
 const SEARCH_DELAY = 250
+
+/**
+ * Connect the candidate's profile to a job, or withdraw it, and say so.
+ *
+ * The board's cards and the listing both use this, so the two act the same; the server
+ * refuses unapproved profiles and withdrawals after a reveal.
+ */
+async function changeConnection(name: string, job: string, company: string, connect: boolean) {
+  if (connect) {
+    await api.connect(name, job)
+    toast.success(`Your profile is connected to ${company}.`)
+  } else {
+    await api.withdraw(name, job)
+    toast.success(`You withdrew from ${company}.`)
+  }
+}
 
 /** The job board: browse and search the listings, and see which you connected to. */
 export function JobBoard() {
@@ -67,12 +83,28 @@ export function JobBoard() {
   }
   const board = useResource(() => api.board(query), JSON.stringify(query))
   const connections = useResource(() => api.connections(name), name)
-  const stageOf = new Map((connections.data ?? []).map((c) => [c.job, c.stage]))
+  const connectionOf = new Map((connections.data ?? []).map((c) => [c.job, c]))
   const requests = (connections.data ?? []).filter((c) => c.stage === 'requested' && c.listing)
   // How well you fit each job; the board works without it if it can't load.
   const fits = useResource(() => api.fits(name), `${name}:${board.data?.total ?? 0}`)
   const fitOf = new Map((fits.data ?? []).map((f) => [f.job, f]))
   const filtered = Boolean(q || location || workMode || seniority)
+  // The job whose connection is changing, and the error if that failed.
+  const [changing, setChanging] = useState<string | null>(null)
+  const [changeError, setChangeError] = useState<{ job: string; error: unknown } | null>(null)
+
+  async function change(x: Listing, connect: boolean) {
+    setChanging(x.name)
+    setChangeError(null)
+    try {
+      await changeConnection(name, x.name, x.company, connect)
+      await Promise.all([connections.reload(), fits.reload()])
+    } catch (e) {
+      setChangeError({ job: x.name, error: e })
+    } finally {
+      setChanging(null)
+    }
+  }
 
   function clear() {
     setText('')
@@ -154,6 +186,15 @@ export function JobBoard() {
         <ErrorAlert error={error} title="Couldn't add the demo jobs" />
       </div>
       {requests.length > 0 && <Requests requests={requests} />}
+      {!summary.approved && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Approve your profile to connect it to jobs:{' '}
+          <Link to="../review" className="text-primary underline-offset-4 hover:underline">
+            go to your review
+          </Link>
+          .
+        </p>
+      )}
       <div role="search" aria-label="Filter the jobs" className="mb-6 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
         <div className="space-y-1.5">
           <Label htmlFor="board-q">Search</Label>
@@ -220,7 +261,24 @@ export function JobBoard() {
         <ul className="space-y-3" aria-label="Jobs">
           {b.listings.map((x) => (
             <li key={x.name}>
-              <ListingCard listing={x} stage={stageOf.get(x.name)} fit={fitOf.get(x.name)} />
+              <ListingCard
+                listing={x}
+                connection={connectionOf.get(x.name)}
+                fit={fitOf.get(x.name)}
+                // Until the connections load, the card can't tell which action fits.
+                action={
+                  connections.data ? (
+                    <CardConnect
+                      listing={x}
+                      connection={connectionOf.get(x.name)}
+                      approved={summary.approved}
+                      busy={changing === x.name}
+                      error={changeError?.job === x.name ? changeError.error : null}
+                      onChange={(connect) => change(x, connect)}
+                    />
+                  ) : undefined
+                }
+              />
             </li>
           ))}
         </ul>
@@ -286,7 +344,18 @@ function Requests({ requests }: { requests: Connection[] }) {
   )
 }
 
-function ListingCard({ listing: x, stage, fit }: { listing: Listing; stage?: Stage; fit?: Fit }) {
+function ListingCard({
+  listing: x,
+  connection,
+  fit,
+  action,
+}: {
+  listing: Listing
+  connection?: Connection
+  fit?: Fit
+  action?: ReactNode
+}) {
+  const stage = connection?.stage
   const connected = stage !== undefined
   return (
     <Card className={cn('transition-colors hover:border-primary/40', connected && 'border-primary/40')}>
@@ -316,8 +385,61 @@ function ListingCard({ listing: x, stage, fit }: { listing: Listing; stage?: Sta
         </div>
         {fit && <FitSummary fit={fit} />}
         {x.counts && <Counts counts={x.counts} className="text-xs" />}
+        {action}
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Connect or withdraw from a card on the board, by the listing's rules: approved
+ * profiles only, and no withdrawing once revealed.
+ */
+function CardConnect({
+  listing: x,
+  connection,
+  approved,
+  busy,
+  error,
+  onChange,
+}: {
+  listing: Listing
+  connection?: Connection
+  approved: boolean
+  busy: boolean
+  error: unknown
+  onChange: (connect: boolean) => void
+}) {
+  let action: ReactNode
+  if (connection?.progress?.revealed_at) {
+    action = (
+      <p className="text-xs text-muted-foreground">
+        {x.company} revealed you on {day(connection.progress.revealed_at)}; the connection stays.
+      </p>
+    )
+  } else if (connection) {
+    action = (
+      <Button variant="outline" size="sm" disabled={busy} aria-label={`Withdraw: ${x.title}`} onClick={() => onChange(false)}>
+        {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Link2Off aria-hidden />} Withdraw
+      </Button>
+    )
+  } else {
+    action = (
+      <Button
+        size="sm"
+        disabled={!approved || busy}
+        aria-label={`Connect my profile: ${x.title}`}
+        onClick={() => onChange(true)}
+      >
+        {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Link2 aria-hidden />} Connect my profile
+      </Button>
+    )
+  }
+  return (
+    <div className="space-y-2 border-t pt-3">
+      {action}
+      <ErrorAlert error={error} title={connection ? "Couldn't withdraw" : "Couldn't connect"} />
+    </div>
   )
 }
 
@@ -369,13 +491,7 @@ export function JobListing() {
     setBusy(true)
     setError(null)
     try {
-      if (connect) {
-        await api.connect(name, job)
-        toast.success(`Your profile is connected to ${x.company}.`)
-      } else {
-        await api.withdraw(name, job)
-        toast.success(`You withdrew from ${x.company}.`)
-      }
+      await changeConnection(name, job, x.company, connect)
       await Promise.all([connections.reload(), fit.reload()])
     } catch (e) {
       setError(e)
