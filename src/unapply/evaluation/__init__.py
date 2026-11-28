@@ -1,7 +1,8 @@
 """Evaluate rankings against a reference ranking, on a pool of synthetic candidates.
 
 - `metrics`: top-k overlap and Kendall's tau, reading a reference ranking, and the
-  agreement between several references (the ceiling, with human shortlists).
+  agreement between several references (the ceiling, with human shortlists), and
+  a blank reference sheet for a person who hires to fill in.
 - `pool`: a job's synthetic candidate pool with its intended ranking, and ranking
   it with the baseline or LLM scorer (`unapply evaluate`).
 - `stored`: a job's ranking from the audit log, the one its employer saw
@@ -16,6 +17,7 @@ from unapply.evaluation.metrics import (
     load_reference,
     mean_comparison,
     rater_agreement,
+    reference_sheet,
     top_k_overlap,
 )
 from unapply.evaluation.pool import (
@@ -43,6 +45,7 @@ __all__ = [
     "load_reference",
     "mean_comparison",
     "rater_agreement",
+    "reference_sheet",
     "stored_ranking",
     "top_k_overlap",
 ]

@@ -256,7 +256,9 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   with the mean, beside the mean agreement between the people over every pair (the
   ceiling; `rater_agreement` in `evaluation/metrics.py`). `--job` compares a real
   job's ranking from the audit log, as its employer saw it, with the references
-  instead (`evaluation/stored.py`), without scoring anyone again.
+  instead (`evaluation/stored.py`), without scoring anyone again. `--sheet` writes
+  a blank reference for a person who hires to fill in: the candidates in
+  alphabetical order with empty ranks, refused until every rank is filled in.
 
 ## Out of scope for the POC
 

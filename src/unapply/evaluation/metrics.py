@@ -93,6 +93,11 @@ def parse_reference(entries: object, where: str = "reference") -> list[Reference
         if not isinstance(e, dict) or "candidate" not in e or "rank" not in e:
             raise ValueError(f"{where}: each entry needs `candidate` and `rank`: {e!r}")
         rank = e["rank"]
+        if rank is None:
+            raise ValueError(
+                f"{where}: {e['candidate']!r} has no rank yet: give every candidate "
+                "one (those outside the shortlist can share the last)"
+            )
         if isinstance(rank, bool) or not isinstance(rank, int) or rank < 1:
             raise ValueError(f"{where}: rank of {e['candidate']!r} must be 1 or more")
         parsed.append(
@@ -103,6 +108,52 @@ def parse_reference(entries: object, where: str = "reference") -> list[Reference
     if twice:
         raise ValueError(f"{where}: listed more than once: {', '.join(twice)}")
     return sorted(parsed, key=lambda e: e.rank)
+
+
+def reference_sheet(candidates: list[str], job: str) -> str:
+    """Write a blank reference ranking for a person who hires to fill in.
+
+    The candidates are listed in alphabetical order, not in any ranking's, so the
+    sheet doesn't suggest an order. Each has an empty `rank` and `reason`; the
+    sheet is refused by `load_reference` until every rank is filled in.
+
+    Parameters
+    ----------
+    candidates : list of str
+        The candidates' names, as in the ranking the sheet will be compared with.
+    job : str
+        The job, such as "Senior Data Scientist at Fjord Grocery", for the header.
+
+    Returns
+    -------
+    str
+        The sheet as YAML, with a header saying how to fill it in.
+
+    Raises
+    ------
+    ValueError
+        If there are no candidates or a name is listed twice.
+    """
+    if not candidates:
+        raise ValueError("no candidates to list on a reference sheet")
+    twice = sorted({n for n in candidates if candidates.count(n) > 1})
+    if twice:
+        raise ValueError(f"listed more than once: {', '.join(twice)}")
+    job = " ".join(job.split())  # On one line, so it stays a comment.
+    header = (
+        f"# A reference ranking for {job}, to fill in by hand.\n"
+        "#\n"
+        "# Rank each candidate from their material: 1 for the best. Candidates may\n"
+        "# share a rank, so those outside your shortlist can all share the last.\n"
+        "# Every candidate needs a rank; a reason is optional. Leave the names as\n"
+        "# they are: they are listed alphabetically, not in any ranking's order.\n"
+        "# Compare with: unapply evaluate --reference <this file>\n"
+    )
+    entries = [{"candidate": n, "rank": None, "reason": ""} for n in sorted(candidates)]
+    body = yaml.safe_dump(
+        {"ranking": entries}, sort_keys=False, allow_unicode=True, width=88
+    )
+    return header + body
 
 
 def top_k_overlap(ranking: list[str], reference: list[str], k: int) -> float:

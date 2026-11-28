@@ -298,6 +298,13 @@ def main(argv: list[str] | None = None) -> int:
         help="With --job: SQLAlchemy URL, by default $UNAPPLY_DATABASE_URL or SQLite.",
     )
     evaluate.add_argument(
+        "--sheet",
+        type=Path,
+        help="Instead of evaluating: write a blank reference sheet to this new file, "
+        "for a person who hires to rank by hand, listing the pool's candidates (with "
+        "--job, the stored ranking's) alphabetically. Then pass it as --reference.",
+    )
+    evaluate.add_argument(
         "--k",
         nargs="+",
         type=int,
@@ -705,6 +712,8 @@ def _evaluate(args: argparse.Namespace) -> int:
     )
     from unapply.evaluation.pool import LLMFor
 
+    if args.sheet is not None:
+        return _evaluate_sheet(args)
     if any(k < 1 for k in args.k):
         print("--k must be 1 or more", file=sys.stderr)
         return 2
@@ -761,6 +770,63 @@ def _evaluate(args: argparse.Namespace) -> int:
             for name, result in evaluation.results.items():
                 for p in result.problems:
                     print(f"  problem: {name}: {p}")
+    return 0
+
+
+def _evaluate_sheet(args: argparse.Namespace) -> int:
+    """`unapply evaluate --sheet`: write a blank reference sheet. Nothing is scored."""
+    from unapply.db.engine import init_db
+    from unapply.db.repository import NotFound, Repository
+    from unapply.evaluation import (
+        DEFAULT_POOL,
+        load_pool,
+        reference_sheet,
+        stored_ranking,
+    )
+
+    given = [
+        option
+        for option, value in (
+            ("--reference", args.reference),
+            ("--scorer", args.scorer),
+            ("--record", args.record),
+            ("--verbose", args.verbose),
+            ("a pool", args.pool if args.job is not None else None),
+            ("--ranking", args.ranking if args.job is None else None),
+            ("--url", args.url if args.job is None else None),
+        )
+        if value
+    ]
+    if given:
+        print(f"--sheet takes no {', '.join(given)}", file=sys.stderr)
+        return 2
+    path: Path = args.sheet
+    if path.exists():
+        print(f"{path} already exists; give a new file", file=sys.stderr)
+        return 2
+    try:
+        if args.job is None:
+            pool = load_pool(args.pool or DEFAULT_POOL)
+            title = f"{pool.job.title} at {pool.job.company}"
+            names = list(pool.candidates)
+        else:
+            init_db(args.url)
+            repo = Repository.from_url(args.url)
+            try:
+                job = repo.job(args.job)
+                stored = stored_ranking(repo, args.job, args.ranking)
+            finally:
+                repo.engine.dispose()
+            assert job is not None  # stored_ranking refuses a job without a rubric.
+            title = f"{job.title} at {job.company}"
+            names = [n for n, _ in stored.ranking]
+        text = reference_sheet(names, title)
+    except (FileNotFoundError, NotFound, ValueError) as e:
+        print(f"Can't write a reference sheet: {e}", file=sys.stderr)
+        return 2
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    print(f"Wrote a reference sheet of {len(names)} candidates for {title} to {path}")
     return 0
 
 
