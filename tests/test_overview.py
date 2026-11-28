@@ -189,7 +189,7 @@ def test_the_overview_names_no_one_and_quotes_nothing(client, repo):
     text = client.get(f"/jobs/{job}/overview").text
     ids = [UUID(r["profile_id"]) for r in ranking["candidates"]]
     secrets = [str(i) for i in ids]
-    secrets += [i.alias for i in identities(ids).values()]
+    secrets += [i.alias for i in identities(ids, repo.job(job).id).values()]
     for pid in ids:
         name = repo.candidate_of(pid)
         secrets.append(name)

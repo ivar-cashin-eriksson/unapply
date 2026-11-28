@@ -276,7 +276,7 @@ def test_only_candidates_who_opted_in_with_an_approved_profile_are_listed(
 
     listed = call(server, "list_candidates")[1]["result"]
     ids = [repo.profile(n).id for n in names[:2]]
-    known_as = identities(ids)
+    known_as = identities(ids, repo.job(JOB).id)
     assert listed == sorted(
         [
             {

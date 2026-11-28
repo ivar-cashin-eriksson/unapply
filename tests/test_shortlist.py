@@ -164,22 +164,40 @@ emil lars jonas henrik mikkel william oscar carl victor august
 """.split()
 
 
-def test_alias_is_two_words_and_stable_for_a_profile():
-    profile_id = uuid4()
-    assert alias(profile_id) == alias(profile_id) == identity(profile_id).alias
-    assert re.fullmatch(ALIAS, alias(profile_id))
-    adjective, noun = alias(profile_id).split()
+def test_alias_is_two_words_and_stable_for_a_profile_and_job():
+    profile_id, job_id = uuid4(), uuid4()
+    known = identity(profile_id, job_id)
+    assert alias(profile_id, job_id) == alias(profile_id, job_id) == known.alias
+    assert re.fullmatch(ALIAS, known.alias)
+    adjective, noun = known.alias.split()
     assert adjective in ADJECTIVES and noun in NOUNS
-    assert identity(profile_id) == identity(UUID(str(profile_id)))
-    # A known id always gets the same alias, on any machine and run.
+    assert identity(UUID(str(profile_id)), UUID(str(job_id))) == known
+    # Known ids always get the same alias, on any machine and run.
     fixed = UUID("12345678-1234-5678-1234-567812345678")
-    assert identity(fixed) == identity(fixed)
-    assert 0 <= identity(fixed).avatar < ALIASES
+    job = UUID("87654321-4321-8765-4321-876543218765")
+    assert identity(fixed, job) == identity(fixed, job)
+    assert 0 <= identity(fixed, job).avatar < ALIASES
+
+
+def test_a_candidate_is_known_by_different_aliases_on_different_jobs():
+    profile_id = uuid4()
+    jobs = [uuid4() for _ in range(50)]
+    seen = {identity(profile_id, j).avatar for j in jobs}
+    # 50 jobs from 1920 aliases: nearly all different, never all the same.
+    assert len(seen) > 40
+    # The job and profile ids aren't interchangeable.
+    a, b = uuid4(), uuid4()
+    assert identity(a, b) != identity(b, a)
+    # Nor does one candidate's order on a job carry over to another.
+    ids = [uuid4() for _ in range(30)]
+    one, two = identities(ids, jobs[0]), identities(ids, jobs[1])
+    assert sum(one[i] == two[i] for i in ids) < 5
 
 
 def test_every_alias_number_names_a_different_alias():
+    job_id = uuid4()
     for profile_id in (uuid4() for _ in range(300)):
-        known = identity(profile_id)
+        known = identity(profile_id, job_id)
         adjective, noun = known.alias.split()
         assert ADJECTIVES.index(adjective) * len(NOUNS) + NOUNS.index(noun) == (
             known.avatar
@@ -201,21 +219,21 @@ def test_alias_words_are_never_person_names():
 
 
 def test_identities_are_unique_within_a_job_and_independent_of_order():
-    ids = [uuid4() for _ in range(400)]
-    known = identities(ids)
+    ids, job_id = [uuid4() for _ in range(400)], uuid4()
+    known = identities(ids, job_id)
     assert len({k.alias for k in known.values()}) == len(ids)
     assert len({k.avatar for k in known.values()}) == len(ids)
-    assert identities(reversed(ids)) == known
-    # Without clashes, a candidate keeps the alias their id gives on its own.
-    assert identities(ids[:1]) == {ids[0]: identity(ids[0])}
+    assert identities(reversed(ids), job_id) == known
+    # Without clashes, a candidate keeps the alias their ids give on their own.
+    assert identities(ids[:1], job_id) == {ids[0]: identity(ids[0], job_id)}
 
 
 def test_a_clash_goes_to_the_candidate_with_the_lower_profile_id(monkeypatch):
     import unapply.matching.shortlist as shortlist
 
     low, high = sorted([uuid4(), uuid4()])
-    monkeypatch.setattr(shortlist, "_index", lambda _id: ALIASES - 1)
-    known = identities([high, low])
+    monkeypatch.setattr(shortlist, "_index", lambda _id, _job: ALIASES - 1)
+    known = identities([high, low], uuid4())
     assert known[low].avatar == ALIASES - 1
     assert known[high].avatar == 0
     assert known[low].alias != known[high].alias
@@ -226,7 +244,7 @@ def test_more_candidates_than_aliases_is_refused(monkeypatch):
 
     monkeypatch.setattr(shortlist, "ALIASES", 2)
     with pytest.raises(ValueError, match="only 2 aliases"):
-        identities([uuid4() for _ in range(3)])
+        identities([uuid4() for _ in range(3)], uuid4())
 
 
 def test_rubric_skills_are_canonical_once_each_in_rubric_order():
@@ -267,11 +285,14 @@ def test_skill_levels_come_from_the_skill_itself_then_a_related_one():
 def test_the_anonymous_candidate_has_no_names_contacts_or_claim_support():
     skills = [Skill(name="python", self_level=SkillLevel(4), estimate=estimate(3))]
     profile = profile_with(skills)
-    seen = anonymous_candidate(profile, rubric("python", "sql"), ["Jane", "Roe"])
+    known_as = identity(profile.id, uuid4())
+    seen = anonymous_candidate(
+        profile, rubric("python", "sql"), ["Jane", "Roe"], known_as=known_as
+    )
     text = seen.model_dump_json()
     for leak in ("Jane", "jane@", "janeroe", "12 34 56 78", "jane-cv.md", "claim"):
         assert leak.lower() not in text.lower(), leak
-    assert (seen.alias, seen.avatar) == (alias(profile.id), identity(profile.id).avatar)
+    assert (seen.alias, seen.avatar) == (known_as.alias, known_as.avatar)
     assert seen.headline == "Analyst, see [redacted]"
     assert seen.experiences[0].organisation == "[redacted] Consulting"
     assert seen.experiences[0].start == date(2020, 1, 1)
@@ -400,7 +421,7 @@ def test_the_shortlist_demo_ranks_the_pool_as_the_evaluation_does(client, repo, 
     assert shortlist["reveal_quota"] == 10
 
 
-def test_the_shortlist_never_names_a_candidate(client):
+def test_the_shortlist_never_names_a_candidate(client, repo):
     job = shortlist_demo(client)
     ok(client.post(f"/jobs/{job}/match"))
     shortlist = ok(client.get(f"/jobs/{job}/shortlist"))
@@ -415,7 +436,8 @@ def test_the_shortlist_never_names_a_candidate(client):
     assert len(set(aliases)) == len(aliases) == 12
     assert len({c["avatar"] for c in shortlist["candidates"]}) == 12
     ids = [UUID(c["profile_id"]) for c in shortlist["candidates"]]
-    assert aliases == [identities(ids)[i].alias for i in ids]
+    job_id = repo.job(job).id
+    assert aliases == [identities(ids, job_id)[i].alias for i in ids]
     # The same aliases when the shortlist is read again, and with the other scorer.
     ok(client.post(f"/jobs/{job}/match?scorer=llm"))
     again = ok(client.get(f"/jobs/{job}/shortlist?scorer=llm"))
@@ -427,6 +449,26 @@ def test_the_shortlist_never_names_a_candidate(client):
         if folder.is_dir():
             for part in folder.name.split("-"):
                 assert not re.search(rf"\b{part}\b", whole), folder.name
+
+
+def test_the_same_candidates_have_other_aliases_on_another_job(client, repo):
+    first, second = shortlist_demo(client), shortlist_demo(client)
+    seen = []
+    for job in (first, second):
+        ok(client.post(f"/jobs/{job}/match"))
+        shortlist = ok(client.get(f"/jobs/{job}/shortlist"))
+        seen.append(
+            {
+                c["profile_id"]: (c["alias"], c["avatar"])
+                for c in shortlist["candidates"]
+            }
+        )
+    # The pool is stored once, so both jobs rank the same 12 profiles.
+    assert seen[0].keys() == seen[1].keys() and len(seen[0]) == 12
+    assert sum(seen[0][pid] == seen[1][pid] for pid in seen[0]) < 3
+    for one in seen:
+        assert len({a for a, _ in one.values()}) == 12
+        assert len({v for _, v in one.values()}) == 12
 
 
 def test_the_shortlist_is_recorded_in_the_audit_log(client, repo):

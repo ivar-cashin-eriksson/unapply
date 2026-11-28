@@ -128,7 +128,8 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
 - "Reveal" button (no payment yet) and "Request application" button.
 - Done: the Shortlist step in the frontend (`frontend/src/pages/employer/Shortlist.tsx`)
   over `GET /jobs/<name>/shortlist` (`src/unapply/matching/shortlist.py`): candidates
-  by alias ("Cobalt Otter") and abstract avatar, unique within the job, with each criterion's score, reason and cited quotes, and hard filter
+  by alias ("Cobalt Otter") and abstract avatar, unique within the job and different
+  on every other job (from the profile and job ids together, task 21), with each criterion's score, reason and cited quotes, and hard filter
   outcomes; a spider chart of up to three candidates (estimated, own or both, with a
   table); "Reveal" and "Request application" recorded once each in the `intents`
   table, reveals limited to the job's `reveal_quota`. The shortlist demo stores the
