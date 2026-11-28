@@ -215,6 +215,13 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   (`ad_skills` in `jobs/board.py`, never a criterion's). The filters live in the
   address, and every pill on a card or listing (location, work mode, seniority,
   work permit, vacancies, skills, fit) adds its filter, shown as removable chips.
+- Done (task 25): **messages** after a reveal: one thread per candidate and job,
+  on the employer's shortlist card and the candidate's listing, newest at the
+  bottom, with unread counts on the shortlist and board cards; no email or push
+  notifications (`jobs/messages.py`, the `messages` table, migration 0009). No
+  thread exists before a reveal, enforced in the API, and each side reaches only
+  its own threads. Messages are the candidate's data and in their export
+  (`GET /candidates/<name>/messages`).
 
 ## The key experiment (run alongside M1–M4)
 

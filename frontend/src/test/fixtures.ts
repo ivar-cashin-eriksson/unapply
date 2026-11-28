@@ -221,6 +221,7 @@ function person(id: string, levels: [SkillLevel | null, SkillLevel | null][]): S
       answered_at: null,
       letter: '',
       files: [],
+      unread_messages: 0,
     },
     contact: null,
   }
@@ -383,6 +384,7 @@ export function connection(patch: Partial<Connection> = {}): Connection {
     listing: listing(),
     stage: 'connected',
     progress: null,
+    unread_messages: 0,
     ...patch,
   }
 }

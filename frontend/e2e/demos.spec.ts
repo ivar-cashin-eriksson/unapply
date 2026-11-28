@@ -599,6 +599,92 @@ test('reveal, request and apply: John Doe applies to one job and declines anothe
   await shot(page, '26-candidate-jobs', { fullPage: false })
 })
 
+test('messages after a reveal: the employer and John Doe write to each other', async ({ page }) => {
+  // John approves his profile and connects to a demo job no other test reveals him on.
+  await page.goto('/candidates')
+  await page.getByRole('button', { name: 'Try the John Doe demo' }).click()
+  await expect(page).toHaveURL(/\/material$/)
+  const candidate = page.url().match(/\/candidates\/([^/]+)\//)![1]
+  await page.getByRole('button', { name: 'Build my profile' }).click()
+  await page.getByRole('button', { name: "Fill in John's review" }).click()
+  await page.getByRole('button', { name: 'Save and approve' }).click()
+  await expect(page).toHaveURL(/\/questions$/)
+  const created = await (await page.request.post('/api/demos/board')).json()
+  const job = (created.jobs as string[]).find((j) => j.includes('havnelys'))!
+  const company = (await (await page.request.get(`/api/board/${job}`)).json()).company as string
+  await page.goto(`/candidates/${candidate}/jobs/${job}`)
+  await page.getByRole('button', { name: 'Connect my profile' }).click()
+  await expect(page.getByRole('region', { name: 'Your connection' })).toContainText('Connected on')
+  const profile = await (await page.request.get(`/api/candidates/${candidate}/profile`)).json()
+
+  // Before a reveal there is no thread, in the app or the API.
+  await expect(page.getByRole('region', { name: `Messages with ${company}` })).toHaveCount(0)
+  const early = await page.request.post(`/api/candidates/${candidate}/messages/${job}`, { data: { text: 'Hi' } })
+  expect(early.status()).toBe(409)
+  expect((await page.request.post(`/api/jobs/${job}/match`)).ok()).toBe(true)
+  const thread = `/api/jobs/${job}/candidates/${profile.id}/messages`
+  expect((await page.request.get(thread)).status()).toBe(404)
+  expect((await page.request.post(thread, { data: { text: 'Hi' } })).status()).toBe(409)
+
+  // The employer reveals John and writes to him from his card.
+  await page.goto(`/jobs/${job}/shortlist`)
+  const shortlist = await (await page.request.get(`/api/jobs/${job}/shortlist`)).json()
+  const alias = shortlist.candidates.find((c: { profile_id: string }) => c.profile_id === profile.id).alias
+  let card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3, name: alias }) })
+  await expect(card.getByRole('button', { name: /^Messages with/ })).toHaveCount(0)
+  await card.getByRole('button', { name: /^Reveal: / }).click()
+  await expect(card.getByRole('heading', { level: 3 })).toContainText('John Doe')
+  card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3, name: /John Doe/ }) })
+  await card.getByRole('button', { name: 'Messages with John Doe' }).click()
+  let messages = card.getByRole('region', { name: 'Thread with John Doe' })
+  await expect(messages).toContainText('No messages yet. Write the first to John Doe.')
+  await messages.getByLabel('Message to John Doe').fill('Hi John, thanks for connecting. Could we talk on Tuesday?')
+  await messages.getByRole('button', { name: 'Send' }).click()
+  await expect(messages.getByRole('list', { name: 'Messages' })).toContainText('Could we talk on Tuesday?')
+  await expect(messages.getByLabel('Message to John Doe')).toHaveValue('')
+  await messages.scrollIntoViewIfNeeded()
+  await shot(page, '27-shortlist-messages', { fullPage: false })
+
+  // John sees one new message on the board, reads it on the listing, and answers.
+  await page.goto(`/candidates/${candidate}/jobs`)
+  const board = page.getByRole('list', { name: 'Jobs' })
+  const listing = board.getByRole('listitem').filter({ hasText: company })
+  await expect(listing.getByText('1 new message')).toBeVisible()
+  await listing.getByRole('link').first().click()
+  await expect(page).toHaveURL(new RegExp(`/jobs/${job}$`))
+  messages = page.getByRole('region', { name: `Thread with ${company}` })
+  await expect(messages).toContainText('Could we talk on Tuesday?')
+  await expect(messages.getByText('New', { exact: true })).toBeVisible()
+  await messages.getByLabel(`Message to ${company}`).fill('Yes, Tuesday works. Any time after ten.')
+  await messages.getByRole('button', { name: 'Send' }).click()
+  const items = messages.getByRole('list', { name: 'Messages' }).getByRole('listitem')
+  await expect(items).toHaveCount(2)
+  await expect(items.last()).toContainText('Any time after ten.')
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await messages.scrollIntoViewIfNeeded()
+  await shot(page, '28-job-listing-messages', { fullPage: false })
+  // Read now: the board no longer counts it.
+  await page.goto(`/candidates/${candidate}/jobs`)
+  await expect(page.getByRole('list', { name: 'Jobs' })).toBeVisible()
+  await expect(page.getByText(/new message/)).toHaveCount(0)
+
+  // The employer sees the answer as new, newest at the bottom.
+  await page.goto(`/jobs/${job}/shortlist`)
+  await expect(card.getByText('1 new message')).toBeVisible()
+  await card.getByRole('button', { name: 'Messages with John Doe' }).click()
+  messages = card.getByRole('region', { name: 'Thread with John Doe' })
+  const thread2 = messages.getByRole('list', { name: 'Messages' }).getByRole('listitem')
+  await expect(thread2).toHaveCount(2)
+  await expect(thread2.first()).toContainText('Could we talk on Tuesday?')
+  await expect(thread2.last()).toContainText('Any time after ten.')
+  await expect(card.getByText('1 new message')).toHaveCount(0)
+
+  // The messages are John's data: his export has both.
+  const exported = await (await page.request.get(`/api/candidates/${candidate}/messages`)).json()
+  const mine = exported.find((t: { job: string }) => t.job === job)
+  expect(mine.messages.map((m: { sender: string }) => m.sender)).toEqual(['employer', 'candidate'])
+})
+
 test('a real candidate is refused paid calls, and told about the demo', async ({ page }) => {
   await page.goto('/candidates')
   await page.getByLabel('Name').fill('jane-example')

@@ -65,7 +65,7 @@ def reveal_candidate(
     except HiringError as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
     response.status_code = status.HTTP_201_CREATED if new else status.HTTP_200_OK
-    return employer_progress(progress, profile_id)
+    return employer_progress(progress, profile_id, _unread(ctx, progress))
 
 
 @router.post("/jobs/{job}/candidates/{profile_id}/request-application")
@@ -84,7 +84,7 @@ def request_candidate_application(
     except HiringError as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
     response.status_code = status.HTTP_201_CREATED if new else status.HTTP_200_OK
-    return employer_progress(progress, profile_id)
+    return employer_progress(progress, profile_id, _unread(ctx, progress))
 
 
 @router.get("/jobs/{job}/candidates/{profile_id}/files/{file_id}")
@@ -168,7 +168,9 @@ def own_application_file(name: str, job: str, file_id: int, ctx: Ctx) -> Respons
     return download(*found)
 
 
-def employer_progress(progress: Progress | None, profile_id: UUID) -> EmployerProgress:
+def employer_progress(
+    progress: Progress | None, profile_id: UUID, unread_messages: int = 0
+) -> EmployerProgress:
     """Describe a candidate's progress as the employer sees it: no names.
 
     Parameters
@@ -177,6 +179,8 @@ def employer_progress(progress: Progress | None, profile_id: UUID) -> EmployerPr
         The candidate's progress on the job, or None before a reveal.
     profile_id : UUID
         The candidate, as the shortlist shows them.
+    unread_messages : int, optional
+        Messages from the candidate the employer hasn't read.
 
     Returns
     -------
@@ -194,6 +198,7 @@ def employer_progress(progress: Progress | None, profile_id: UUID) -> EmployerPr
         answered_at=progress.answered_at,
         letter=progress.letter if applied else "",
         files=progress.files if applied else [],
+        unread_messages=unread_messages,
     )
 
 
@@ -272,6 +277,9 @@ def connection(ctx: Context, name: str, job: str) -> Connection:
         listing=listing,
         stage=progress.stage if progress else Stage.CONNECTED,
         progress=progress,
+        unread_messages=ctx.repo.unread_messages(
+            "employer", job=job, candidate=name
+        ).get((name, job), 0),
     )
 
 
@@ -315,6 +323,14 @@ def _checked(files: list[UploadFile]) -> list[tuple[str, bytes]]:
             )
         checked.append((filename, content))
     return checked
+
+
+def _unread(ctx: Context, progress: Progress) -> int:
+    """Count the candidate's messages on the job that the employer hasn't read."""
+    found = ctx.repo.unread_messages(
+        "candidate", job=progress.job, candidate=progress.candidate
+    )
+    return found.get((progress.candidate, progress.job), 0)
 
 
 def _not_on_job() -> HTTPException:

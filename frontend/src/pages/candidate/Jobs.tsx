@@ -12,6 +12,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  MessagesSquare,
   PlayCircle,
   Search,
   Send,
@@ -27,6 +28,7 @@ import { toast } from 'sonner'
 import { AdText } from '@/components/AdText'
 import { Counts } from '@/components/Counts'
 import { FitBadge, FitSummary, MissedFilters } from '@/components/FitBadge'
+import { MessageThread, UnreadBadge } from '@/components/MessageThread'
 import { StageBadge } from '@/components/StageBadge'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -629,7 +631,12 @@ function ListingCard({
               {x.title}
             </Link>
           </CardTitle>
-          {stage && <StageBadge stage={stage} />}
+          {stage && (
+            <span className="flex flex-wrap items-center gap-1.5">
+              <StageBadge stage={stage} />
+              {connection && <UnreadBadge count={connection.unread_messages} />}
+            </span>
+          )}
         </div>
         <Meta listing={x} filterTo={filterTo} />
       </CardHeader>
@@ -836,6 +843,27 @@ export function JobListing() {
               company={x.company}
               onAnswered={() => Promise.all([connections.reload(), listing.reload()]).then(() => undefined)}
             />
+          )}
+          {connection?.progress?.revealed_at && (
+            <Card role="region" aria-label={`Messages with ${x.company}`} className="border-primary/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MessagesSquare className="size-4 text-primary" aria-hidden /> Messages
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MessageThread
+                  label={`Thread with ${x.company}`}
+                  me="candidate"
+                  other={x.company}
+                  threadKey={`${name}:${job}`}
+                  load={() => api.candidateThread(name, job)}
+                  markRead={() => api.candidateRead(name, job)}
+                  send={(text) => api.candidateSend(name, job, text)}
+                  onRead={() => void connections.reload()}
+                />
+              </CardContent>
+            </Card>
           )}
           {fit.data && <FitCard fit={fit.data} />}
           <ConnectCard

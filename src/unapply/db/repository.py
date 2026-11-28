@@ -5,8 +5,8 @@ and jobs by name, their current `Profile` or `Job`, a history of every step, and
 interview questions waiting for answers. It adds what folders can't do well: rubric
 versions that can't change once a match uses them, matches, an append-only audit log
 of matches, rankings and reveals, employers' early intents (kept as history),
-candidates' consents to jobs, their progress on each job with their applications,
-and a copy of the skill taxonomy.
+candidates' consents to jobs, their progress on each job with their applications
+and their messages with the employer, and a copy of the skill taxonomy.
 
 Every method runs in its own transaction, so a failed call changes nothing.
 """
@@ -41,6 +41,7 @@ from unapply.db.models import (
     JobHistoryRow,
     JobRow,
     MatchRow,
+    MessageRow,
     ProgressRow,
     RubricVersionRow,
     SkillRelationRow,
@@ -49,6 +50,7 @@ from unapply.db.models import (
     TaxonomySkillRow,
 )
 from unapply.jobs.hiring import ApplicationFile, ChargeIntent, Progress
+from unapply.jobs.messages import Message, Sender
 from unapply.matching.audit import AuditEntry, AuditKind
 from unapply.matching.shortlist import Intent, IntentKind
 from unapply.schemas import Job, Match, Profile, Rubric
@@ -1146,6 +1148,164 @@ class Repository:
                 return None
             return row.name, row.content
 
+    # Messages between employers and the candidates they revealed
+
+    def add_message(
+        self, candidate: str, job: str, sender: Sender, text: str
+    ) -> Message:
+        """Add a message to a candidate's thread with a job's employer.
+
+        Callers check that the candidate is revealed (`unapply.jobs.messages`).
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+        sender : {"candidate", "employer"}
+            Who writes it.
+        text : str
+            What they write.
+
+        Returns
+        -------
+        Message
+            The message as stored, with its id.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        ValueError
+            If the candidate has no progress on the job, so no thread.
+        """
+        with self.transaction() as s:
+            key = (_candidate(s, candidate).id, _job(s, job).id)
+            if s.get(ProgressRow, key) is None:
+                raise ValueError(f"{candidate!r} has no thread on {job!r}")
+            row = MessageRow(
+                candidate_id=key[0],
+                job_id=key[1],
+                sender=sender,
+                text=text,
+                sent_at=datetime.now(),
+            )
+            s.add(row)
+            s.flush()
+            return _load_message(row)
+
+    def messages(self, candidate: str, job: str) -> list[Message]:
+        """Read a candidate's thread with a job's employer.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+
+        Returns
+        -------
+        list of Message
+            Oldest first; empty if there are none.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            rows = s.scalars(
+                select(MessageRow)
+                .filter_by(
+                    candidate_id=_candidate(s, candidate).id, job_id=_job(s, job).id
+                )
+                .order_by(MessageRow.id)
+            )
+            return [_load_message(row) for row in rows]
+
+    def mark_read(self, candidate: str, job: str, sender: Sender) -> int:
+        """Mark one side's unread messages in a thread as read now.
+
+        Parameters
+        ----------
+        candidate : str
+            The candidate.
+        job : str
+            The job.
+        sender : {"candidate", "employer"}
+            Whose messages were read: the side that didn't open the thread.
+
+        Returns
+        -------
+        int
+            How many messages were unread.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            rows = list(
+                s.scalars(
+                    select(MessageRow).filter_by(
+                        candidate_id=_candidate(s, candidate).id,
+                        job_id=_job(s, job).id,
+                        sender=sender,
+                        read_at=None,
+                    )
+                )
+            )
+            now = datetime.now()
+            for row in rows:
+                row.read_at = now
+            return len(rows)
+
+    def unread_messages(
+        self, sender: Sender, job: str | None = None, candidate: str | None = None
+    ) -> dict[tuple[str, str], int]:
+        """Count one side's unread messages, per thread.
+
+        Parameters
+        ----------
+        sender : {"candidate", "employer"}
+            Whose messages: "employer" counts what candidates haven't read,
+            "candidate" what employers haven't.
+        job : str or None, optional
+            Only threads on this job.
+        candidate : str or None, optional
+            Only this candidate's threads.
+
+        Returns
+        -------
+        dict of (str, str) to int
+            Candidate and job names to the number unread; threads with none
+            unread are left out.
+
+        Raises
+        ------
+        NotFound
+            If there is no such candidate or job.
+        """
+        with self.transaction() as s:
+            query = (
+                select(CandidateRow.name, JobRow.name, func.count())
+                .select_from(MessageRow)
+                .join(CandidateRow, CandidateRow.id == MessageRow.candidate_id)
+                .join(JobRow, JobRow.id == MessageRow.job_id)
+                .where(MessageRow.sender == sender, MessageRow.read_at.is_(None))
+                .group_by(CandidateRow.name, JobRow.name)
+            )
+            if job is not None:
+                query = query.where(MessageRow.job_id == _job(s, job).id)
+            if candidate is not None:
+                query = query.where(
+                    MessageRow.candidate_id == _candidate(s, candidate).id
+                )
+            return {(c, j): n for c, j, n in s.execute(query).all()}
+
     # Skill taxonomy
 
     def save_taxonomy(self, taxonomy: Taxonomy) -> None:
@@ -1667,4 +1827,14 @@ def _load_progress(s: Session, row: ProgressRow, candidate: str, job: str) -> Pr
             )
             for f in files
         ],
+    )
+
+
+def _load_message(row: MessageRow) -> Message:
+    return Message(
+        id=row.id,
+        sender=row.sender,  # type: ignore[arg-type]
+        text=row.text,
+        sent_at=row.sent_at,
+        read_at=row.read_at,
     )
