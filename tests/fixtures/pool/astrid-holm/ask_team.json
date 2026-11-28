@@ -1,0 +1,8 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "answered": false,
+    "answer": "Nothing in the material says she has managed a team, as a line manager or otherwise. The closest is that she mentors three data scientists in her current role as lead data scientist, and that she designs price experiments together with the commercial team.",
+    "evidence": ["E7", "E5"]
+  }
+}

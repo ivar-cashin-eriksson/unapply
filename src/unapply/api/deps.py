@@ -28,8 +28,8 @@ from unapply.llm import (
 )
 from unapply.schemas import Profile
 
-# Makes the client for a purpose ("extract", "estimate", "questions" or "rubric"),
-# allowed to call or not. Tests pass a fake.
+# Makes the client for a purpose ("extract", "estimate", "questions", "rubric",
+# "match" or "ask"), allowed to call or not. Tests pass a fake.
 LLMFactory = Callable[[str, bool], StructuredLLM]
 
 
@@ -39,7 +39,8 @@ def claude(purpose: str, allow: bool) -> StructuredLLM:
     Parameters
     ----------
     purpose : str
-        "extract", "estimate", "questions" or "rubric".
+        "extract", "estimate", "questions", "rubric", "match" or "ask" (questions
+        about a revealed candidate).
     allow : bool
         Whether the client may make paid calls.
 

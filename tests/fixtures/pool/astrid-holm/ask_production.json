@@ -1,0 +1,8 @@
+{
+  "model": "hand-written placeholder, not a model answer: re-record with --record",
+  "answer": {
+    "answered": true,
+    "answer": "Yes. At the online grocer she owns a demand forecasting system for 15,000 products that has been in production since 2022 and is retrained daily, and the CV says it cut forecast error by 22%. She built its pipeline in Python and PySpark on Databricks, over 2 billion order lines, and added a deep learning model for promotion weeks to it. Her earlier credit risk models are described as built and validated, not as deployed.",
+    "evidence": ["E2", "E3", "E4", "E8"]
+  }
+}

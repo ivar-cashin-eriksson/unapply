@@ -7,7 +7,16 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from unapply.api import board, candidates, hiring, internal, jobs, matching, messages
+from unapply.api import (
+    ask,
+    board,
+    candidates,
+    hiring,
+    internal,
+    jobs,
+    matching,
+    messages,
+)
 from unapply.api.deps import Context, LLMFactory, claude
 from unapply.db.engine import init_db
 from unapply.db.repository import NotFound, Repository, RubricLocked
@@ -23,7 +32,9 @@ few questions, then browse the job board and connect their profile to the jobs t
 want. Employers turn a job ad into a rubric, edit it, and match and rank the
 candidates connected to it, anonymised. From the shortlist, an employer reveals a
 candidate (no payment is taken yet) and then asks them to apply; the candidate
-applies with a letter or files, or declines.
+applies with a letter or files, or declines. Once a candidate is revealed, the
+employer can ask a model questions about them, answered from their own material
+with the quotes cited.
 
 **Paid model calls are refused** unless the request adds `?allow_api=true` (or the
 server runs with `UNAPPLY_ALLOW_API_CALLS=1`). Demo candidates and jobs, created
@@ -91,6 +102,7 @@ def create_app(
         board.router,
         hiring.router,
         messages.router,
+        ask.router,
     ):
         app.include_router(router)
     if internal_routes:
