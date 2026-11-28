@@ -263,8 +263,11 @@ def main(argv: list[str] | None = None) -> int:
     evaluate.add_argument(
         "--reference",
         type=Path,
+        action="append",
         help="YAML ranking to compare with (see docs), by default the pool's "
-        "intended ranking.",
+        "intended ranking. Give it more than once, such as one per person who "
+        "hires, to compare with each, and to see how much the references agree "
+        "with each other: the ceiling.",
     )
     evaluate.add_argument(
         "--scorer",
@@ -673,9 +676,12 @@ def _mcp(args: argparse.Namespace) -> int:
 def _evaluate(args: argparse.Namespace) -> int:
     from unapply.evaluation import (
         DEFAULT_POOL,
+        compare_ranking,
         evaluate_pool,
         load_pool,
         load_reference,
+        mean_comparison,
+        rater_agreement,
     )
     from unapply.evaluation.pool import LLMFor
 
@@ -691,52 +697,84 @@ def _evaluate(args: argparse.Namespace) -> int:
             return RecordingLLM(llm, path)
 
     folder = args.pool or DEFAULT_POOL
+    paths: list[Path] = args.reference or []
+    ks = tuple(args.k)
     try:
         pool = load_pool(folder, llm_for)
-        reference = load_reference(args.reference) if args.reference else None
+        references = [load_reference(p) for p in paths] or [pool.intended]
+        agreement = rater_agreement(references, ks) if len(references) > 1 else None
     except (FileNotFoundError, ValueError) as e:
         print(f"Can't evaluate: {e}", file=sys.stderr)
         return 2
-    reference = reference or pool.intended
     job = pool.job
     print(
         f"{job.title} at {job.company}, rubric version {job.rubric.version}: "
         f"{len(pool.candidates)} candidates in {folder}, roles counted to "
         f"{pool.today:%Y-%m-%d}"
     )
-    print(
-        "Reference: "
-        + (str(args.reference) if args.reference else "the pool's intended ranking")
-    )
+    if not paths:
+        print("Reference: the pool's intended ranking")
+    elif len(paths) == 1:
+        print(f"Reference: {paths[0]}")
+    else:
+        print("References:")
+        for i, p in enumerate(paths, 1):
+            print(f"  {i}: {p}")
+    if agreement is not None:
+        print(
+            "Agreement between the references (the ceiling, "
+            f"{agreement.pairs} pair{'s' if agreement.pairs > 1 else ''}): "
+            f"{_comparison(agreement.top_k, agreement.tau)}"
+        )
     for name, candidate in pool.candidates.items():
         for p in candidate.problems:
             print(f"  problem: {name}: {p}")
-    wanted = {e.candidate: e.rank for e in reference}
+    wanted = [{e.candidate: e.rank for e in r} for r in references]
+    headers = (
+        ["reference"]
+        if len(references) == 1
+        else [f"ref {i}" for i in range(1, len(references) + 1)]
+    )
     for kind in dict.fromkeys(args.scorer):
         try:
-            evaluation = evaluate_pool(pool, kind, reference, tuple(args.k), llm_for)
+            evaluation = evaluate_pool(pool, kind, references[0], ks, llm_for)
+            ranks = {n: r.rank for n, r in evaluation.ranking}
+            order = [n for n, _ in evaluation.ranking]
+            comparisons = [(evaluation.top_k, evaluation.tau)] + [
+                compare_ranking(ranks, order, r, ks) for r in references[1:]
+            ]
         except ValueError as e:
             print(f"Can't evaluate {kind}: {e}", file=sys.stderr)
             return 2
         print()
         print(f"{kind} ({evaluation.model})")
-        print("  rank  total  reference  candidate")
+        print("  rank  total  " + "  ".join(headers) + "  candidate")
         for name, ranked in evaluation.ranking:
             status = (
                 "" if ranked.match.passed_hard_filters else "  (failed hard filters)"
             )
-            ref = str(wanted.get(name, "-"))
-            print(f"  {ranked.rank:>4}  {ranked.total:5.2f}  {ref:>9}  {name}{status}")
-        overlaps = "  ".join(
-            f"top-{k} overlap {v:.2f}" for k, v in evaluation.top_k.items()
-        )
-        tau = "-" if evaluation.tau is None else f"{evaluation.tau:.2f}"
-        print(f"  {overlaps}  Kendall's tau {tau}")
+            refs = "  ".join(
+                f"{w.get(name, '-')!s:>{len(h)}}"
+                for w, h in zip(wanted, headers, strict=True)
+            )
+            print(f"  {ranked.rank:>4}  {ranked.total:5.2f}  {refs}  {name}{status}")
+        if len(comparisons) == 1:
+            print(f"  {_comparison(*comparisons[0])}")
+        else:
+            for i, c in enumerate(comparisons, 1):
+                print(f"  ref {i}: {_comparison(*c)}")
+            print(f"  mean: {_comparison(*mean_comparison(comparisons))}")
         if args.verbose:
             for name, result in evaluation.results.items():
                 for p in result.problems:
                     print(f"  problem: {name}: {p}")
     return 0
+
+
+def _comparison(top_k: dict[int, float], tau: float | None) -> str:
+    """Format top-k overlaps and Kendall's tau on one line."""
+    overlaps = "  ".join(f"top-{k} overlap {v:.2f}" for k, v in top_k.items())
+    return f"{overlaps}  Kendall's tau {'-' if tau is None else f'{tau:.2f}'}"
 
 
 def _ask(args: argparse.Namespace) -> int:

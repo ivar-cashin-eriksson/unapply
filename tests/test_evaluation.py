@@ -17,10 +17,13 @@ from unapply.cli import main
 from unapply.evaluation import (
     DEFAULT_POOL,
     ReferenceEntry,
+    compare_ranking,
     evaluate_pool,
     kendall_tau,
     load_pool,
     load_reference,
+    mean_comparison,
+    rater_agreement,
     top_k_overlap,
 )
 from unapply.ingest.extract import normalise_quote
@@ -91,6 +94,78 @@ def test_kendall_tau_undefined():
     assert kendall_tau({"a": 1}, {"a": 1}) is None
     assert kendall_tau({"a": 1, "b": 2}, {"a": 1, "c": 2}) is None  # One in common.
     assert kendall_tau({"a": 1, "b": 1}, {"a": 1, "b": 2}) is None  # All tied.
+
+
+def _reference(*names: str) -> list[ReferenceEntry]:
+    """A reference ranking of `names`, best first, without ties."""
+    return [ReferenceEntry(n, i) for i, n in enumerate(names, 1)]
+
+
+# Two people who agree on the top two but swap the 1st and 2nd and the 3rd and 4th.
+FIRST = _reference("a", "b", "c", "d")
+SECOND = _reference("b", "a", "d", "c")
+
+
+def test_compare_ranking():
+    ranks = {"a": 1, "b": 2, "c": 3, "d": 4}
+    top_k, tau = compare_ranking(ranks, ["a", "b", "c", "d"], SECOND, (2, 3))
+    assert top_k == {2: 1.0, 3: pytest.approx(2 / 3)}
+    # Two of the six pairs swapped: (4 - 2) / 6.
+    assert tau == pytest.approx(1 / 3)
+
+
+def test_mean_comparison_skips_undefined_taus():
+    top_k, tau = mean_comparison([({3: 1.0}, 0.5), ({3: 0.5}, None), ({3: 0.0}, 1.0)])
+    assert top_k == {3: 0.5}
+    assert tau == 0.75
+    assert mean_comparison([({3: 1.0}, None)]) == ({3: 1.0}, None)
+    with pytest.raises(ValueError, match="nothing to average"):
+        mean_comparison([])
+
+
+def test_rater_agreement_of_two_references():
+    agreement = rater_agreement([FIRST, SECOND], (2, 3))
+    assert agreement.pairs == 1
+    assert agreement.top_k == {2: 1.0, 3: pytest.approx(2 / 3)}
+    assert agreement.tau == pytest.approx(1 / 3)
+    # Symmetric: the order of the references doesn't matter.
+    assert rater_agreement([SECOND, FIRST], (2, 3)) == agreement
+
+
+def test_rater_agreement_is_the_mean_over_every_pair():
+    # Pairs: FIRST-SECOND (tau 1/3), FIRST-FIRST (1) and SECOND-FIRST (1/3).
+    agreement = rater_agreement([FIRST, SECOND, FIRST], (3,))
+    assert agreement.pairs == 3
+    assert agreement.top_k == {3: pytest.approx((2 / 3 + 1 + 2 / 3) / 3)}
+    assert agreement.tau == pytest.approx(5 / 9)
+    # Identical references agree completely.
+    assert rater_agreement([FIRST, FIRST], (2,)).tau == 1.0
+
+
+def test_rater_agreement_only_counts_candidates_in_both():
+    # e and f are each in one reference only, so they don't count.
+    agreement = rater_agreement(
+        [_reference("a", "e", "b"), _reference("a", "b", "f")], (2,)
+    )
+    assert agreement.top_k == {2: 1.0}
+    assert agreement.tau == 1.0
+
+
+def test_rater_agreement_without_a_tau():
+    # The second reference ties both candidates, so tau can't be computed.
+    tied = [ReferenceEntry("a", 1), ReferenceEntry("b", 1)]
+    agreement = rater_agreement([_reference("a", "b"), tied], (1,))
+    assert agreement.top_k == {1: 1.0}
+    assert agreement.tau is None
+
+
+def test_rater_agreement_refuses_bad_input():
+    with pytest.raises(ValueError, match="two or more references"):
+        rater_agreement([FIRST], (3,))
+    with pytest.raises(ValueError, match="no candidate in common"):
+        rater_agreement([FIRST, _reference("x", "y")], (3,))
+    with pytest.raises(ValueError, match="k must be 1 or more"):
+        rater_agreement([FIRST, SECOND], (0,))
 
 
 def test_load_reference(tmp_path):
@@ -324,6 +399,58 @@ def test_cli_with_a_reference_one_scorer_and_k(tmp_path, capsys):
     assert "top-2 overlap 1.00  Kendall's tau 0.33" in out
     # The baseline can't read "retail experience"; --verbose says so.
     assert "names no skill, so the baseline doesn't score it" in out
+
+
+def _write_reference(path: Path, *names: str) -> Path:
+    path.write_text(
+        "ranking:\n"
+        + "".join(
+            f"  - {{candidate: {n}, rank: {i}}}\n" for i, n in enumerate(names, 1)
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_cli_with_several_references(tmp_path, capsys):
+    first = _write_reference(
+        tmp_path / "first.yaml",
+        "astrid-holm",
+        "mikkel-lund",
+        "sofie-krag",
+        "henrik-mose",
+    )
+    second = _write_reference(
+        tmp_path / "second.yaml",
+        "mikkel-lund",
+        "astrid-holm",
+        "henrik-mose",
+        "sofie-krag",
+    )
+    args = ["evaluate", "--scorer", "baseline", "--k", "2", "3"]
+    assert main([*args, "--reference", str(first), "--reference", str(second)]) == 0
+    out = capsys.readouterr().out
+    assert f"  1: {first}" in out and f"  2: {second}" in out
+    # The two people agree on the top two and swap two of six pairs.
+    assert (
+        "Agreement between the references (the ceiling, 1 pair): "
+        "top-2 overlap 1.00  top-3 overlap 0.67  Kendall's tau 0.33"
+    ) in out
+    assert "  rank  total  ref 1  ref 2  candidate" in out
+    # The baseline ranks Astrid, Mikkel, Sofie, ... Henrik: the first person's order.
+    assert re.search(r"\n +1 +0\.\d\d +1 +2  astrid-holm\n", out)
+    assert re.search(r" +-  +-  jonas-friis\n", out)
+    assert "  ref 1: top-2 overlap 1.00  top-3 overlap 1.00  Kendall's tau 1.00" in out
+    assert "  ref 2: top-2 overlap 1.00  top-3 overlap 0.67  Kendall's tau 0.33" in out
+    assert "  mean: top-2 overlap 1.00  top-3 overlap 0.83  Kendall's tau 0.67" in out
+
+
+def test_cli_refuses_references_with_no_candidate_in_common(tmp_path, capsys):
+    first = _write_reference(tmp_path / "first.yaml", "astrid-holm", "mikkel-lund")
+    second = _write_reference(tmp_path / "second.yaml", "sofie-krag", "henrik-mose")
+    args = ["evaluate", "--reference", str(first), "--reference", str(second)]
+    assert main(args) == 2
+    assert "no candidate in common" in capsys.readouterr().err
 
 
 def _digest(folder: Path) -> str:

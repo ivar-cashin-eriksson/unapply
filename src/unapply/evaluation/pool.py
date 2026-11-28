@@ -32,9 +32,8 @@ from unapply.estimation.claims import claim_support
 from unapply.estimation.skills import estimate_skills, skills_without_estimate
 from unapply.evaluation.metrics import (
     ReferenceEntry,
-    kendall_tau,
+    compare_ranking,
     parse_reference,
-    top_k_overlap,
 )
 from unapply.ingest.documents import load_path
 from unapply.ingest.extract import extract_profile
@@ -357,11 +356,8 @@ def evaluate_pool(
     names = {r.match.id: name for name, r in results.items()}
     ranked = rank([r.match for r in results.values()], pool.job.rubric)
     ranking = [(names[r.match.id], r) for r in ranked]
-    order = [n for n, _ in ranking]
-    reference_order = [e.candidate for e in reference]
-    top_k = {k: top_k_overlap(order, reference_order, k) for k in ks}
-    tau = kendall_tau(
-        {n: r.rank for n, r in ranking}, {e.candidate: e.rank for e in reference}
+    top_k, tau = compare_ranking(
+        {n: r.rank for n, r in ranking}, [n for n, _ in ranking], reference, ks
     )
     models = sorted({r.match.model for r in results.values()})
     return Evaluation(

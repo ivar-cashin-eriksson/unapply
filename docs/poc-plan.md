@@ -251,8 +251,11 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   with an intended ranking (`tests/fixtures/pool/`). On it the baseline scores
   top-3 1.00, top-5 0.80, tau 0.82; it ranks an overclaimer 4th instead of 8th,
   because unsure estimates leave room for the candidate's own levels. The LLM
-  scorer's answers are hand-written stand-ins until recorded. Still to do: rankings
-  from the database (real matches) and agreement between human rankers.
+  scorer's answers are hand-written stand-ins until recorded. `--reference` can be
+  repeated, one file per person who hires: each scorer is compared with each and
+  with the mean, beside the mean agreement between the people over every pair (the
+  ceiling; `rater_agreement` in `evaluation/metrics.py`). Still to do: rankings from
+  the database (real matches).
 
 ## Out of scope for the POC
 
