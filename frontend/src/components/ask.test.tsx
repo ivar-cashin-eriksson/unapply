@@ -108,4 +108,27 @@ describe('asking about a revealed candidate', () => {
     // The question stays in the box, to try again.
     expect(within(region).getByLabelText('Question about Kim Berg')).toHaveValue('Has she used Kubernetes?')
   })
+
+  it('shows either the questions or the messages, not both', async () => {
+    const { data } = withKim()
+    vi.spyOn(api, 'askOptions').mockResolvedValue({ suggested: [PRODUCTION] })
+    vi.spyOn(api, 'employerThread').mockResolvedValue({ messages: [], unread: 0 })
+    vi.spyOn(api, 'employerRead').mockResolvedValue({ messages: [], unread: 0 })
+    const { user } = open(data)
+    const kim = (await screen.findByRole('heading', { name: /Kim Berg/ })).closest('li') as HTMLElement
+    const askButton = within(kim).getByRole('button', { name: 'Ask about Kim Berg' })
+    const messagesButton = within(kim).getByRole('button', { name: 'Messages with Kim Berg' })
+
+    await user.click(askButton)
+    await within(kim).findByRole('region', { name: 'Questions about Kim Berg' })
+    await user.click(messagesButton)
+    await within(kim).findByRole('region', { name: 'Thread with Kim Berg' })
+    expect(within(kim).queryByRole('region', { name: 'Questions about Kim Berg' })).toBeNull()
+    expect(askButton).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(askButton)
+    expect(await within(kim).findByRole('region', { name: 'Questions about Kim Berg' })).toBeInTheDocument()
+    expect(within(kim).queryByRole('region', { name: 'Thread with Kim Berg' })).toBeNull()
+    expect(messagesButton).toHaveAttribute('aria-expanded', 'false')
+  })
 })

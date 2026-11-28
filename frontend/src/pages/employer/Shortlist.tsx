@@ -479,7 +479,11 @@ function CandidateCard({
               aria-expanded={talking}
               aria-controls={threadId}
               aria-label={`Messages with ${who}`}
-              onClick={() => setTalking(!talking)}
+              onClick={() => {
+                // One of messages and questions shows at a time.
+                setTalking(!talking)
+                setAsking(false)
+              }}
             >
               <MessagesSquare aria-hidden /> Messages
             </Button>
@@ -494,6 +498,7 @@ function CandidateCard({
               onClick={() => {
                 setAsking(!asking)
                 setAskOpened(true)
+                setTalking(false)
               }}
             >
               <Sparkles aria-hidden /> Ask
