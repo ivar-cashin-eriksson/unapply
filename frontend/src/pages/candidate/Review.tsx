@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
+import { CategoryDot } from '@/components/CategoryColour'
 import { Field, LinesInput, ListInput, Quotes, WorkModes } from '@/components/fields'
 import { LevelChips } from '@/components/LevelChips'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
@@ -14,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { categoryBorder } from '@/lib/categoryColour'
 import { api, describeError } from '@/lib/api'
 import { CATEGORIES, LEVELS } from '@/lib/format'
 import type { ExperienceEdit, NewSkill, ReviewForm, SkillCategory, SkillEdit } from '@/lib/types'
@@ -194,7 +196,7 @@ function Skills({ skills, onChange }: { skills: SkillEdit[]; onChange: (s: Skill
       <ul className="space-y-2">
         {shown.map(([s, i]) => (
           <li key={s.name}>
-            <Card className={cn('py-0 transition-opacity', !s.keep && 'opacity-55')}>
+            <Card className={cn('py-0 transition-opacity', categoryBorder(s.category), !s.keep && 'opacity-55')}>
               <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-start">
                 <div className="flex min-w-0 flex-1 items-start gap-3">
                   <Checkbox
@@ -250,6 +252,7 @@ function CategorySelect({
       <SelectContent>
         {CATEGORIES.map((c) => (
           <SelectItem key={c.value} value={c.value}>
+            <CategoryDot category={c.value} />
             {c.label}
           </SelectItem>
         ))}
@@ -351,7 +354,7 @@ function AddSkills({ skills, onChange }: { skills: NewSkill[]; onChange: (s: New
       <ul className="space-y-3">
         {skills.map((s, i) => (
           <li key={i}>
-            <Card className="py-0">
+            <Card className={cn('py-0', categoryBorder(s.category))}>
               <CardContent className="grid gap-4 p-5 sm:grid-cols-[1fr_auto]">
                 <Field label="Skill">
                   {(id) => <Input id={id} value={s.name} placeholder="matlab" onChange={(e) => set(i, { name: e.target.value })} />}

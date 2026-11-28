@@ -1,6 +1,7 @@
 import { BadgeCheck, Briefcase, Download, FileUp, MapPin, Pencil } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { CategoryHeading } from '@/components/CategoryColour'
 import { ContactCard } from '@/components/ContactCard'
 import { LevelChip } from '@/components/LevelChips'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
@@ -8,10 +9,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { categoryBorder } from '@/lib/categoryColour'
 import { api } from '@/lib/api'
-import { CATEGORIES, categoryLabel, period, WORK_MODES } from '@/lib/format'
+import { CATEGORIES, period, WORK_MODES } from '@/lib/format'
 import type { CandidateProfile, CandidateSkill } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
+import { cn } from '@/lib/utils'
 import { TRANSPARENCY, useCandidate } from '@/pages/candidate/context'
 
 /** Step 4: the profile as employers will see it once approved. No assessment. */
@@ -178,9 +181,9 @@ function SkillGroups({ skills }: { skills: CandidateSkill[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {groups.map((g) => (
-        <Card key={g.category ?? 'other'} className="py-0">
+        <Card key={g.category ?? 'other'} className={cn('py-0', categoryBorder(g.category))}>
           <CardContent className="space-y-3 p-5">
-            <h3 className="text-sm font-medium text-muted-foreground">{categoryLabel(g.category)}</h3>
+            <CategoryHeading category={g.category} />
             <ul className="space-y-2">
               {g.skills.map((s) => (
                 <li key={s.name} className="flex items-center justify-between gap-3">
