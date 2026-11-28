@@ -1,6 +1,9 @@
 """Ingestion tests. Synthetic data only; the model is faked."""
 
+import io
 import json
+import urllib.error
+import urllib.request
 import zipfile
 from datetime import date
 
@@ -17,7 +20,7 @@ from unapply.ingest.extract import (
     extract_profile,
     render_sources,
 )
-from unapply.ingest.github import cached_fetcher, fetch_github
+from unapply.ingest.github import _fetch, cached_fetcher, fetch_github
 from unapply.schemas import SkillCategory, SkillLevel, Source, SourceKind
 
 CV = """Alex Example - alex@example.com
@@ -207,6 +210,64 @@ def test_cached_fetcher_fetches_each_path_once_including_missing(tmp_path):
         with pytest.raises(FileNotFoundError):
             cached("/missing", True)
     assert calls == ["/a", "/missing"]
+
+
+class FakeResponse(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return None
+
+
+def _fake_urlopen(monkeypatch, *, body=b"", error=None):
+    """Answer GitHub requests offline and keep the requests sent."""
+    sent = []
+
+    def urlopen(request, timeout):
+        sent.append(request)
+        if error is not None:
+            raise error
+        return FakeResponse(body)
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    return sent
+
+
+def _http_error(code, headers=None):
+    return urllib.error.HTTPError("https://api.github.com/x", code, "", headers, None)
+
+
+def test_github_fetch_decodes_json_or_returns_raw_text(monkeypatch):
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    sent = _fake_urlopen(monkeypatch, body=b'[{"name": "tool"}]')
+    assert _fetch("/users/u/repos", raw=False) == [{"name": "tool"}]
+    assert _fetch("/repos/u/tool/readme", raw=True) == '[{"name": "tool"}]'
+    assert sent[0].full_url == "https://api.github.com/users/u/repos"
+    assert sent[0].get_header("Accept") == "application/vnd.github+json"
+    assert sent[1].get_header("Accept") == "application/vnd.github.raw+json"
+    assert not sent[0].has_header("Authorization")
+
+
+def test_github_fetch_sends_the_token_when_set(monkeypatch):
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    sent = _fake_urlopen(monkeypatch, body=b"{}")
+    _fetch("/users/u/repos", raw=False)
+    assert sent[0].get_header("Authorization") == "Bearer test-token"
+
+
+def test_github_fetch_maps_not_found_and_explains_the_rate_limit(monkeypatch):
+    _fake_urlopen(monkeypatch, error=_http_error(404))
+    with pytest.raises(FileNotFoundError):
+        _fetch("/repos/u/tool/readme", raw=True)
+    limited = _http_error(403, {"x-ratelimit-remaining": "0"})
+    _fake_urlopen(monkeypatch, error=limited)
+    with pytest.raises(RuntimeError, match="GITHUB_TOKEN"):
+        _fetch("/users/u/repos", raw=False)
+    # A 403 for any other reason is passed on as it is.
+    _fake_urlopen(monkeypatch, error=_http_error(403, {}))
+    with pytest.raises(urllib.error.HTTPError):
+        _fetch("/users/u/repos", raw=False)
 
 
 def test_linkedin_export_keeps_profile_data_and_drops_private_data(tmp_path):
