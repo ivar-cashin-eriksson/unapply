@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 
+from unapply.matching.places import place_ids
 from unapply.schemas import Experience, HardFilters, Profile, WorkMode
 
 # EU member states (ISO 3166-1 alpha-2), for "EU" work permits. Greece is "GR" in
@@ -162,9 +163,12 @@ def _location(profile: Profile, filters: HardFilters) -> FilterCheck:
 def same_place(a: str, b: str) -> bool:
     """Tell whether two place names mean the same place.
 
-    Compares their words, ignoring case and punctuation: one name's words must all
-    be in the other's, so "Copenhagen" matches "Copenhagen, Denmark" and "Greater
-    Copenhagen". It knows no geography: "Denmark" doesn't match "Copenhagen".
+    Compares the places they name (see `unapply.matching.places.place_ids`) and
+    their other words, ignoring case and punctuation: one name's must all be in the
+    other's. So "Copenhagen" matches "Copenhagen, Denmark", "Greater Copenhagen" and
+    "København", and a city matches its country either way round ("Denmark" and
+    "Copenhagen"), but two cities don't ("Aarhus" and "Copenhagen"). Places the
+    gazetteer doesn't know are compared by their words only.
 
     Parameters
     ----------
@@ -176,14 +180,10 @@ def same_place(a: str, b: str) -> bool:
     bool
         True if they match.
     """
-    words_a, words_b = _words(a), _words(b)
-    if not words_a or not words_b:
+    ids_a, ids_b = place_ids(a), place_ids(b)
+    if not ids_a or not ids_b:
         return False
-    return words_a <= words_b or words_b <= words_a
-
-
-def _words(text: str) -> set[str]:
-    return set(re.findall(r"\w+", text.casefold()))
+    return ids_a <= ids_b or ids_b <= ids_a
 
 
 def _work_permit(profile: Profile, filters: HardFilters) -> FilterCheck:

@@ -349,6 +349,10 @@ def test_search_by_words_location_work_mode_and_seniority(found):
         "Kaveri Retail Pvt Ltd",
     ]
     assert len(titles(location="Copenhagen")) == 10
+    # A country finds the jobs in its cities, by any name the gazetteer knows.
+    assert titles(location="Danmark") == titles(location="Copenhagen")
+    assert titles(location="India") == titles(location="Bangalore")
+    assert titles(location="Sweden") == ["Kornmod Foods A/S", "Tidevand Software GmbH"]
     assert titles(work_mode=WorkMode.REMOTE) == [
         "Kornmod Foods A/S",
         "Tidevand Software GmbH",

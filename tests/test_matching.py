@@ -61,6 +61,7 @@ from unapply.matching.llm_scorer import (
     apply_scores,
     render_match_prompt,
 )
+from unapply.matching.places import place_ids
 from unapply.matching.run import match_job
 from unapply.schemas import (
     Criterion,
@@ -194,12 +195,40 @@ def test_work_mode(wanted, offered, outcome):
         ("Copenhagen, Denmark", "Copenhagen", True),
         ("Greater Copenhagen", "Copenhagen", True),
         ("Aarhus", "Copenhagen", False),
-        ("Denmark", "Copenhagen", False),  # No geography: a known limit.
+        ("København", "Copenhagen", True),
+        ("Greater København", "Copenhagen, Denmark", True),
+        # A city matches its country, either way round, by any of their names.
+        ("Denmark", "Copenhagen", True),
+        ("Copenhagen", "Danmark", True),
+        ("Sverige", "Malmö", True),
+        ("New Delhi", "India", True),
+        ("Denmark", "Malmö", False),
+        ("Aarhus", "Copenhagen, Denmark", False),
+        ("Sweden", "Denmark", False),
+        # Places the gazetteer doesn't know are compared by their words.
+        ("Skagen", "Skagen, Denmark", True),
+        ("Skagen", "Denmark", False),
         ("", "Copenhagen", False),
     ],
 )
 def test_same_place(a, b, same):
     assert same_place(a, b) is same
+
+
+def test_place_ids():
+    # The longest known name wins, and every name of a place gives the same ids.
+    assert (
+        place_ids("New Delhi") == place_ids("Delhi") == {"city:in:delhi", "country:in"}
+    )
+    assert place_ids("Den Haag, Nederland") == place_ids("The Hague")
+    assert place_ids("United States of America") == {"country:us"}
+    # Unknown words stay as they are; no words, no ids.
+    assert place_ids("Remote (Copenhagen)") == {
+        "remote",
+        "city:dk:copenhagen",
+        "country:dk",
+    }
+    assert place_ids(" , ") == set()
 
 
 def test_location():
@@ -211,6 +240,8 @@ def test_location():
 
     assert outcome(Preferences(locations=["Copenhagen, Denmark"])) == Outcome.PASS
     assert outcome(Preferences(locations=["Aarhus", "Odense"])) == Outcome.FAIL
+    assert outcome(Preferences(locations=["Denmark"])) == Outcome.PASS
+    assert outcome(Preferences(locations=["Sweden"])) == Outcome.FAIL
     # No locations given: not excluded, but reported.
     assert outcome(Preferences()) == Outcome.UNKNOWN
     # Remote work, if both accept it, makes the location irrelevant.

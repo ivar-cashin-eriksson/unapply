@@ -111,8 +111,10 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   stand-in answer until it is recorded). Both put forecasting, Python and A/B
   testing high and SQL, Spark and deep learning low.
 - Known limits: the baseline can't score criteria without a skill (Fjord's "retail or
-  e-commerce"); places are matched by name, without geography ("Denmark" doesn't
-  match "Copenhagen"); hard filter outcomes are kept in the audit log, not with the
+  e-commerce"); places know only a little geography: a small
+  gazetteer (`matching/places.py`) matches a city to its country and native names
+  ("Denmark" and "København" match "Copenhagen"), and other places are matched by
+  name; hard filter outcomes are kept in the audit log, not with the
   match.
 - The MCP server (`src/unapply/mcp_server/`, `unapply mcp <job>`): one per job, with
   read-only tools scoped to the candidates who opted in to it and to the sections
