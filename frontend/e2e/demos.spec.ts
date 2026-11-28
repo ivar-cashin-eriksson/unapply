@@ -567,7 +567,7 @@ test('reveal, request and apply: John Doe applies to one job and declines anothe
   await expect(page.getByRole('region', { name: 'Application from John Doe' })).toHaveCount(0)
 
   // Smørblomst Mejeri: John connects, and the employer reveals five others, so his
-  // dashboard names the skills common among those revealed.
+  // dashboard compares him with those revealed.
   const dairy = 'board-smoerblomst-dairy'
   await page.goto(`/candidates/${candidate}/jobs/${dairy}`)
   await page.getByRole('button', { name: 'Connect my profile' }).click()
@@ -584,6 +584,8 @@ test('reveal, request and apply: John Doe applies to one job and declines anothe
 
   // His dashboard: three jobs, revealed on two, asked to apply on two.
   await page.goto(`/candidates/${candidate}/dashboard`)
+  await page.getByRole('tab', { name: 'Your jobs' }).click()
+  await expect(page).toHaveURL(/\?sheet=jobs$/)
   const yours = page.getByRole('list', { name: 'Jobs you connected to' })
   await expect(yours.locator(':scope > li')).toHaveCount(3)
   const rate = page.getByLabel('Your success rate')
@@ -591,12 +593,24 @@ test('reveal, request and apply: John Doe applies to one job and declines anothe
   await expect(rate).toContainText('Asked to apply67%2 of 3')
   const dairyRow = yours.locator(':scope > li').filter({ hasText: 'Smørblomst Mejeri' })
   await expect(dairyRow).toContainText('Connected')
-  await expect(dairyRow.getByRole('group', { name: /Common among those revealed/ })).toBeVisible()
+  await expect(dairyRow.getByRole('button', { name: /Compare with others/ })).toBeVisible()
   await expect(yours.locator(':scope > li').filter({ hasText: 'Fjord Grocery' })).toContainText('Applied')
   await expect(yours.locator(':scope > li').filter({ hasText: 'Lynfjord' })).toContainText('Declined')
   expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
-  await yours.scrollIntoViewIfNeeded()
   await shot(page, '26-candidate-jobs', { fullPage: false })
+
+  // Compared with the five revealed on Smørblomst Mejeri, though he wasn't: where
+  // he stands out, where they're ahead, and a spider chart of own levels.
+  await dairyRow.getByRole('button', { name: /Compare with others/ }).click()
+  await expect(page).toHaveURL(new RegExp(`sheet=compare&job=${dairy}$`))
+  const compared = page.getByRole('group', { name: 'Compared with: Revealed' })
+  await expect(compared).toBeVisible()
+  await expect(compared.getByText('Where you stand out')).toBeVisible()
+  await expect(compared.getByText("Where they're ahead")).toBeVisible()
+  await expect(compared.getByRole('img', { name: /Your own levels and the median of revealed/ })).toBeVisible()
+  await expect(page.getByLabel('Compare with').getByRole('radio', { name: 'Applied' })).toBeDisabled()
+  expect(await page.locator('main').textContent()).not.toMatch(HIDDEN_FROM_CANDIDATES)
+  await shot(page, '29-candidate-compared')
 })
 
 test('messages after a reveal: the employer and John Doe write to each other', async ({ page }) => {

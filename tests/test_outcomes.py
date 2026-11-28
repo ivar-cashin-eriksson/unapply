@@ -21,9 +21,13 @@ from unapply.db.repository import Repository
 from unapply.jobs.hiring import Stage, answer, request_application, reveal
 from unapply.jobs.outcomes import (
     COMMON_SHARE,
+    MAX_AXES,
+    MAX_TIPS,
+    RARE_SHARE,
+    Group,
     candidate_jobs,
-    revealed_profiles,
-    revealed_skills,
+    compare_group,
+    group_profiles,
 )
 from unapply.schemas import ClaimSupport, Profile, Skill, SkillEstimate, SkillLevel
 from unapply.taxonomy import default_taxonomy
@@ -149,91 +153,112 @@ def test_an_unknown_candidate_is_not_found(client):
     assert client.get("/candidates/nobody/jobs").status_code == 404
 
 
-# Skills common among the revealed, and the group-size rule
+# Comparing with groups of the others on a job, and the group-size rule
 
 
-def test_skills_are_suggested_only_once_five_others_were_revealed(client, repo, pool):
+def groups(jobs: dict, job: str) -> dict[str, dict]:
+    return {g["group"]: g for g in outcome(jobs, job)["groups"]}
+
+
+def test_a_group_shows_only_once_it_has_five_others(client, repo, pool):
     me, *others = pool
     reveal_all(repo, FJORD, others[: MIN_GROUP - 1])
-    assert (
-        outcome(ok(client.get(f"/candidates/{me}/jobs")), FJORD)["revealed_skills"]
-        is None
-    )
+    assert groups(ok(client.get(f"/candidates/{me}/jobs")), FJORD) == {}
 
     reveal_all(repo, FJORD, [others[MIN_GROUP - 1]])
-    tips = outcome(ok(client.get(f"/candidates/{me}/jobs")), FJORD)["revealed_skills"]
-    assert tips is not None
-    # A job nobody was revealed on suggests nothing.
-    assert (
-        outcome(ok(client.get(f"/candidates/{me}/jobs")), LYNFJORD)["revealed_skills"]
-        is None
-    )
+    found = groups(ok(client.get(f"/candidates/{me}/jobs")), FJORD)
+    assert list(found) == [Group.REVEALED]
+    # A job nobody was revealed on shows no group.
+    assert groups(ok(client.get(f"/candidates/{me}/jobs")), LYNFJORD) == {}
 
 
-def test_a_revealed_candidate_gets_no_suggestions_for_that_job(client, repo, pool):
+def test_the_groups_overlap_and_ignore_the_candidates_own_stage(client, repo, pool):
     me, *others = pool
-    reveal_all(repo, FJORD, [*others[:MIN_GROUP], me])
-    assert (
-        outcome(ok(client.get(f"/candidates/{me}/jobs")), FJORD)["revealed_skills"]
-        is None
-    )
+    shown = others[: MIN_GROUP + 2]
+    reveal_all(repo, FJORD, [*shown, me])
+    for name in shown[:MIN_GROUP]:
+        request_application(repo, FJORD, repo.profile(name).id)
+    for name in shown[: MIN_GROUP - 1]:
+        answer(repo, name, FJORD, "applied", letter="Yes.")
+    found = groups(ok(client.get(f"/candidates/{me}/jobs")), FJORD)
+    # Revealed themselves, they still see both groups; four applied is too few.
+    assert list(found) == [Group.REVEALED, Group.REQUESTED]
+
+    answer(repo, shown[MIN_GROUP - 1], FJORD, "applied", letter="Yes.")
+    profiles = group_profiles(repo, FJORD, me)
+    assert len(profiles[Group.REVEALED]) == MIN_GROUP + 2
+    assert len(profiles[Group.REQUESTED]) == MIN_GROUP
+    assert len(profiles[Group.APPLIED]) == MIN_GROUP
+    found = groups(ok(client.get(f"/candidates/{me}/jobs")), FJORD)
+    assert list(found) == [Group.REVEALED, Group.REQUESTED, Group.APPLIED]
 
 
-def test_copies_of_the_demo_never_count_as_revealed_others(client, repo, pool):
+def test_a_decline_counts_as_asked_but_not_applied(client, repo, pool):
+    me, *others = pool
+    shown = others[:MIN_GROUP]
+    reveal_all(repo, FJORD, shown)
+    for name in shown:
+        request_application(repo, FJORD, repo.profile(name).id)
+        answer(repo, name, FJORD, "declined")
+    profiles = group_profiles(repo, FJORD, me)
+    assert len(profiles[Group.REQUESTED]) == MIN_GROUP
+    assert profiles[Group.APPLIED] == []
+
+
+def test_copies_of_the_demo_never_count_in_a_group(client, repo, pool):
     john = approved_john(client)
     ok(client.put(f"/candidates/{john}/connections/{FJORD}"))
     copies = [approved_john(client) for _ in range(MIN_GROUP)]
     for c in copies:
         ok(client.put(f"/candidates/{c}/connections/{FJORD}"))
     reveal_all(repo, FJORD, copies)
-    assert revealed_profiles(repo, FJORD, john) == []
-    assert (
-        outcome(ok(client.get(f"/candidates/{john}/jobs")), FJORD)["revealed_skills"]
-        is None
-    )
+    assert all(not v for v in group_profiles(repo, FJORD, john).values())
+    assert groups(ok(client.get(f"/candidates/{john}/jobs")), FJORD) == {}
 
 
-def test_the_suggestions_are_the_common_skills_john_lacks_or_rated_lower(
-    client, repo, pool
-):
+def test_johns_comparison_matches_a_calculation_by_hand(client, repo, pool):
     john = approved_john(client)
     ok(client.put(f"/candidates/{john}/connections/{FJORD}"))
     shown = pool[:7]
     reveal_all(repo, FJORD, shown)
-    for name in shown[:3]:
-        request_application(repo, FJORD, repo.profile(name).id)
-    tips = outcome(ok(client.get(f"/candidates/{john}/jobs")), FJORD)["revealed_skills"]
+    found = groups(ok(client.get(f"/candidates/{john}/jobs")), FJORD)[Group.REVEALED]
 
     # Worked out again by hand from the pool's own levels.
     taxonomy = default_taxonomy()
-    profiles = [repo.profile(n) for n in shown]
-    listed = {
-        n: {taxonomy.canonical(s.name): s.self_level for s in p.skills}
-        for n, p in zip(shown, profiles, strict=True)
-    }
-    skills = {s for x in listed.values() for s in x}
-    count = {s: sum(s in x for x in listed.values()) for s in skills}
+    listed = [
+        {taxonomy.canonical(s.name): s.self_level for s in repo.profile(n).skills}
+        for n in shown
+    ]
+    skills = {s for x in listed for s in x}
+    count = {s: sum(s in x for x in listed) for s in skills}
+    rated = {s: [int(x[s]) for x in listed if x.get(s) is not None] for s in skills}
+    medians = {s: median(v) for s, v in rated.items() if len(v) >= MIN_GROUP}
     common = {s for s in skills if count[s] >= COMMON_SHARE * len(shown)}
     own = {taxonomy.canonical(s.name): s.self_level for s in repo.profile(john).skills}
     implied = set().union(*(taxonomy.implied(s) for s in own))
-    missing = {s for s in common if s not in own and s not in implied}
-    lower = set()
-    for s in common & own.keys():
-        rated = [int(x[s]) for x in listed.values() if x.get(s) is not None]
-        if own[s] is not None and len(rated) >= MIN_GROUP and own[s] < median(rated):
-            lower.add(s)
 
-    assert set(tips["missing"]) <= missing
-    assert len(tips["missing"]) == min(len(missing), 5)
-    assert set(tips["lower"]) == lower or len(tips["lower"]) == 5
-    assert set(tips["lower"]) <= lower
-    # Most common first.
-    for found in (tips["missing"], tips["lower"]):
-        assert [count[s] for s in found] == sorted(
-            (count[s] for s in found), reverse=True
-        )
-    # The pool and John differ, so there is something to suggest.
-    assert tips["missing"] or tips["lower"]
+    axes = [s["skill"] for s in found["skills"]]
+    assert 3 <= len(axes) <= MAX_AXES and set(axes) <= medians.keys()
+    assert [count[s] for s in axes] == sorted((count[s] for s in axes), reverse=True)
+    for s in found["skills"]:
+        assert s["median"] == medians[s["skill"]]
+        assert s["own_level"] == own.get(s["skill"])
+
+    higher = {s for s in own if own[s] and s in medians and own[s] > medians[s]}
+    rare = {s for s in own if count.get(s, 0) <= RARE_SHARE * len(shown)}
+    missing = {s for s in common if s not in own and s not in implied}
+    lower = {s for s in common if own.get(s) and s in medians and own[s] < medians[s]}
+    for key, expected in [
+        ("higher", higher),
+        ("rare", rare),
+        ("missing", missing),
+        ("lower", lower),
+    ]:
+        assert set(found[key]) <= expected, key
+        assert len(found[key]) == min(len(expected), MAX_TIPS), key
+    # The pool and John differ, so there is something on each side.
+    assert found["higher"] or found["rare"]
+    assert found["missing"] or found["lower"]
 
 
 def own_levels(levels: dict[str, int | None]) -> Profile:
@@ -245,29 +270,58 @@ def own_levels(levels: dict[str, int | None]) -> Profile:
     )
 
 
-def test_lower_needs_five_of_the_revealed_to_have_rated_it():
-    taxonomy = default_taxonomy()
-    me = own_levels({"python": 1, "sql": 1})
-    # Five revealed list both; all five rate python, only four rate sql.
-    revealed = [own_levels({"python": 4, "sql": 4}) for _ in range(4)]
-    revealed.append(own_levels({"python": 4, "sql": None}))
-    tips = revealed_skills(me, revealed, taxonomy)
-    assert tips.lower == ["python"]
-    assert tips.missing == []
-    assert revealed_skills(me, revealed[:4], taxonomy) is None
+def compared(me: Profile, others: list[Profile]):
+    return compare_group(me, Group.REVEALED, others, default_taxonomy())
 
 
-def test_common_means_at_least_half_of_the_revealed():
-    taxonomy = default_taxonomy()
+def test_a_level_is_compared_only_where_five_of_the_group_rated_it():
+    me = own_levels({"python": 1, "sql": 5})
+    # Five list both; all five rate python, only four rate sql.
+    others = [own_levels({"python": 4, "sql": 4}) for _ in range(4)]
+    others.append(own_levels({"python": 4, "sql": None}))
+    found = compared(me, others)
+    assert found.lower == ["python"] and found.higher == []
+    assert [s.skill for s in found.skills] == ["python"]
+    assert found.missing == [] and found.rare == []
+    assert compared(me, others[:4]) is None
+
+
+def test_higher_and_rare_are_where_the_candidate_stands_out():
+    me = own_levels({"python": 5, "sql": 4, "kafka": 2, "rust": None})
+    others = [own_levels({"python": 3, "sql": 3}) for _ in range(5)]
+    others[0] = own_levels({"python": 3, "sql": 3, "kafka": 4})
+    found = compared(me, others)
+    # Furthest above the median first; rare by own level, unrated last.
+    assert found.higher == ["python", "sql"]
+    assert found.rare == ["kafka", "rust"]
+    assert found.lower == [] and found.missing == []
+    others[1] = own_levels({"python": 3, "sql": 3, "kafka": 4})
+    assert compared(me, others).rare == ["rust"]
+
+
+def test_common_means_at_least_half_of_the_group():
     me = own_levels({"python": 3})
-    revealed = [own_levels({"python": 3, "kafka": 3}) for _ in range(3)]
-    revealed += [own_levels({"python": 3, "dbt": 3}) for _ in range(3)]
-    revealed.append(own_levels({"python": 3, "terraform": 3}))
-    tips = revealed_skills(me, revealed, taxonomy)
-    # 3 of 7 is under half; and the same level isn't lower.
-    assert tips.missing == [] and tips.lower == []
-    revealed.append(own_levels({"python": 3, "kafka": 2}))
-    assert revealed_skills(me, revealed, taxonomy).missing == ["kafka"]
+    others = [own_levels({"python": 3, "kafka": 3}) for _ in range(3)]
+    others += [own_levels({"python": 3, "dbt": 3}) for _ in range(3)]
+    others.append(own_levels({"python": 3, "terraform": 3}))
+    found = compared(me, others)
+    # 3 of 7 is under half; and the same level is neither higher nor lower.
+    assert found.missing == [] and found.lower == [] and found.higher == []
+    others.append(own_levels({"python": 3, "kafka": 2}))
+    assert compared(me, others).missing == ["kafka"]
+
+
+def test_the_chart_has_the_skills_the_group_lists_most():
+    names = [f"skill {i}" for i in range(MAX_AXES + 2)]
+    me = own_levels({names[0]: 2})
+    # The first skill is listed by all six, the rest by five.
+    others = [own_levels(dict.fromkeys(names, 3)) for _ in range(5)]
+    others.append(own_levels({names[0]: 3}))
+    found = compared(me, others)
+    axes = [s.skill for s in found.skills]
+    assert len(axes) == MAX_AXES and axes[0] == names[0]
+    assert found.skills[0].own_level == 2 and found.skills[0].median == 3
+    assert all(s.own_level is None for s in found.skills[1:])
 
 
 # Nothing hidden, nothing about one other candidate
@@ -279,7 +333,7 @@ def test_no_assessment_rubric_or_other_candidate_reaches_the_jobs(client, repo, 
     shown = pool[:6]
     reveal_all(repo, FJORD, shown)
     before = ok(client.get(f"/candidates/{john}/jobs"))
-    assert outcome(before, FJORD)["revealed_skills"] is not None
+    assert outcome(before, FJORD)["groups"]
 
     text = json.dumps({k: v for k, v in before.items() if k != "jobs"}) + json.dumps(
         [{k: v for k, v in j.items() if k != "listing"} for j in before["jobs"]]
@@ -320,9 +374,7 @@ def test_no_assessment_rubric_or_other_candidate_reaches_the_jobs(client, repo, 
         )
         repo.save_profile(name, rewritten, "assessed")
     after = ok(client.get(f"/candidates/{john}/jobs"))
-    assert [j["revealed_skills"] for j in after["jobs"]] == [
-        j["revealed_skills"] for j in before["jobs"]
-    ]
+    assert [j["groups"] for j in after["jobs"]] == [j["groups"] for j in before["jobs"]]
     assert after["revealed_rate"] == before["revealed_rate"]
 
 
