@@ -116,8 +116,9 @@ function ReviewEditor({ initial }: { initial: ReviewForm }) {
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
           </TabsList>
           <TabsContent value="skills" className="space-y-8 pt-4">
-            <Skills skills={form.skills} onChange={(skills) => update({ skills })} />
+            {/* Adding comes first: the list of skills found can be long. */}
             <AddSkills skills={form.add_skills} onChange={(add_skills) => update({ add_skills })} />
+            <Skills skills={form.skills} onChange={(skills) => update({ skills })} />
           </TabsContent>
           <TabsContent value="experience" className="pt-4">
             <Experiences

@@ -169,7 +169,11 @@ describe('review', () => {
     // Skills are added in the Skills tab, next to the ones found; there is no other tab.
     expect(screen.queryByRole('tab', { name: /Add skills/ })).toBeNull()
     await user.click(screen.getByRole('tab', { name: /Skills/ }))
-    await user.click(screen.getByRole('button', { name: 'Add a skill' }))
+    // The button comes before the skills found, so a long list doesn't hide it.
+    const add = screen.getByRole('button', { name: 'Add a skill' })
+    const firstFound = screen.getAllByRole('checkbox', { name: /^Keep / })[0]
+    expect(add.compareDocumentPosition(firstFound) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await user.click(add)
     await user.type(screen.getByLabelText('Skill'), 'matlab')
     const level = screen.getByRole('radiogroup', { name: 'Your level in matlab' })
     await user.click(within(level).getByRole('radio', { name: /^3 / }))
