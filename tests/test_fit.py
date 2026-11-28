@@ -17,7 +17,7 @@ from unapply.app.forms import candidate_view
 from unapply.db.engine import database_url, init_db
 from unapply.db.repository import NotFound, Repository
 from unapply.evaluation.pool import load_board, load_pool, store_board
-from unapply.jobs.board import listings
+from unapply.jobs.board import connected, is_connected, listings
 from unapply.jobs.fit import (
     BoardSort,
     FitBand,
@@ -339,6 +339,24 @@ def test_unknown_candidates_and_jobs(repo, pool):
         False,
         None,
     )
+
+
+def test_fits_agree_with_fit_and_connected_for_every_job(client, repo):
+    name = approved_demo(client)
+    ok(client.post("/demos/board"), 201)
+    job = listings(repo)[0].name
+    ok(client.put(f"/candidates/{name}/connections/{job}"))
+    repo.create_candidate("jane")
+    for candidate in (name, "pool-astrid-holm", "jane"):
+        assert fits(repo, candidate) == [
+            fit(repo, candidate, x.name) for x in listings(repo)
+        ]
+        for x in listings(repo):
+            assert is_connected(repo, candidate, x.name) == (
+                candidate in connected(repo, x.name)
+            )
+    with pytest.raises(NotFound):
+        fits(repo, "nobody")
 
 
 def test_fit_routes_refuse_unknown_names(client):

@@ -21,7 +21,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
@@ -99,7 +99,18 @@ export function JobBoard() {
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
   // The filters live in the address, so pills can link to the board filtered by them.
-  const [params, setParams] = useSearchParams()
+  const [params, setSearchParams] = useSearchParams()
+  // The router applies a change to the address in a transition, so a filter set
+  // right after another (such as just after "Clear filters") would start from the
+  // old params and undo it. Changes start from the latest params set instead.
+  const latest = useRef(params)
+  useEffect(() => {
+    latest.current = params
+  }, [params])
+  function setParams(next: URLSearchParams | Record<string, string>) {
+    latest.current = new URLSearchParams(next)
+    setSearchParams(latest.current, { replace: true })
+  }
   const active = activeFilters(params)
   const fitFilter = (params.get('fit') as FitFilter | null) ?? ''
   const [sort, setSort] = useState<BoardSort>('newest')
@@ -154,9 +165,9 @@ export function JobBoard() {
 
   /** Set one filter from its select; an empty value turns it off. */
   function setFilter(key: FilterKey, value: string) {
-    const next = new URLSearchParams(params)
+    const next = new URLSearchParams(latest.current)
     next.delete(key)
-    setParams(value ? withFilter(next, key, value) : next, { replace: true })
+    setParams(value ? withFilter(next, key, value) : next)
   }
 
   const filterTo: FilterTo = (key, value) => `?${withFilter(params, key, value)}`
@@ -164,7 +175,7 @@ export function JobBoard() {
   function clear() {
     setText('')
     setQ('')
-    setParams({}, { replace: true })
+    setParams({})
   }
 
   async function addDemoJobs() {
@@ -349,7 +360,7 @@ export function JobBoard() {
             <Filter
               label="Skills in the ad"
               value=""
-              onChange={(v) => v && setParams(withFilter(params, 'skill', v), { replace: true })}
+              onChange={(v) => v && setParams(withFilter(latest.current, 'skill', v))}
               any="Add a skill"
             >
               {b.skills
@@ -365,7 +376,7 @@ export function JobBoard() {
       </div>
 
       {active.length > 0 && (
-        <Chips filters={active} onRemove={(f) => setParams(withoutFilter(params, f.key, f.value), { replace: true })} />
+        <Chips filters={active} onRemove={(f) => setParams(withoutFilter(latest.current, f.key, f.value))} />
       )}
 
       <div className="mb-3 flex items-center justify-between gap-2 text-sm text-muted-foreground">

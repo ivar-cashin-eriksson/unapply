@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 
 from unapply.app.forms import candidate_view
-from unapply.jobs.board import Listing, connected, find_listing, listings
+from unapply.jobs.board import Listing, find_listing, is_connected, listings
 from unapply.matching.audit import AuditKind
 from unapply.matching.baseline import own_total
 from unapply.matching.filters import Outcome, check_hard_filters
@@ -258,11 +258,15 @@ def fit(repo: Repository, candidate: str, job: str) -> Fit | None:
     repo.settings(candidate)  # NotFound if there is no such candidate.
     if find_listing(repo, job) is None:
         return None
+    return _fit(repo, candidate, job, repo.profile(candidate))
+
+
+def _fit(repo: Repository, candidate: str, job: str, profile: Profile | None) -> Fit:
+    """Work out the fit to a job known to be on the board, for a profile loaded once."""
     current = repo.job(job)
     assert current is not None  # A listed job has an approved rubric.
-    profile = repo.profile(candidate)
     today = repo.job_settings(job).get("today")
-    is_connected = candidate in connected(repo, job)
+    connected = is_connected(repo, candidate, job)
     return Fit(
         job=job,
         band=own_band(profile, current.rubric) if profile is not None else None,
@@ -275,8 +279,8 @@ def fit(repo: Repository, candidate: str, job: str) -> Fit | None:
             if profile is not None
             else []
         ),
-        connected=is_connected,
-        place=place(repo, candidate, job) if is_connected else None,
+        connected=connected,
+        place=place(repo, candidate, job) if connected else None,
     )
 
 
@@ -300,8 +304,10 @@ def fits(repo: Repository, candidate: str) -> list[Fit]:
     NotFound
         If there is no such candidate.
     """
-    found = [fit(repo, candidate, x.name) for x in listings(repo)]
-    return [f for f in found if f is not None]
+    repo.settings(candidate)  # NotFound if there is no such candidate.
+    # Loaded once for every job, rather than once per job as `fit` would.
+    profile = repo.profile(candidate)
+    return [_fit(repo, candidate, x.name, profile) for x in listings(repo)]
 
 
 class FitFilter(StrEnum):
