@@ -181,3 +181,132 @@ def kendall_tau(ranks: dict[str, int], reference: dict[str, int]) -> float | Non
     if denominator == 0:
         return None
     return (concordant - discordant) / denominator
+
+
+def compare_ranking(
+    ranks: dict[str, int],
+    order: list[str],
+    reference: list[ReferenceEntry],
+    ks: tuple[int, ...],
+) -> tuple[dict[int, float], float | None]:
+    """Compare one ranking with a reference: top-k overlaps and Kendall's tau.
+
+    Parameters
+    ----------
+    ranks : dict of str to int
+        Rank by candidate name, 1 for the best.
+    order : list of str
+        The same candidates, best first (ties in any order).
+    reference : list of ReferenceEntry
+        The reference ranking, best first.
+    ks : tuple of int
+        The top-k overlaps to compute.
+
+    Returns
+    -------
+    tuple of (dict of int to float, float or None)
+        Top-k overlap by k, and Kendall's tau-b (None if it can't be computed).
+
+    Raises
+    ------
+    ValueError
+        If a k is below 1 or the two have no candidate in common.
+    """
+    reference_order = [e.candidate for e in reference]
+    top_k = {k: top_k_overlap(order, reference_order, k) for k in ks}
+    tau = kendall_tau(ranks, {e.candidate: e.rank for e in reference})
+    return top_k, tau
+
+
+@dataclass(frozen=True)
+class Agreement:
+    """How much several reference rankings agree with each other.
+
+    The mean over every pair of references. With human shortlists as references,
+    this is the ceiling a scorer is measured against: a ranking that agrees with
+    each person about as much as they agree with each other is as good as one of
+    them.
+
+    Parameters
+    ----------
+    pairs : int
+        The number of pairs of references compared.
+    top_k : dict of int to float
+        Mean top-k overlap, by k.
+    tau : float or None
+        Mean Kendall's tau-b over the pairs where it can be computed; None if it
+        can't for any.
+    """
+
+    pairs: int
+    top_k: dict[int, float]
+    tau: float | None
+
+
+def mean_comparison(
+    comparisons: list[tuple[dict[int, float], float | None]],
+) -> tuple[dict[int, float], float | None]:
+    """Average several comparisons from `compare_ranking`.
+
+    Parameters
+    ----------
+    comparisons : list of tuple of (dict of int to float, float or None)
+        Top-k overlaps by k and tau, each for the same ks.
+
+    Returns
+    -------
+    tuple of (dict of int to float, float or None)
+        Mean top-k overlap by k, and the mean of the taus that aren't None (None
+        if all are).
+
+    Raises
+    ------
+    ValueError
+        If `comparisons` is empty.
+    """
+    if not comparisons:
+        raise ValueError("nothing to average")
+    ks = comparisons[0][0]
+    top_k = {k: sum(c[0][k] for c in comparisons) / len(comparisons) for k in ks}
+    taus = [c[1] for c in comparisons if c[1] is not None]
+    return top_k, (sum(taus) / len(taus) if taus else None)
+
+
+def rater_agreement(
+    references: list[list[ReferenceEntry]], ks: tuple[int, ...]
+) -> Agreement:
+    """Mean top-k overlap and Kendall's tau between every pair of references.
+
+    Both metrics are symmetric, so each pair is compared once. As elsewhere, only
+    candidates in both references of a pair count.
+
+    Parameters
+    ----------
+    references : list of list of ReferenceEntry
+        Two or more reference rankings, each best first.
+    ks : tuple of int
+        The top-k overlaps to compute.
+
+    Returns
+    -------
+    Agreement
+        The mean agreement over the pairs.
+
+    Raises
+    ------
+    ValueError
+        If there are fewer than two references, a k is below 1, or two references
+        have no candidate in common.
+    """
+    if len(references) < 2:
+        raise ValueError("agreement needs two or more references")
+    comparisons = []
+    for i, a in enumerate(references):
+        for b in references[i + 1 :]:
+            comparisons.append(
+                compare_ranking(
+                    {e.candidate: e.rank for e in a}, [e.candidate for e in a], b, ks
+                )
+            )
+    top_k, tau = mean_comparison(comparisons)
+    return Agreement(pairs=len(comparisons), top_k=top_k, tau=tau)
