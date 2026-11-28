@@ -391,6 +391,16 @@ mean, and the command first prints how much the references agree with each other
 agrees with each person about as much as they agree with each other does as well as
 one of them. Each scorer still ranks the pool once.
 
+`--job` compares a real job's ranking instead: the latest one in the audit log, as
+its employer saw it (or one picked with `--ranking <id>`, as `unapply audit` lists
+them). Each reference names candidates as they are in the database, and is needed,
+since a job has no intended ranking. Nothing is scored again or stored, so no model
+is called.
+
+```bash
+uv run unapply evaluate --job fjord --reference anna.yaml --reference ben.yaml
+```
+
 On the pool, the baseline gets top-3 overlap 1.00, top-5 0.80 and tau 0.82: it
 trusts a candidate's own levels where the estimates are unsure, so the overclaimer
 comes 4th instead of 8th. The LLM scorer's stand-ins agree with the intended ranking
@@ -449,7 +459,7 @@ didn't opt in get the same answer. The server's instructions to the agent are in
 | `uv run unapply mcp acme` | Serve a job's matching agent over MCP (stdio), scoped to the candidates who opted in |
 | `uv run unapply audit acme` | List a job's rankings from the audit log and check that each reproduces |
 | `uv run unapply ask astrid-holm production --replay tests/fixtures/pool/astrid-holm/ask_production.json` | Ask a demo question about a pool candidate, as an employer does after a reveal (`--allow-api --record FILE` records a real answer) |
-| `uv run unapply evaluate` | Rank the synthetic pool with both scorers and compare with its intended ranking (`--reference FILE` for another; repeat it for several people and their agreement) |
+| `uv run unapply evaluate` | Rank the synthetic pool with both scorers and compare with its intended ranking (`--reference FILE` for another; repeat it for several people and their agreement; `--job NAME` for a job's stored ranking) |
 | `uv run unapply review export data/me/profile.json --sheet data/me/review.yaml` | Write a review sheet: set your levels, remove or add skills, approve |
 | `uv run unapply review apply data/me/profile.json data/me/review.yaml --out data/me/profile.reviewed.json` | Apply the edited sheet |
 | `uv run unapply estimate data/me/profile.reviewed.json --out data/me/profile.estimated.json` | Estimate skills without an estimate from their evidence, and check claim support (calls the Claude API; `--all` redoes every skill) |
