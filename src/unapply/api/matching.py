@@ -144,7 +144,8 @@ def shortlist(
     candidates on, and how far they got (revealed, asked to apply, applied or
     declined). Until the employer reveals a candidate, their quotes are left out:
     each criterion score says how many support it. Once revealed, their name,
-    contact details and quotes are included. No model is called.
+    contact details and quotes are included, and how many of their messages the
+    employer hasn't read. No model is called.
     """
     job, ranked = _stored(ctx, name, scorer, version)
     ranking = _ranking(ctx, name, job, scorer, ranked, {})
@@ -154,6 +155,7 @@ def shortlist(
         for p in ctx.repo.progresses(job=name)
         for pid in ctx.repo.profile_ids(p.candidate)
     }
+    unread = ctx.repo.unread_messages("candidate", job=name)
     candidates = []
     for r in ranking.candidates:
         profile = ctx.repo.profile_by_id(r.profile_id)
@@ -171,7 +173,11 @@ def shortlist(
         candidates.append(
             ShortlistCandidate(
                 **dict(shown),
-                progress=employer_progress(found, profile.id),
+                progress=employer_progress(
+                    found,
+                    profile.id,
+                    unread.get((found.candidate, name), 0) if found else 0,
+                ),
                 contact=contact(ctx, found.candidate) if found and revealed else None,
             )
         )

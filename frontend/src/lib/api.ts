@@ -12,6 +12,7 @@ import type {
   CandidateJobs,
   CandidateProfile,
   CandidateSummary,
+  CandidateThread,
   Connection,
   Contact,
   Dashboard,
@@ -22,6 +23,7 @@ import type {
   JobSummary,
   Listing,
   MaterialFile,
+  Message,
   Overview,
   Questions,
   Ranking,
@@ -32,6 +34,7 @@ import type {
   Scorer,
   Shortlist,
   ShortlistDemo,
+  Thread,
 } from '@/lib/types'
 
 export const BASE = '/api'
@@ -213,6 +216,22 @@ export const api = {
     `${BASE}${c(name)}/applications/${encodeURIComponent(job)}/files/${fileId}`,
   contact: (name: string) => json<Contact>('GET', `${c(name)}/contact`),
   saveContact: (name: string, contact: Contact) => json<Contact>('PUT', `${c(name)}/contact`, contact),
+  // Messages once an employer reveals a candidate: one thread per candidate and job
+  employerThread: (name: string, profileId: string) => json<Thread>('GET', employerThread(name, profileId)),
+  employerSend: (name: string, profileId: string, text: string) =>
+    json<Message>('POST', employerThread(name, profileId), { text }),
+  employerRead: (name: string, profileId: string) => json<Thread>('POST', `${employerThread(name, profileId)}/read`),
+  candidateThreads: (name: string) => json<CandidateThread[]>('GET', `${c(name)}/messages`),
+  candidateThread: (name: string, job: string) =>
+    json<Thread>('GET', `${c(name)}/messages/${encodeURIComponent(job)}`),
+  candidateSend: (name: string, job: string, text: string) =>
+    json<Message>('POST', `${c(name)}/messages/${encodeURIComponent(job)}`, { text }),
+  candidateRead: (name: string, job: string) =>
+    json<Thread>('POST', `${c(name)}/messages/${encodeURIComponent(job)}/read`),
+}
+
+function employerThread(name: string, profileId: string): string {
+  return `${j(name)}/candidates/${encodeURIComponent(profileId)}/messages`
 }
 
 /** A message for an error, saying what to do about a refused paid call. */

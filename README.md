@@ -95,7 +95,10 @@ npm run dev                   # http://localhost:5173
   until the employer reveals them. Each listing shows how many connected, were
   revealed, were asked to apply and applied. When an employer asks them to apply,
   the request shows on the board and the listing, and the candidate applies with a
-  cover letter, files or both, or declines. On their profile, candidates give the
+  cover letter, files or both, or declines. Once an employer reveals them, the two
+  can **message** each other on the listing: one thread per job, newest at the
+  bottom, with unread counts on the board's cards (no email or push
+  notifications). On their profile, candidates give the
   name and contact details an employer sees only once they reveal them. Their
   **dashboard** sums up their own profile: skills by area (the taxonomy's
   categories) with their own levels and how many quotes from their material
@@ -123,7 +126,9 @@ npm run dev                   # http://localhost:5173
   contact details and the quotes behind each score; no payment is taken, a charge
   intent is recorded; limited to the job's reveal quota, 10), then **Request
   application**, then waits, then shows **Applied** with the application (letter
-  and files to download) or **Declined**. Until a reveal, no quotes and no role
+  and files to download) or **Declined**. A revealed candidate's card has
+  **Messages**, a thread with them, and counts their unread messages. Until a
+  reveal, no quotes and no role
   summaries are shown. The job's counts sit above the list, beside its vacancies.
   The **overview** sums up the job's candidates in aggregate, never one of them:
   how many connected, were matched and meet every hard filter (and which filters
@@ -257,6 +262,13 @@ uv run unapply api            # http://127.0.0.1:8000, interactive docs at /docs
   reveal), apply with a letter and files (PDF, Word, Markdown, text; up to 5 of 10
   MB, kept in the database) or decline, download application files, and the
   candidate's contact details (from the CV for demo candidates).
+- **Messages** (`/jobs/<name>/candidates/<profile id>/messages`,
+  `/candidates/<name>/messages`, `/candidates/<name>/messages/<job>`, each thread
+  with `.../read`): a thread per revealed candidate and job, oldest first. Before a
+  reveal there is no thread: reading one gives 404 and writing one 409. Messages are
+  up to 5,000 characters, and are marked read when the app shows them; the
+  shortlist and the candidate's connections count those unread. A candidate's
+  `GET /candidates/<name>/messages` lists every thread in full: their export.
 - **Demos** (`/demos/candidate`, `/demos/job`, `/demos/shortlist`, `/demos/board`):
   John Doe, Fjord Grocery, Fjord Grocery with the synthetic pool, and the eleven
   demo jobs on the board, which replay recorded answers for free. The pool's

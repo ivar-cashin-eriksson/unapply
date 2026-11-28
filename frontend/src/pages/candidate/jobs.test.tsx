@@ -13,6 +13,8 @@ const HIDDEN = /rubric|criteri|weight|min.?level|estimat|confidence|claim suppor
 beforeEach(() => {
   vi.spyOn(api, 'fits').mockResolvedValue([])
   vi.spyOn(api, 'fit').mockResolvedValue(fit())
+  // A revealed listing shows the thread with the employer; messages.test.tsx tests it.
+  vi.spyOn(api, 'candidateThread').mockResolvedValue({ messages: [], unread: 0 })
 })
 
 function approved() {

@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from unapply.api import board, candidates, hiring, internal, jobs, matching
+from unapply.api import board, candidates, hiring, internal, jobs, matching, messages
 from unapply.api.deps import Context, LLMFactory, claude
 from unapply.db.engine import init_db
 from unapply.db.repository import NotFound, Repository, RubricLocked
@@ -90,6 +90,7 @@ def create_app(
         matching.router,
         board.router,
         hiring.router,
+        messages.router,
     ):
         app.include_router(router)
     if internal_routes:

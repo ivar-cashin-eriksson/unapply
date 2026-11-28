@@ -3,7 +3,8 @@
 The others are intents (employers' early reveal and application requests, kept as
 history), consents (which jobs a candidate opted in to), and each connected
 candidate's progress on a job (revealed, asked to apply, applied or declined) with
-the files of their application.
+the files of their application, and the messages between a revealed candidate and
+the employer.
 
 The tables mirror the Pydantic schemas in `unapply.schemas`; `unapply.db.repository`
 converts between the two, so nothing else needs to know about the tables.
@@ -526,3 +527,30 @@ class ApplicationFileRow(Base):
     size: Mapped[int] = mapped_column(Integer)
     content: Mapped[bytes] = mapped_column(LargeBinary)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class MessageRow(Base):
+    """A message between an employer and a candidate (`unapply.jobs.messages`).
+
+    Belongs to the candidate's progress on the job, which exists from the reveal
+    on, so a thread can't exist before it; it goes with the candidate or the job.
+    `read_at` is set when the other side first opens the thread.
+    """
+
+    __tablename__ = "messages"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["candidate_id", "job_id"],
+            ["job_progress.candidate_id", "job_progress.job_id"],
+            ondelete=CASCADE,
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    candidate_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    job_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    # "candidate" or "employer" (`Sender`).
+    sender: Mapped[str] = mapped_column(String(16))
+    text: Mapped[str] = mapped_column(Text)
+    sent_at: Mapped[datetime] = mapped_column(DateTime)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime)

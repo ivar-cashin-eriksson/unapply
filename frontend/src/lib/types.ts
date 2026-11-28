@@ -338,6 +338,8 @@ export interface EmployerProgress {
   /** The application, once sent. */
   letter: string
   files: ApplicationFile[]
+  /** Messages from the candidate the employer hasn't read. */
+  unread_messages: number
 }
 
 /** Who a candidate is: shown to an employer only once they reveal them. */
@@ -468,7 +470,41 @@ export interface Connection {
   stage: Stage
   /** Null until the employer reveals the candidate. */
   progress: Progress | null
+  /** Messages from the employer the candidate hasn't read. */
+  unread_messages: number
 }
+
+/** Who wrote a message. */
+export type Sender = 'candidate' | 'employer'
+
+/** One message between an employer and a candidate they revealed. */
+export interface Message {
+  id: number
+  sender: Sender
+  text: string
+  sent_at: string
+  /** When the other side read it; null while unread. */
+  read_at: string | null
+}
+
+/** The messages between a revealed candidate and a job's employer, oldest first. */
+export interface Thread {
+  messages: Message[]
+  /** Messages from the other side that whoever asked hasn't read. */
+  unread: number
+}
+
+/** One of a candidate's threads, with the job it is about: also their export. */
+export interface CandidateThread extends Thread {
+  job: string
+  /** Null if the job is no longer on the board. */
+  company: string | null
+  title: string | null
+  revealed_at: string
+}
+
+/** The longest message the API takes, in characters. */
+export const MAX_MESSAGE_CHARS = 5000
 
 /** How well the candidate fits a job, from their own levels only. */
 export type FitBand = 'strong' | 'good' | 'partial' | 'low'

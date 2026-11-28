@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from unapply.jobs.board import Listing, ListingCounts
 from unapply.jobs.hiring import ApplicationFile, Contact, Progress, Stage
+from unapply.jobs.messages import MAX_MESSAGE_CHARS, Message
 from unapply.matching.shortlist import AnonymousCandidate, Intent
 from unapply.schemas import (
     CriterionKind,
@@ -713,6 +714,8 @@ class EmployerProgress(BaseModel):
         Their application's text, once they applied.
     files : list of ApplicationFile
         Their application's files, once they applied.
+    unread_messages : int
+        Messages from the candidate the employer hasn't read; 0 before a reveal.
     """
 
     profile_id: UUID
@@ -722,6 +725,7 @@ class EmployerProgress(BaseModel):
     answered_at: datetime | None = None
     letter: str = ""
     files: list[ApplicationFile] = Field(default_factory=list)
+    unread_messages: int = 0
 
 
 class ShortlistCandidate(AnonymousCandidate):
@@ -805,6 +809,8 @@ class Connection(BaseModel):
         applied or declined.
     progress : Progress or None
         When each step happened, and their application; None until revealed.
+    unread_messages : int
+        Messages from the employer the candidate hasn't read; 0 before a reveal.
     """
 
     job: str
@@ -812,3 +818,52 @@ class Connection(BaseModel):
     listing: Listing | None
     stage: Stage = Stage.CONNECTED
     progress: Progress | None = None
+    unread_messages: int = 0
+
+
+class MessageForm(BaseModel):
+    """A message to send in a thread.
+
+    Parameters
+    ----------
+    text : str
+        What to write; surrounding whitespace is removed.
+    """
+
+    text: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS + 100)
+
+
+class Thread(BaseModel):
+    """The messages between a revealed candidate and a job's employer.
+
+    Parameters
+    ----------
+    messages : list of Message
+        Oldest first.
+    unread : int
+        Messages from the other side that whoever asked hasn't read.
+    """
+
+    messages: list[Message]
+    unread: int
+
+
+class CandidateThread(Thread):
+    """One of a candidate's threads, with the job it is about.
+
+    Parameters
+    ----------
+    job : str
+        The job's name.
+    company : str or None
+        The employer, from the job's listing; None if it is no longer on the board.
+    title : str or None
+        The job's title, likewise.
+    revealed_at : datetime
+        When the employer revealed the candidate, which started the thread.
+    """
+
+    job: str
+    company: str | None = None
+    title: str | None = None
+    revealed_at: datetime

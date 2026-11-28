@@ -5,7 +5,7 @@ pool, with the baseline scorer: no model is called.
 """
 
 import json
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import anthropic
 import pytest
@@ -365,6 +365,150 @@ def test_nothing_identifying_or_quoted_reaches_the_employer_before_a_reveal(
             assert not [s for s in secrets if s in text], path
 
 
+# Messages after a reveal
+
+
+def test_there_is_no_thread_before_a_reveal(client, repo):
+    job = board(client)[0]
+    name, profile_id = john_on(client, job)
+    employer = f"/jobs/{job}/candidates/{profile_id}/messages"
+    candidate = f"/candidates/{name}/messages/{job}"
+
+    for url in (employer, candidate):
+        assert client.get(url).status_code == 404
+        assert client.post(f"{url}/read").status_code == 404
+        response = client.post(url, json={"text": "Hello"})
+        assert response.status_code == 409, url
+        assert "reveal" in response.json()["detail"]
+    assert ok(client.get(f"/candidates/{name}/messages")) == []
+    assert repo.messages(name, job) == []
+    assert card(client, job, profile_id)["progress"]["unread_messages"] == 0
+    assert connection(client, name, job)["unread_messages"] == 0
+
+
+def test_a_revealed_candidate_and_the_employer_write_to_each_other(client, repo):
+    job = board(client)[0]
+    name, profile_id = john_on(client, job)
+    employer = f"/jobs/{job}/candidates/{profile_id}/messages"
+    candidate = f"/candidates/{name}/messages/{job}"
+    ok(client.post(f"/jobs/{job}/candidates/{profile_id}/reveal"), 201)
+
+    # The reveal starts an empty thread, on both sides.
+    assert ok(client.get(employer)) == {"messages": [], "unread": 0}
+    assert ok(client.get(candidate)) == {"messages": [], "unread": 0}
+    [listed] = ok(client.get(f"/candidates/{name}/messages"))
+    listing = ok(client.get(f"/board/{job}"))
+    assert listed["job"] == job and listed["messages"] == []
+    assert (listed["company"], listed["title"]) == (
+        listing["company"],
+        listing["title"],
+    )
+
+    # The employer writes; the candidate has one unread, until they read it.
+    sent = ok(client.post(employer, json={"text": "  Hi John, are you free?  "}), 201)
+    assert sent["sender"] == "employer" and sent["text"] == "Hi John, are you free?"
+    assert sent["read_at"] is None
+    assert connection(client, name, job)["unread_messages"] == 1
+    assert ok(client.get(candidate))["unread"] == 1
+    assert ok(client.get(employer))["unread"] == 0  # Their own isn't unread.
+    read = ok(client.post(f"{candidate}/read"))
+    assert read["unread"] == 0 and read["messages"][0]["read_at"] is not None
+    assert connection(client, name, job)["unread_messages"] == 0
+
+    # The candidate answers; the employer sees it unread on the shortlist.
+    ok(client.post(candidate, json={"text": "Yes, Tuesday works."}), 201)
+    ok(client.post(candidate, json={"text": "Any time after ten."}), 201)
+    assert card(client, job, profile_id)["progress"]["unread_messages"] == 2
+    thread = ok(client.post(f"{employer}/read"))
+    assert thread["unread"] == 0
+    assert card(client, job, profile_id)["progress"]["unread_messages"] == 0
+    # Oldest first, the same on both sides.
+    texts = ["Hi John, are you free?", "Yes, Tuesday works.", "Any time after ten."]
+    assert [m["text"] for m in thread["messages"]] == texts
+    assert [m["sender"] for m in thread["messages"]] == [
+        "employer",
+        "candidate",
+        "candidate",
+    ]
+    assert ok(client.get(candidate))["messages"] == thread["messages"]
+
+    # The candidate's list is their export: every message, in full.
+    [listed] = ok(client.get(f"/candidates/{name}/messages"))
+    assert [m["text"] for m in listed["messages"]] == texts
+    assert [m.text for m in repo.messages(name, job)] == texts
+
+
+def test_messages_that_are_empty_or_too_long_are_refused(client):
+    job = board(client)[0]
+    name, profile_id = john_on(client, job)
+    ok(client.post(f"/jobs/{job}/candidates/{profile_id}/reveal"), 201)
+    url = f"/candidates/{name}/messages/{job}"
+    assert client.post(url, json={"text": "   "}).status_code == 422
+    assert client.post(url, json={"text": ""}).status_code == 422
+    assert client.post(url, json={"text": "x" * 5_001}).status_code == 422
+    ok(client.post(url, json={"text": "x" * 5_000}), 201)
+
+
+def test_each_side_sees_only_its_own_threads(client, repo):
+    jobs = board(client)
+    first, second = jobs[0], jobs[1]
+    name, profile_id = john_on(client, first, second)
+    ok(client.post(f"/jobs/{first}/candidates/{profile_id}/reveal"), 201)
+    ok(
+        client.post(
+            f"/jobs/{first}/candidates/{profile_id}/messages", json={"text": "For John"}
+        ),
+        201,
+    )
+    # Someone from the pool, revealed on the same job, gets their own thread.
+    shortlist = ok(client.get(f"/jobs/{first}/shortlist"))
+    other_id = next(
+        c["profile_id"]
+        for c in shortlist["candidates"]
+        if c["profile_id"] != profile_id
+    )
+    ok(client.post(f"/jobs/{first}/candidates/{other_id}/reveal"), 201)
+    other = repo.candidate_of(UUID(other_id))
+    ok(
+        client.post(
+            f"/candidates/{other}/messages/{first}", json={"text": "From the pool"}
+        ),
+        201,
+    )
+
+    # The employer: one thread per candidate, each with only its own messages.
+    johns = ok(client.get(f"/jobs/{first}/candidates/{profile_id}/messages"))
+    others = ok(client.get(f"/jobs/{first}/candidates/{other_id}/messages"))
+    assert [m["text"] for m in johns["messages"]] == ["For John"]
+    assert [m["text"] for m in others["messages"]] == ["From the pool"]
+    # The second job's employer hasn't revealed John: no thread there.
+    assert (
+        client.get(f"/jobs/{second}/candidates/{profile_id}/messages").status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"/jobs/{second}/candidates/{profile_id}/messages", json={"text": "Hi"}
+        ).status_code
+        == 409
+    )
+    assert client.get(f"/candidates/{name}/messages/{second}").status_code == 404
+    # A candidate who isn't on a job can't be reached through it.
+    stranger = str(uuid4())
+    assert (
+        client.get(f"/jobs/{first}/candidates/{stranger}/messages").status_code == 404
+    )
+
+    # Each candidate lists only their own threads.
+    [mine] = ok(client.get(f"/candidates/{name}/messages"))
+    assert mine["job"] == first
+    assert [m["text"] for m in mine["messages"]] == ["For John"]
+    [theirs] = ok(client.get(f"/candidates/{other}/messages"))
+    assert [m["text"] for m in theirs["messages"]] == ["From the pool"]
+    assert ok(client.get(f"/candidates/{other}/messages/{first}"))["unread"] == 0
+    assert client.get("/candidates/nobody/messages").status_code == 404
+
+
 # The package
 
 
@@ -394,3 +538,19 @@ def progress_time():
     from datetime import datetime
 
     return datetime(2026, 11, 27, 12, 0)
+
+
+def test_messages_need_a_progress_row(repo, client):
+    jobs = board(client)
+    name, _ = john_on(client, jobs[0])
+    with pytest.raises(ValueError, match="no thread"):
+        repo.add_message(name, jobs[0], "employer", "Hi")
+    repo.save_progress(
+        Progress(candidate=name, job=jobs[0], revealed_at=progress_time())
+    )
+    sent = repo.add_message(name, jobs[0], "employer", "Hi")
+    assert repo.unread_messages("employer") == {(name, jobs[0]): 1}
+    assert repo.unread_messages("candidate") == {}
+    assert repo.mark_read(name, jobs[0], "employer") == 1
+    assert repo.unread_messages("employer", job=jobs[0], candidate=name) == {}
+    assert repo.messages(name, jobs[0])[0].id == sent.id

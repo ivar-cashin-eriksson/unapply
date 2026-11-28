@@ -10,6 +10,7 @@ import {
   ListOrdered,
   Loader2,
   Mail,
+  MessagesSquare,
   Phone,
   Quote,
   RefreshCw,
@@ -23,6 +24,7 @@ import { toast } from 'sonner'
 
 import { CandidateAvatar } from '@/components/CandidateAvatar'
 import { Counts } from '@/components/Counts'
+import { MessageThread, UnreadBadge } from '@/components/MessageThread'
 import { SpiderChart, type Series } from '@/components/SpiderChart'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
@@ -233,6 +235,7 @@ function ShortlistView({ data, scorer, reload, compared, setCompared, view, setV
         onCompare={() => toggle(c.profile_id)}
         revealsLeft={reveals < data.reveal_quota}
         onNext={() => next(c)}
+        onRead={() => void reload()}
       />
     )
   }
@@ -332,6 +335,8 @@ interface CardProps {
   onCompare: () => void
   revealsLeft: boolean
   onNext: () => Promise<void>
+  /** Called once the candidate's messages are read, to update the unread count. */
+  onRead: () => void
 }
 
 /** The one action button at each stage; only the first two are actions. */
@@ -361,8 +366,11 @@ function CandidateCard({
   onCompare,
   revealsLeft,
   onNext,
+  onRead,
 }: CardProps) {
+  const { name: job } = useJob()
   const [open, setOpen] = useState(false)
+  const [talking, setTalking] = useState(false)
   const [busy, setBusy] = useState(false)
   const stage = candidate.progress.stage
   const step = NEXT[stage]
@@ -372,6 +380,8 @@ function CandidateCard({
   const unknown = (ranked.hard_filters ?? []).filter((f) => f.outcome === 'unknown')
   const detailsId = `details-${candidate.profile_id}`
   const compareId = `compare-${candidate.profile_id}`
+  const threadId = `thread-${candidate.profile_id}`
+  const who = candidate.contact?.name ?? candidate.alias
 
   async function act() {
     setBusy(true)
@@ -410,6 +420,7 @@ function CandidateCard({
               {STAGE_BADGE[stage] && (
                 <Badge variant={stage === 'declined' ? 'outline' : 'secondary'}>{STAGE_BADGE[stage]}</Badge>
               )}
+              <UnreadBadge count={candidate.progress.unread_messages} />
             </div>
             {candidate.contact && <ContactLine contact={candidate.contact} />}
             <p className="text-sm text-muted-foreground">{candidate.headline}</p>
@@ -455,6 +466,18 @@ function CandidateCard({
             <ChevronDown className={cn('transition-transform', open && 'rotate-180')} aria-hidden />
             {open ? 'Hide' : 'Why'}
           </Button>
+          {revealed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-expanded={talking}
+              aria-controls={threadId}
+              aria-label={`Messages with ${who}`}
+              onClick={() => setTalking(!talking)}
+            >
+              <MessagesSquare aria-hidden /> Messages
+            </Button>
+          )}
           <span className="flex-1" />
           <Button
             size="sm"
@@ -468,6 +491,21 @@ function CandidateCard({
             {step.label}
           </Button>
         </div>
+
+        {talking && (
+          <div id={threadId} className="border-t px-5 py-4">
+            <MessageThread
+              label={`Thread with ${who}`}
+              me="employer"
+              other={who}
+              threadKey={`${job}:${candidate.profile_id}`}
+              load={() => api.employerThread(job, candidate.profile_id)}
+              markRead={() => api.employerRead(job, candidate.profile_id)}
+              send={(text) => api.employerSend(job, candidate.profile_id, text)}
+              onRead={onRead}
+            />
+          </div>
+        )}
 
         {stage === 'applied' && <Application candidate={candidate} />}
 

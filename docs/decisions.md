@@ -24,3 +24,7 @@ are on its GitHub issue. Add a line here when a decision becomes a lasting rule.
 - **Aliases are per job** (2026-11-27, task 21): a candidate's alias and avatar come
   from their profile id and the job's id together, so they differ on every job and
   two employers can't link them; within one job they're the same in every view.
+- **Messages only after a reveal** (2026-11-28, task 25): an employer and a
+  candidate they revealed can message each other, one thread per candidate and job;
+  there is no thread before the reveal, and no email or push notifications.
+  Messages are the candidate's personal data and part of their export.
