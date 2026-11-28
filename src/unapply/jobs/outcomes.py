@@ -103,7 +103,8 @@ class GroupComparison(BaseModel):
         Which group.
     skills : list of GroupSkill
         The chart: up to `MAX_AXES` of the skills the group lists most that at
-        least `MIN_GROUP` of them rated; most listed first.
+        least `MIN_GROUP` of them rated; by name, so a skill keeps its place
+        relative to the others when the candidate switches between groups.
     higher : list of str
         Skills the candidate rated above the group's median; furthest above first.
     rare : list of str
@@ -294,7 +295,10 @@ def compare_group(
     rated = {s: int(v) for s, v in own.items() if v is not None}
     implied = set().union(*(taxonomy.implied(s) for s in own)) if own else set()
 
-    axes = [s for s in by_listed if s in medians][:MAX_AXES]
+    axes = sorted(
+        [s for s in by_listed if s in medians][:MAX_AXES],
+        key=lambda s: (s.casefold(), s),
+    )
     higher = sorted(
         (s for s in rated if s in medians and rated[s] > medians[s]),
         key=lambda s: (medians[s] - rated[s], s),
