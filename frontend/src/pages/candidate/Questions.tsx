@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
 import { EmptyState, ErrorAlert, Loading, PageHeader, Working } from '@/components/states'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -147,9 +148,11 @@ export function Questions() {
           ))}
           <ErrorAlert error={error} title="Couldn't send your answers" />
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" size="lg" disabled={busy !== null || filled === 0}>
-              <Send aria-hidden /> Send {filled || ''} {filled === 1 ? 'answer' : 'answers'}
-            </Button>
+            <WhyDisabled reason={filled === 0 && 'Answer at least one question first'}>
+              <Button type="submit" size="lg" disabled={busy !== null || filled === 0}>
+                <Send aria-hidden /> Send {filled || ''} {filled === 1 ? 'answer' : 'answers'}
+              </Button>
+            </WhyDisabled>
             <Button type="button" variant="ghost" onClick={discard} disabled={busy !== null}>
               <X aria-hidden /> Not now
             </Button>

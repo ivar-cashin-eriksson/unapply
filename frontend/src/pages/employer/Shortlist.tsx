@@ -28,6 +28,7 @@ import { CandidateAvatar } from '@/components/CandidateAvatar'
 import { Counts } from '@/components/Counts'
 import { MessageThread, UnreadBadge } from '@/components/MessageThread'
 import { SpiderChart, type Series } from '@/components/SpiderChart'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -447,13 +448,15 @@ function CandidateCard({
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Checkbox
-              id={compareId}
-              aria-label={`Compare ${candidate.alias}`}
-              checked={compared}
-              disabled={!canCompare}
-              onCheckedChange={onCompare}
-            />
+            <WhyDisabled reason={!canCompare && `You can compare at most ${MAX_COMPARED} people`}>
+              <Checkbox
+                id={compareId}
+                aria-label={`Compare ${candidate.alias}`}
+                checked={compared}
+                disabled={!canCompare}
+                onCheckedChange={onCompare}
+              />
+            </WhyDisabled>
             <label htmlFor={compareId} className="text-sm">
               Compare
             </label>
@@ -505,17 +508,18 @@ function CandidateCard({
             </Button>
           )}
           <span className="flex-1" />
-          <Button
-            size="sm"
-            variant={step.action ? 'default' : 'ghost'}
-            disabled={busy || !step.action || quotaUsed}
-            title={quotaUsed ? 'All reveals for this job are used' : undefined}
-            aria-label={`${step.label}: ${candidate.contact?.name ?? candidate.alias}`}
-            onClick={act}
-          >
-            <StepIcon className={cn(busy && 'animate-spin')} aria-hidden />
-            {step.label}
-          </Button>
+          <WhyDisabled reason={quotaUsed && 'All reveals for this job are used'}>
+            <Button
+              size="sm"
+              variant={step.action ? 'default' : 'ghost'}
+              disabled={busy || !step.action || quotaUsed}
+              aria-label={`${step.label}: ${candidate.contact?.name ?? candidate.alias}`}
+              onClick={act}
+            >
+              <StepIcon className={cn(busy && 'animate-spin')} aria-hidden />
+              {step.label}
+            </Button>
+          </WhyDisabled>
         </div>
 
         {talking && (

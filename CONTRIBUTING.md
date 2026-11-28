@@ -20,7 +20,8 @@ Conventions for working on this project. Setup is in the [README](README.md).
   `frontend/src/lib/api.ts`; its types in `src/lib/types.ts` mirror the API's models.
   It never asks for paid calls (`allow_api`). Pages go in `src/pages/`, shared parts
   in `src/components/`, and shadcn/ui components, added with `npx shadcn add`, in
-  `src/components/ui/`.
+  `src/components/ui/`. A control greyed out for a reason says why with
+  `WhyDisabled`, not `title` (disabled buttons get no hover).
 - **Configuration goes in `config/`** as JSON, or YAML where people edit it by hand
   (the skill taxonomy, `config/skills.yaml`): thresholds, model names.
 - **Exploration goes in `scratch/`**, which is gitignored. Move anything worth keeping

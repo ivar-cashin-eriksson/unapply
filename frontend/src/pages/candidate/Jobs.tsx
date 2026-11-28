@@ -30,6 +30,7 @@ import { Counts } from '@/components/Counts'
 import { FitBadge, FitSummary, MissedFilters } from '@/components/FitBadge'
 import { MessageThread, UnreadBadge } from '@/components/MessageThread'
 import { StageBadge } from '@/components/StageBadge'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -691,14 +692,16 @@ function CardConnect({
     )
   } else {
     action = (
-      <Button
-        size="sm"
-        disabled={!approved || busy}
-        aria-label={`Connect my profile: ${x.title}`}
-        onClick={() => onChange(true)}
-      >
-        {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Link2 aria-hidden />} Connect my profile
-      </Button>
+      <WhyDisabled reason={!approved && 'Approve your profile first'}>
+        <Button
+          size="sm"
+          disabled={!approved || busy}
+          aria-label={`Connect my profile: ${x.title}`}
+          onClick={() => onChange(true)}
+        >
+          {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Link2 aria-hidden />} Connect my profile
+        </Button>
+      </WhyDisabled>
     )
   }
   return (
@@ -942,9 +945,11 @@ function ConnectCard({
           Connecting lets {company} match and rank your approved profile anonymously. They only
           see your name if they reveal you, and you can withdraw until then.
         </p>
-        <Button className="w-full" disabled={!approved || busy} onClick={() => onChange(true)}>
-          <Link2 aria-hidden /> Connect my profile
-        </Button>
+        <WhyDisabled reason={!approved && 'Approve your profile first'} className="w-full">
+          <Button className="w-full" disabled={!approved || busy} onClick={() => onChange(true)}>
+            <Link2 aria-hidden /> Connect my profile
+          </Button>
+        </WhyDisabled>
         {!approved && (
           <p className="text-xs text-muted-foreground">
             Approve your profile first: <Link to="../../review" className="text-primary underline-offset-4 hover:underline">go to your review</Link>.
@@ -1121,13 +1126,15 @@ function ApplicationCard({
         </div>
         <ErrorAlert error={error} title="Couldn't send your answer" />
         <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={busy !== null || (!letter.trim() && files.length === 0)}
-            onClick={() => answer('apply')}
-          >
-            {busy === 'apply' ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />}
-            Apply
-          </Button>
+          <WhyDisabled reason={!letter.trim() && files.length === 0 && 'Write a cover letter or add a file first'}>
+            <Button
+              disabled={busy !== null || (!letter.trim() && files.length === 0)}
+              onClick={() => answer('apply')}
+            >
+              {busy === 'apply' ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />}
+              Apply
+            </Button>
+          </WhyDisabled>
           <Button variant="outline" disabled={busy !== null} onClick={() => answer('decline')}>
             {busy === 'decline' ? <Loader2 className="animate-spin" aria-hidden /> : <X aria-hidden />}
             Decline

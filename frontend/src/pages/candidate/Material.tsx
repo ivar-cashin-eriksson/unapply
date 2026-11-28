@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { FileDrop } from '@/components/FileDrop'
 import { ErrorAlert, PageHeader, Working } from '@/components/states'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -185,9 +186,11 @@ export function Material() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full" disabled={!hasMaterial || extracting} onClick={extract}>
-                {summary.has_profile ? 'Build it again' : 'Build my profile'}
-              </Button>
+              <WhyDisabled reason={!hasMaterial && 'Add a file or your GitHub first'} className="w-full">
+                <Button className="w-full" disabled={!hasMaterial || extracting} onClick={extract}>
+                  {summary.has_profile ? 'Build it again' : 'Build my profile'}
+                </Button>
+              </WhyDisabled>
               {extracting && <Working>Reading your material. This can take a minute.</Working>}
               {!hasMaterial && (
                 <p className="text-xs text-muted-foreground">Add a file or your GitHub first.</p>

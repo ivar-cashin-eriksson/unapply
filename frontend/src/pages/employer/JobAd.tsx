@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { Field } from '@/components/fields'
 import { ErrorAlert, PageHeader, Working } from '@/components/states'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -133,10 +134,17 @@ export function JobAd() {
         </Field>
         <ErrorAlert error={error} title="Couldn't draft the rubric" />
         <div className="flex flex-wrap items-center gap-3">
-          <Button size="lg" disabled={!ad.trim() || !validCount || busy} onClick={extract}>
-            <Sparkles aria-hidden />
-            {summary.has_rubric ? 'Draft the rubric again' : 'Draft the rubric'}
-          </Button>
+          <WhyDisabled
+            reason={
+              (!ad.trim() && 'Paste the job ad first') ||
+              (!validCount && 'Enter a number of vacancies from 1 to 1000')
+            }
+          >
+            <Button size="lg" disabled={!ad.trim() || !validCount || busy} onClick={extract}>
+              <Sparkles aria-hidden />
+              {summary.has_rubric ? 'Draft the rubric again' : 'Draft the rubric'}
+            </Button>
+          </WhyDisabled>
           {busy && <Working>Reading the ad. This can take a minute.</Working>}
         </div>
         {summary.has_rubric && (

@@ -451,7 +451,9 @@ describe('the job board', () => {
 
     const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
     for (const card of cards) {
-      expect(await within(card).findByRole('button', { name: /^Connect my profile: / })).toBeDisabled()
+      const connect = await within(card).findByRole('button', { name: /^Connect my profile: / })
+      expect(connect).toBeDisabled()
+      expect(connect).toHaveAccessibleDescription('Approve your profile first')
     }
     expect(screen.getByRole('link', { name: 'go to your review' })).toHaveAttribute('href', '/candidates/john-doe/review')
   })
@@ -661,6 +663,9 @@ describe('a listing', () => {
     vi.spyOn(api, 'connections').mockResolvedValue([])
     renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
     expect(await screen.findByRole('button', { name: 'Connect my profile' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Connect my profile' })).toHaveAccessibleDescription(
+      'Approve your profile first',
+    )
     expect(screen.getByRole('link', { name: 'go to your review' })).toHaveAttribute(
       'href',
       '/candidates/john-doe/review',

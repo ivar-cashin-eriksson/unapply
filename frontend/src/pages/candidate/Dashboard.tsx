@@ -7,6 +7,7 @@ import { GroupSpider } from '@/components/GroupSpider'
 import { LevelChip } from '@/components/LevelChips'
 import { LevelDistribution } from '@/components/LevelDistribution'
 import { StageBadge } from '@/components/StageBadge'
+import { WhyDisabled } from '@/components/WhyDisabled'
 import { EmptyState, ErrorAlert, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -374,15 +375,11 @@ function CompareView({ data, job, onJob }: { data: CandidateJobs; job: string | 
           {GROUPS.map((g) => {
             const there = current.groups.some((x) => x.group === g.value)
             return (
-              <ToggleGroupItem
-                key={g.value}
-                value={g.value}
-                disabled={!there}
-                title={there ? undefined : `Fewer than ${data.min_group} others`}
-                className="rounded-full px-3"
-              >
-                {g.label}
-              </ToggleGroupItem>
+              <WhyDisabled key={g.value} reason={!there && `Fewer than ${data.min_group} others`} className="rounded-full">
+                <ToggleGroupItem value={g.value} disabled={!there} className="rounded-full px-3">
+                  {g.label}
+                </ToggleGroupItem>
+              </WhyDisabled>
             )
           })}
         </ToggleGroup>
