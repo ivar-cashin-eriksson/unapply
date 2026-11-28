@@ -48,6 +48,7 @@ from unapply.interview.questions import (
 )
 from unapply.interview.sheet import apply_interview_sheet
 from unapply.llm import LLMError, StructuredLLM
+from unapply.matching.filters import experience_kind
 from unapply.review import apply_review_sheet, export_review_sheet
 from unapply.schemas import Profile
 from unapply.workspace import data_dir
@@ -501,7 +502,7 @@ def review_sheet(profile: Profile, form: ReviewForm) -> str:
         **form.model_dump(
             mode="json",
             exclude={
-                "experiences": {"__all__": {"evidence"}},
+                "experiences": {"__all__": {"evidence", "kind"}},
                 "skills": {"__all__": {"evidence"}},
             },
         ),
@@ -551,6 +552,7 @@ def _form(profile: Profile, sheet: dict) -> ReviewForm:
                 evidence=forms.evidence_lines(
                     profile, experiences[x["id"]].evidence_ids
                 ),
+                kind=experience_kind(experiences[x["id"]]),
             )
             for x in sheet.get("experiences") or []
         ],

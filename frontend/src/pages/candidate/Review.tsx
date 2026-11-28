@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { categoryBorder } from '@/lib/categoryColour'
+import { byKind, EXPERIENCE_KINDS } from '@/lib/experienceKind'
 import { api, describeError } from '@/lib/api'
 import { CATEGORIES, LEVELS } from '@/lib/format'
 import type { ExperienceEdit, NewSkill, ReviewForm, SkillCategory, SkillEdit } from '@/lib/types'
@@ -274,64 +275,77 @@ function Experiences({
     return <p className="text-sm text-muted-foreground">No experience was found in your material.</p>
   }
   return (
-    <ul className="space-y-3">
-      {experiences.map((x, i) => (
-        <li key={x.id}>
-          <Card className={cn('py-0', !x.keep && 'opacity-55')}>
-            <CardContent className="space-y-4 p-5">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  checked={x.keep}
-                  aria-label={`Keep ${x.title} at ${x.organisation}`}
-                  onCheckedChange={(v) => set(i, { keep: v === true })}
-                />
-                <p className={cn('font-medium', !x.keep && 'line-through')}>
-                  {x.title || 'Untitled'} · {x.organisation}
-                </p>
-              </div>
-              <fieldset disabled={!x.keep} className="grid gap-4 sm:grid-cols-2">
-                <Field label="Title">
-                  {(id) => <Input id={id} value={x.title} onChange={(e) => set(i, { title: e.target.value })} />}
-                </Field>
-                <Field label="Organisation">
-                  {(id) => (
-                    <Input id={id} value={x.organisation} onChange={(e) => set(i, { organisation: e.target.value })} />
-                  )}
-                </Field>
-                <Field label="Start" hint="YYYY or YYYY-MM">
-                  {(id) => (
-                    <Input
-                      id={id}
-                      value={x.start ?? ''}
-                      placeholder="2019-08"
-                      onChange={(e) => set(i, { start: e.target.value.trim() || null })}
-                    />
-                  )}
-                </Field>
-                <Field label="End" hint="YYYY or YYYY-MM; empty means now">
-                  {(id) => (
-                    <Input
-                      id={id}
-                      value={x.end ?? ''}
-                      placeholder="now"
-                      onChange={(e) => set(i, { end: e.target.value.trim() || null })}
-                    />
-                  )}
-                </Field>
-                <div className="sm:col-span-2">
-                  <Field label="Summary">
-                    {(id) => (
-                      <Textarea id={id} rows={3} value={x.summary} onChange={(e) => set(i, { summary: e.target.value })} />
-                    )}
-                  </Field>
-                </div>
-              </fieldset>
-              <Quotes lines={x.evidence} label="From your material" />
-            </CardContent>
-          </Card>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-6">
+      {byKind(experiences).map(({ kind, entries }) => {
+        const look = EXPERIENCE_KINDS[kind]
+        const Icon = look.icon
+        return (
+          <section key={kind} aria-label={look.plural} data-kind={kind} className="space-y-3">
+            <h3 className={cn('flex items-center gap-2 text-sm font-medium', look.text)}>
+              <Icon className="size-4" aria-hidden /> {look.plural}
+            </h3>
+            <ul className="space-y-3">
+              {entries.map(({ entry: x, index: i }) => (
+                <li key={x.id}>
+                  <Card className={cn('border-l-4 py-0', look.border, !x.keep && 'opacity-55')}>
+                    <CardContent className="space-y-4 p-5">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={x.keep}
+                          aria-label={`Keep ${x.title} at ${x.organisation}`}
+                          onCheckedChange={(v) => set(i, { keep: v === true })}
+                        />
+                        <p className={cn('font-medium', !x.keep && 'line-through')}>
+                          {x.title || 'Untitled'} · {x.organisation}
+                        </p>
+                      </div>
+                      <fieldset disabled={!x.keep} className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Title">
+                          {(id) => <Input id={id} value={x.title} onChange={(e) => set(i, { title: e.target.value })} />}
+                        </Field>
+                        <Field label="Organisation">
+                          {(id) => (
+                            <Input id={id} value={x.organisation} onChange={(e) => set(i, { organisation: e.target.value })} />
+                          )}
+                        </Field>
+                        <Field label="Start" hint="YYYY or YYYY-MM">
+                          {(id) => (
+                            <Input
+                              id={id}
+                              value={x.start ?? ''}
+                              placeholder="2019-08"
+                              onChange={(e) => set(i, { start: e.target.value.trim() || null })}
+                            />
+                          )}
+                        </Field>
+                        <Field label="End" hint="YYYY or YYYY-MM; empty means now">
+                          {(id) => (
+                            <Input
+                              id={id}
+                              value={x.end ?? ''}
+                              placeholder="now"
+                              onChange={(e) => set(i, { end: e.target.value.trim() || null })}
+                            />
+                          )}
+                        </Field>
+                        <div className="sm:col-span-2">
+                          <Field label="Summary">
+                            {(id) => (
+                              <Textarea id={id} rows={3} value={x.summary} onChange={(e) => set(i, { summary: e.target.value })} />
+                            )}
+                          </Field>
+                        </div>
+                      </fieldset>
+                      <Quotes lines={x.evidence} label="From your material" />
+                    </CardContent>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
+    </div>
   )
 }
 

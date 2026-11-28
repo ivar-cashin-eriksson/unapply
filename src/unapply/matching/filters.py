@@ -236,12 +236,43 @@ def permit_covers(held: str, required: str) -> bool:
     return required == "EU" and held in EU_COUNTRIES
 
 
+class ExperienceKind(StrEnum):
+    """What kind of entry an experience is: work, education or a personal project."""
+
+    WORK = "work"
+    EDUCATION = "education"
+    PROJECT = "project"
+
+
+def experience_kind(experience: Experience) -> ExperienceKind:
+    """Tell what kind of entry an experience is.
+
+    A heuristic on the title and organisation, because the profile doesn't record
+    the kind: degrees, diplomas and the like are education, "personal", "side" and
+    "hobby" projects are projects, and everything else is work.
+
+    Parameters
+    ----------
+    experience : Experience
+        The entry.
+
+    Returns
+    -------
+    ExperienceKind
+        Its kind.
+    """
+    if _EDUCATION.search(experience.title):
+        return ExperienceKind.EDUCATION
+    if _PERSONAL.search(f"{experience.title} {experience.organisation}"):
+        return ExperienceKind.PROJECT
+    return ExperienceKind.WORK
+
+
 def counts_as_work(experience: Experience) -> bool:
     """Tell whether an experience entry counts towards years of work experience.
 
-    Education (degrees, diplomas) and personal projects don't. This is a heuristic
-    on the title and organisation, because the profile doesn't record what kind of
-    entry it is.
+    Education (degrees, diplomas) and personal projects don't; see
+    `experience_kind`.
 
     Parameters
     ----------
@@ -253,8 +284,7 @@ def counts_as_work(experience: Experience) -> bool:
     bool
         True if it looks like work.
     """
-    text = f"{experience.title} {experience.organisation}"
-    return not (_EDUCATION.search(experience.title) or _PERSONAL.search(text))
+    return experience_kind(experience) == ExperienceKind.WORK
 
 
 def years_of_experience(profile: Profile, today: date | None = None) -> float | None:

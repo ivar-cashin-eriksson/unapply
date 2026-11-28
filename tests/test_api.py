@@ -383,8 +383,12 @@ def test_john_doe_demo_journey(client, fake):
     extraction = ok(client.post(f"/candidates/{name}/extract"))
     profile = extraction["profile"]
     assert (len(profile["experiences"]), len(profile["skills"])) == (7, 45)
+    kinds = {x["kind"] for x in profile["experiences"]}
+    assert kinds == {"work", "education", "project"}
 
     review = ok(client.get(f"/candidates/{name}/review"))
+    by_id = {x["id"]: x["kind"] for x in profile["experiences"]}
+    assert {x["id"]: x["kind"] for x in review["experiences"]} == by_id
     assert review["approve"] is False
     assert len(review["skills"]) == 45
     assert all(s["evidence"] for s in review["skills"])

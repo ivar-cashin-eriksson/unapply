@@ -16,6 +16,7 @@ from unapply.jobs.ask import MAX_HISTORY, MAX_QUESTION_CHARS, Turn
 from unapply.jobs.board import Listing, ListingCounts
 from unapply.jobs.hiring import ApplicationFile, Contact, Progress, Stage
 from unapply.jobs.messages import MAX_MESSAGE_CHARS, Message
+from unapply.matching.filters import ExperienceKind, experience_kind
 from unapply.matching.shortlist import AnonymousCandidate, Intent
 from unapply.schemas import (
     CriterionKind,
@@ -132,6 +133,19 @@ class CandidateSkill(BaseModel):
     evidence_ids: list[UUID] = Field(default_factory=list)
 
 
+class CandidateExperience(Experience):
+    """An experience entry as the candidate sees it, with its kind.
+
+    Parameters
+    ----------
+    kind : ExperienceKind
+        Work, education or a personal project (see `experience_kind`). Derived
+        from the title and organisation, not stored.
+    """
+
+    kind: ExperienceKind = ExperienceKind.WORK
+
+
 class CandidateProfile(BaseModel):
     """A profile as the candidate sees it, without the assessment.
 
@@ -145,8 +159,8 @@ class CandidateProfile(BaseModel):
         What the profile was built from.
     evidence : list of Evidence
         Quotes from the sources.
-    experiences : list of Experience
-        Jobs, projects and education.
+    experiences : list of CandidateExperience
+        Jobs, projects and education, each with its kind.
     skills : list of CandidateSkill
         Skills with the candidate's own levels.
     preferences : Preferences
@@ -159,7 +173,7 @@ class CandidateProfile(BaseModel):
     headline: str
     sources: list[Source]
     evidence: list[Evidence]
-    experiences: list[Experience]
+    experiences: list[CandidateExperience]
     skills: list[CandidateSkill]
     preferences: Preferences
     approved_by_candidate_at: datetime | None
@@ -178,11 +192,12 @@ class CandidateProfile(BaseModel):
         CandidateProfile
             The same profile without them.
         """
-        return cls.model_validate(
-            profile.model_dump(
-                exclude={"claim_support": True, "skills": {"__all__": {"estimate"}}}
-            )
+        data = profile.model_dump(
+            exclude={"claim_support": True, "skills": {"__all__": {"estimate"}}}
         )
+        for x, entry in zip(profile.experiences, data["experiences"], strict=True):
+            entry["kind"] = experience_kind(x)
+        return cls.model_validate(data)
 
 
 class Extraction(BaseModel):
@@ -225,6 +240,9 @@ class ExperienceEdit(BaseModel):
     evidence : list of str
         The quotes behind it, as "source: quote" lines. Shown only; ignored when
         the form is sent back.
+    kind : ExperienceKind
+        Work, education or a personal project, as the stored entry reads. Shown
+        only; ignored when the form is sent back.
     """
 
     id: str
@@ -235,6 +253,7 @@ class ExperienceEdit(BaseModel):
     end: str | None = None
     summary: str = ""
     evidence: list[str] = Field(default_factory=list)
+    kind: ExperienceKind = ExperienceKind.WORK
 
 
 class SkillEdit(BaseModel):
