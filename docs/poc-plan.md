@@ -209,6 +209,12 @@ Pydantic models for Profile, Evidence, SkillRating, Rubric and Match (`src/unapp
   first, ties newest first (`GET /board?candidate=&fit=&sort=fit`, worked out in
   `jobs/fit.py`, nothing stored). The board keeps the last results on screen while
   the next search loads.
+- Done (task 24): an **Advanced** section on the board with filters for work permit
+  (a member state's permit covers "EU"), vacancies (at least so many) and the
+  skills an ad names, found in the ad text through the taxonomy so synonyms match
+  (`ad_skills` in `jobs/board.py`, never a criterion's). The filters live in the
+  address, and every pill on a card or listing (location, work mode, seniority,
+  work permit, vacancies, skills, fit) adds its filter, shown as removable chips.
 
 ## The key experiment (run alongside M1–M4)
 

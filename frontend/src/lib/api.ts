@@ -183,7 +183,10 @@ export const api = {
   // The job board: listings (never the rubric), and the candidate's connections
   board: (query: BoardQuery = {}) => {
     const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(query)) if (value) params.set(key, value)
+    for (const [key, value] of Object.entries(query)) {
+      if (Array.isArray(value)) for (const v of value) params.append(key, v)
+      else if (value) params.set(key, String(value))
+    }
     const qs = params.toString()
     return json<Board>('GET', qs ? `/board?${qs}` : '/board')
   },

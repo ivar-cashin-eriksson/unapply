@@ -84,4 +84,14 @@ describe('requests', () => {
     expect(init.method).toBe('POST')
     expect((init.body as FormData).getAll('files')).toHaveLength(1)
   })
+
+  it('searches the board with each skill as its own parameter', async () => {
+    const fetch = respond(200, {})
+    await api.board({ q: 'data', skill: ['python', 'sql'], min_vacancies: 2, work_permit: undefined })
+    await api.board({ skill: [] })
+    expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
+      '/api/board?q=data&skill=python&skill=sql&min_vacancies=2',
+      '/api/board',
+    ])
+  })
 })

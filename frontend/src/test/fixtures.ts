@@ -341,7 +341,9 @@ export function listing(patch: Partial<Listing> = {}): Listing {
     vacancies: 1,
     locations: ['Copenhagen'],
     work_modes: ['hybrid'],
+    work_permits: ['EU'],
     seniority: 'senior',
+    skills: ['python', 'sql', 'time series forecasting'],
     posted_at: '2026-11-27T09:00:00',
     demo: true,
     counts: { connected: 13, revealed: 2, requested: 1, applied: 0 },
@@ -356,6 +358,7 @@ export const DAIRY = listing({
   ad: '# Junior Data Scientist\n\nWe forecast how much milk our customers will order.',
   vacancies: 2,
   seniority: 'junior',
+  skills: ['demand forecasting'],
   posted_at: '2026-11-27T08:50:00',
 })
 
@@ -366,6 +369,9 @@ export function board(patch: Partial<Board> = {}): Board {
     locations: ['Copenhagen'],
     work_modes: ['hybrid'],
     seniorities: ['junior', 'senior'],
+    work_permits: ['EU'],
+    vacancies: [1, 2],
+    skills: ['demand forecasting', 'python', 'sql', 'time series forecasting'],
     ...patch,
   }
 }

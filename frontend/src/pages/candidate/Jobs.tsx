@@ -3,8 +3,10 @@ import {
   Briefcase,
   Building2,
   Check,
+  ChevronDown,
   Download,
   Eye,
+  IdCard,
   Link2,
   Link2Off,
   Loader2,
@@ -14,11 +16,12 @@ import {
   Search,
   Send,
   ShieldCheck,
+  SlidersHorizontal,
   Users,
   X,
 } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { AdText } from '@/components/AdText'
@@ -34,14 +37,43 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
-import { adSummary, day, FIT_FILTERS, placeText, seniorityLabel, SENIORITIES, vacancies, workModeLabel } from '@/lib/format'
-import type { Board, BoardQuery, BoardSort, Connection, Fit, FitFilter, Listing, Seniority, WorkMode } from '@/lib/types'
+import {
+  adSummary,
+  day,
+  FIT_FILTERS,
+  minVacancies,
+  permitLabel,
+  placeText,
+  seniorityLabel,
+  SENIORITIES,
+  vacancies,
+  workModeLabel,
+} from '@/lib/format'
+import type { Board, BoardQuery, BoardSort, Connection, Fit, FitFilter, Listing } from '@/lib/types'
 import { useResource } from '@/lib/useResource'
 import { cn } from '@/lib/utils'
+import {
+  activeFilters,
+  filterLabel,
+  filterQuery,
+  withFilter,
+  withoutFilter,
+  type ActiveFilter,
+  type FilterKey,
+} from '@/pages/candidate/boardFilters'
 import { useCandidate } from '@/pages/candidate/context'
 
 /** Wait this long after the last key before searching, in milliseconds. */
 const SEARCH_DELAY = 250
+
+/** Skills shown on a card on the board; the listing shows them all. */
+const CARD_SKILLS = 6
+
+/** Where a pill links to: the board filtered by it. */
+type FilterTo = (key: FilterKey, value: string) => string
+
+/** Filters the advanced section holds; it opens by itself when one is on. */
+const ADVANCED: FilterKey[] = ['work_permit', 'min_vacancies', 'skill']
 
 /**
  * Connect the candidate's profile to a job, or withdraw it, and say so.
@@ -64,11 +96,12 @@ export function JobBoard() {
   const { name, summary } = useCandidate()
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
-  const [location, setLocation] = useState('')
-  const [workMode, setWorkMode] = useState<WorkMode | ''>('')
-  const [seniority, setSeniority] = useState<Seniority | ''>('')
-  const [fitFilter, setFitFilter] = useState<FitFilter | ''>('')
+  // The filters live in the address, so pills can link to the board filtered by them.
+  const [params, setParams] = useSearchParams()
+  const active = activeFilters(params)
+  const fitFilter = (params.get('fit') as FitFilter | null) ?? ''
   const [sort, setSort] = useState<BoardSort>('newest')
+  const [advanced, setAdvanced] = useState(() => active.some((f) => ADVANCED.includes(f.key)))
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<unknown>(null)
 
@@ -79,9 +112,7 @@ export function JobBoard() {
 
   const query: BoardQuery = {
     q: q || undefined,
-    location: location || undefined,
-    work_mode: workMode || undefined,
-    seniority: seniority || undefined,
+    ...filterQuery(params),
     // The server works out the fit for these from the candidate's own levels.
     ...(fitFilter || sort === 'fit'
       ? { candidate: name, fit: fitFilter || undefined, sort: sort === 'fit' ? sort : undefined }
@@ -101,7 +132,7 @@ export function JobBoard() {
   const fitOf = new Map((fits.data ?? []).map((f) => [f.job, f]))
   // Without a profile there is no band, so nothing to filter or sort by.
   const byFit = (fits.data ?? []).some((f) => f.band)
-  const filtered = Boolean(q || location || workMode || seniority || fitFilter)
+  const filtered = Boolean(q || active.length)
   // The job whose connection is changing, and the error if that failed.
   const [changing, setChanging] = useState<string | null>(null)
   const [changeError, setChangeError] = useState<{ job: string; error: unknown } | null>(null)
@@ -119,13 +150,19 @@ export function JobBoard() {
     }
   }
 
+  /** Set one filter from its select; an empty value turns it off. */
+  function setFilter(key: FilterKey, value: string) {
+    const next = new URLSearchParams(params)
+    next.delete(key)
+    setParams(value ? withFilter(next, key, value) : next, { replace: true })
+  }
+
+  const filterTo: FilterTo = (key, value) => `?${withFilter(params, key, value)}`
+
   function clear() {
     setText('')
     setQ('')
-    setLocation('')
-    setWorkMode('')
-    setSeniority('')
-    setFitFilter('')
+    setParams({}, { replace: true })
   }
 
   async function addDemoJobs() {
@@ -231,21 +268,21 @@ export function JobBoard() {
             />
           </div>
         </div>
-        <Filter label="Location" value={location} onChange={setLocation} any="Anywhere">
+        <Filter label="Location" value={params.get('location') ?? ''} onChange={(v) => setFilter('location', v)} any="Anywhere">
           {b.locations.map((l) => (
             <option key={l} value={l}>
               {l}
             </option>
           ))}
         </Filter>
-        <Filter label="Work mode" value={workMode} onChange={(v) => setWorkMode(v as WorkMode | '')} any="Any">
+        <Filter label="Work mode" value={params.get('work_mode') ?? ''} onChange={(v) => setFilter('work_mode', v)} any="Any">
           {b.work_modes.map((m) => (
             <option key={m} value={m}>
               {workModeLabel(m)}
             </option>
           ))}
         </Filter>
-        <Filter label="Seniority" value={seniority} onChange={(v) => setSeniority(v as Seniority | '')} any="Any">
+        <Filter label="Seniority" value={params.get('seniority') ?? ''} onChange={(v) => setFilter('seniority', v)} any="Any">
           {SENIORITIES.filter((s) => b.seniorities.includes(s.value)).map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
@@ -253,7 +290,7 @@ export function JobBoard() {
           ))}
         </Filter>
         {byFit && (
-          <Filter label="Fit" value={fitFilter} onChange={(v) => setFitFilter(v as FitFilter | '')} any="Any">
+          <Filter label="Fit" value={fitFilter} onChange={(v) => setFilter('fit', v)} any="Any">
             {FIT_FILTERS.map((f) => (
               <option key={f.value} value={f.value}>
                 {f.label}
@@ -261,7 +298,73 @@ export function JobBoard() {
             ))}
           </Filter>
         )}
+        <div className="sm:col-span-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            aria-expanded={advanced}
+            aria-controls="board-advanced"
+            onClick={() => setAdvanced(!advanced)}
+          >
+            <SlidersHorizontal aria-hidden /> Advanced
+            <ChevronDown aria-hidden className={cn('transition-transform', advanced && 'rotate-180')} />
+          </Button>
+        </div>
+        {advanced && (
+          <div
+            id="board-advanced"
+            role="group"
+            aria-label="Advanced filters"
+            className="grid gap-3 sm:col-span-full sm:grid-cols-3"
+          >
+            <Filter
+              label="Work permit"
+              value={params.get('work_permit') ?? ''}
+              onChange={(v) => setFilter('work_permit', v)}
+              any="Any"
+            >
+              {b.work_permits.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </Filter>
+            <Filter
+              label="Vacancies"
+              value={params.get('min_vacancies') ?? ''}
+              onChange={(v) => setFilter('min_vacancies', v)}
+              any="Any"
+            >
+              {b.vacancies
+                .filter((n) => n > 1)
+                .map((n) => (
+                  <option key={n} value={n}>
+                    {minVacancies(n)}
+                  </option>
+                ))}
+            </Filter>
+            <Filter
+              label="Skills in the ad"
+              value=""
+              onChange={(v) => v && setParams(withFilter(params, 'skill', v), { replace: true })}
+              any="Add a skill"
+            >
+              {b.skills
+                .filter((s) => !params.getAll('skill').includes(s))
+                .map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+            </Filter>
+          </div>
+        )}
       </div>
+
+      {active.length > 0 && (
+        <Chips filters={active} onRemove={(f) => setParams(withoutFilter(params, f.key, f.value), { replace: true })} />
+      )}
 
       <div className="mb-3 flex items-center justify-between gap-2 text-sm text-muted-foreground">
         <p role="status" aria-live="polite">
@@ -288,7 +391,7 @@ export function JobBoard() {
             </Button>
           }
         >
-          Try fewer words, or another location, work mode, seniority or fit.
+          Try fewer words or filters.
         </EmptyState>
       ) : (
         <ul className="space-y-3" aria-label="Jobs">
@@ -298,6 +401,7 @@ export function JobBoard() {
                 listing={x}
                 connection={connectionOf.get(x.name)}
                 fit={fitOf.get(x.name)}
+                filterTo={filterTo}
                 // Until the connections load, the card can't tell which action fits.
                 action={
                   connections.data ? (
@@ -347,6 +451,98 @@ function Filter({
         <option value="">{any}</option>
         {children}
       </select>
+    </div>
+  )
+}
+
+/** The active filters as chips, each with a button to remove it. */
+function Chips({ filters, onRemove }: { filters: ActiveFilter[]; onRemove: (filter: ActiveFilter) => void }) {
+  return (
+    <ul aria-label="Active filters" className="mb-3 flex flex-wrap gap-1.5">
+      {filters.map((f) => {
+        const label = filterLabel(f)
+        return (
+          <li key={`${f.key}=${f.value}`}>
+            <span className="inline-flex h-7 items-center gap-1 rounded-full border border-primary/40 bg-accent/40 pr-1 pl-2.5 text-xs font-medium">
+              {label}
+              <button
+                type="button"
+                aria-label={`Remove ${label}`}
+                className="rounded-full p-0.5 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                onClick={() => onRemove(f)}
+              >
+                <X className="size-3.5" aria-hidden />
+              </button>
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/**
+ * A pill that filters the board by what it says: on the board it adds the filter, on a
+ * listing it goes back to the board filtered by it.
+ */
+function FilterPill({
+  to,
+  variant = 'outline',
+  className,
+  children,
+}: {
+  to: string
+  variant?: 'outline' | 'secondary'
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <Badge variant={variant} className={cn('hover:border-primary/60', className)} asChild>
+      <Link to={to} title="Show the jobs with this">
+        {children}
+      </Link>
+    </Badge>
+  )
+}
+
+/** The pills of what a listing shows: seniority, work modes, permits and vacancies. */
+function Pills({ listing: x, filterTo }: { listing: Listing; filterTo: FilterTo }) {
+  return (
+    <>
+      <FilterPill variant="secondary" to={filterTo('seniority', x.seniority)}>
+        {seniorityLabel(x.seniority)}
+      </FilterPill>
+      {x.work_modes.map((m) => (
+        <FilterPill key={m} to={filterTo('work_mode', m)}>
+          {workModeLabel(m)}
+        </FilterPill>
+      ))}
+      {x.work_permits.map((p) => (
+        <FilterPill key={p} to={filterTo('work_permit', p)}>
+          <IdCard aria-hidden /> {permitLabel(p)}
+        </FilterPill>
+      ))}
+      <FilterPill to={filterTo('min_vacancies', String(x.vacancies))}>
+        <Users aria-hidden /> {vacancies(x.vacancies)}
+      </FilterPill>
+    </>
+  )
+}
+
+/** The skills an ad names, as pills; `limit` shows only the first few. */
+function SkillPills({ skills, filterTo, limit }: { skills: string[]; filterTo: FilterTo; limit?: number }) {
+  if (!skills.length) return null
+  const shown = limit === undefined ? skills : skills.slice(0, limit)
+  return (
+    <div role="group" aria-label="Named in the ad" className="flex flex-wrap items-center gap-1.5">
+      {shown.map((s) => (
+        <FilterPill key={s} to={filterTo('skill', s)} className="border-dashed">
+          {s}
+        </FilterPill>
+      ))}
+      {shown.length < skills.length && (
+        <span className="text-xs text-muted-foreground">+{skills.length - shown.length} more</span>
+      )}
     </div>
   )
 }
@@ -402,11 +598,13 @@ function ListingCard({
   listing: x,
   connection,
   fit,
+  filterTo,
   action,
 }: {
   listing: Listing
   connection?: Connection
   fit?: Fit
+  filterTo: FilterTo
   action?: ReactNode
 }) {
   const stage = connection?.stage
@@ -422,22 +620,15 @@ function ListingCard({
           </CardTitle>
           {stage && <StageBadge stage={stage} />}
         </div>
-        <Meta listing={x} />
+        <Meta listing={x} filterTo={filterTo} />
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="line-clamp-2 text-sm text-muted-foreground">{adSummary(x.ad)}</p>
         <div className="flex flex-wrap gap-1.5">
-          <Badge variant="secondary">{seniorityLabel(x.seniority)}</Badge>
-          {x.work_modes.map((m) => (
-            <Badge key={m} variant="outline">
-              {workModeLabel(m)}
-            </Badge>
-          ))}
-          <Badge variant="outline">
-            <Users aria-hidden /> {vacancies(x.vacancies)}
-          </Badge>
+          <Pills listing={x} filterTo={filterTo} />
         </div>
-        {fit && <FitSummary fit={fit} />}
+        <SkillPills skills={x.skills} filterTo={filterTo} limit={CARD_SKILLS} />
+        {fit && <FitSummary fit={fit} fitTo={(band) => filterTo('fit', band)} />}
         {x.counts && <Counts counts={x.counts} className="text-xs" />}
         {action}
       </CardContent>
@@ -497,21 +688,30 @@ function CardConnect({
   )
 }
 
-/** Company and place, on one line. */
-function Meta({ listing: x }: { listing: Listing }) {
+/** Company and place, on one line; each place is a pill that filters by it. */
+function Meta({ listing: x, filterTo }: { listing: Listing; filterTo: FilterTo }) {
   return (
-    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
         <Building2 className="size-4" aria-hidden />
         {x.company}
       </span>
-      <span className="inline-flex items-center gap-1.5">
+      <span className="inline-flex flex-wrap items-center gap-1.5">
         <MapPin className="size-4" aria-hidden />
-        {x.locations.length ? x.locations.join(', ') : 'Anywhere'}
+        {x.locations.length
+          ? x.locations.map((l) => (
+              <FilterPill key={l} to={filterTo('location', l)}>
+                {l}
+              </FilterPill>
+            ))
+          : 'Anywhere'}
       </span>
-    </p>
+    </div>
   )
 }
+
+/** On a listing, a pill goes back to the board filtered by it alone. */
+const boardFilteredBy: FilterTo = (key, value) => `..?${new URLSearchParams({ [key]: value })}`
 
 /** One listing in full: the ad and vacancies, and connecting your profile to it. */
 export function JobListing() {
@@ -558,7 +758,7 @@ export function JobListing() {
     <>
       {back}
       <PageHeader title={x.title}>
-        <Meta listing={x} />
+        <Meta listing={x} filterTo={boardFilteredBy} />
       </PageHeader>
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <Card>
@@ -572,16 +772,46 @@ export function JobListing() {
               <CardTitle className="text-base">At a glance</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
                 <dt className="text-muted-foreground">Vacancies</dt>
-                <dd>{vacancies(x.vacancies)}</dd>
+                <dd>
+                  <FilterPill to={boardFilteredBy('min_vacancies', String(x.vacancies))}>{vacancies(x.vacancies)}</FilterPill>
+                </dd>
                 <dt className="text-muted-foreground">Seniority</dt>
-                <dd>{seniorityLabel(x.seniority)}</dd>
+                <dd>
+                  <FilterPill variant="secondary" to={boardFilteredBy('seniority', x.seniority)}>
+                    {seniorityLabel(x.seniority)}
+                  </FilterPill>
+                </dd>
                 <dt className="text-muted-foreground">Work mode</dt>
-                <dd>{x.work_modes.length ? x.work_modes.map(workModeLabel).join(', ') : 'Any'}</dd>
+                <dd className="flex flex-wrap gap-1.5">
+                  {x.work_modes.length
+                    ? x.work_modes.map((m) => (
+                        <FilterPill key={m} to={boardFilteredBy('work_mode', m)}>
+                          {workModeLabel(m)}
+                        </FilterPill>
+                      ))
+                    : 'Any'}
+                </dd>
+                <dt className="text-muted-foreground">Work permit</dt>
+                <dd className="flex flex-wrap gap-1.5">
+                  {x.work_permits.length
+                    ? x.work_permits.map((p) => (
+                        <FilterPill key={p} to={boardFilteredBy('work_permit', p)}>
+                          {permitLabel(p)}
+                        </FilterPill>
+                      ))
+                    : 'None asked for'}
+                </dd>
                 <dt className="text-muted-foreground">Posted</dt>
                 <dd>{day(x.posted_at)}</dd>
               </dl>
+              {x.skills.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <p className="text-sm text-muted-foreground">Skills the ad names</p>
+                  <SkillPills skills={x.skills} filterTo={boardFilteredBy} />
+                </div>
+              )}
               {x.counts && <Counts counts={x.counts} className="mt-3 flex-col" />}
               {x.demo && (
                 <p className="mt-3 text-xs text-muted-foreground">A demo job: the company is invented.</p>
@@ -693,7 +923,7 @@ function FitCard({ fit }: { fit: Fit }) {
       <CardContent className="space-y-3 text-sm">
         {fit.band ? (
           <div className="space-y-1.5">
-            <FitBadge band={fit.band} />
+            <FitBadge band={fit.band} to={boardFilteredBy('fit', fit.band)} />
             <p className="text-muted-foreground">From your own levels, compared with what the job asks for.</p>
           </div>
         ) : (

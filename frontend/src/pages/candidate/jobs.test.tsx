@@ -143,6 +143,119 @@ describe('the job board', () => {
     expect(await screen.findByText('2 jobs')).toBeInTheDocument()
   })
 
+  it('filters by work permit, vacancies and skills in the advanced section', async () => {
+    approved()
+    const search = vi.spyOn(api, 'board').mockImplementation(async (query = {}) =>
+      query.skill?.length ? board({ listings: [listing()] }) : board(),
+    )
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    const { user } = renderApp('/candidates/john-doe/jobs')
+
+    await screen.findByRole('list', { name: 'Jobs' })
+    const toggle = screen.getByRole('button', { name: 'Advanced' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText('Work permit')).toBeNull()
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    const advanced = screen.getByRole('group', { name: 'Advanced filters' })
+    // Only what listings show: no filter by skill level.
+    expect(within(advanced).getAllByRole('combobox')).toHaveLength(3)
+    expect(within(screen.getByLabelText('Vacancies')).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Any',
+      'At least 2 vacancies',
+    ])
+    await user.selectOptions(screen.getByLabelText('Work permit'), 'EU')
+    await user.selectOptions(screen.getByLabelText('Vacancies'), '2')
+    await user.selectOptions(screen.getByLabelText('Skills in the ad'), 'python')
+    await user.selectOptions(screen.getByLabelText('Skills in the ad'), 'sql')
+    await waitFor(() =>
+      expect(search).toHaveBeenLastCalledWith({ work_permit: 'EU', min_vacancies: 2, skill: ['python', 'sql'] }),
+    )
+    // A chosen skill leaves the list, and each filter shows as a chip.
+    expect(within(screen.getByLabelText('Skills in the ad')).queryByRole('option', { name: 'python' })).toBeNull()
+    const chips = screen.getByRole('list', { name: 'Active filters' })
+    expect(within(chips).getAllByRole('listitem').map((c) => c.textContent)).toEqual([
+      'Work permit: EU',
+      'At least 2 vacancies',
+      'Skill: python',
+      'Skill: sql',
+    ])
+    expect(await screen.findByText('1 of 2 jobs')).toBeInTheDocument()
+
+    await user.click(within(chips).getByRole('button', { name: 'Remove Skill: python' }))
+    await waitFor(() =>
+      expect(search).toHaveBeenLastCalledWith({ work_permit: 'EU', min_vacancies: 2, skill: ['sql'] }),
+    )
+    await user.click(screen.getAllByRole('button', { name: 'Clear filters' })[0])
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith({}))
+    expect(screen.queryByRole('list', { name: 'Active filters' })).toBeNull()
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('adds a filter from any pill on a card, shown as a removable chip', async () => {
+    approved()
+    const search = vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    vi.spyOn(api, 'fits').mockResolvedValue([
+      fit({ band: 'good' }),
+      fit({ job: DAIRY.name, band: 'low', missed: [{ filter: 'location', label: 'Location: Copenhagen' }] }),
+    ])
+    const { user } = renderApp('/candidates/john-doe/jobs')
+
+    const cards = within(await screen.findByRole('list', { name: 'Jobs' })).getAllByRole('listitem')
+    const fjord = cards[0]
+    expect(within(fjord).getByRole('group', { name: 'Named in the ad' })).toHaveTextContent(
+      'pythonsqltime series forecasting',
+    )
+    const pills: [string, object][] = [
+      ['Senior', { seniority: 'senior' }],
+      ['Hybrid', { work_mode: 'hybrid' }],
+      ['Copenhagen', { location: 'Copenhagen' }],
+      ['EU work permit', { work_permit: 'EU' }],
+      ['1 vacancy', { min_vacancies: 1 }],
+      ['python', { skill: ['python'] }],
+    ]
+    for (const [name, expected] of pills) {
+      await user.click(within(fjord).getByRole('link', { name }))
+      await waitFor(() => expect(search).toHaveBeenLastCalledWith(expect.objectContaining(expected)))
+    }
+    await user.click(await within(fjord).findByRole('link', { name: /Good fit/ }))
+    await waitFor(() =>
+      expect(search).toHaveBeenLastCalledWith(expect.objectContaining({ candidate: 'john-doe', fit: 'good' })),
+    )
+    const chips = screen.getByRole('list', { name: 'Active filters' })
+    expect(within(chips).getAllByRole('listitem').map((c) => c.textContent)).toEqual([
+      'Fit: Good fit',
+      'Location: Copenhagen',
+      'Work mode: Hybrid',
+      'Seniority: Senior',
+      'Work permit: EU',
+      'At least 1 vacancy',
+      'Skill: python',
+    ])
+    // The selects follow, and the advanced section opens for the filters it holds.
+    expect(screen.getByLabelText('Seniority')).toHaveValue('senior')
+    expect(screen.getByLabelText('Location')).toHaveValue('Copenhagen')
+    // A missed requirement finds the jobs with requirements you don't meet.
+    await user.click(within(cards[1]).getByRole('link', { name: /Location: Copenhagen/ }))
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith(expect.objectContaining({ fit: 'not_met' })))
+
+    await user.click(within(chips).getByRole('button', { name: 'Remove Seniority: Senior' }))
+    await waitFor(() => expect(search.mock.lastCall?.[0]?.seniority).toBeUndefined())
+    expect(screen.getByLabelText('Seniority')).toHaveValue('')
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+  })
+
+  it('opens the advanced section by itself when the address has its filters', async () => {
+    approved()
+    const search = vi.spyOn(api, 'board').mockResolvedValue(board())
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    renderApp('/candidates/john-doe/jobs?skill=sql&work_permit=EU')
+    expect(await screen.findByRole('group', { name: 'Advanced filters' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Work permit')).toHaveValue('EU')
+    expect(search).toHaveBeenLastCalledWith({ skill: ['sql'], work_permit: 'EU' })
+  })
+
   it('filters by your fit and sorts best fit first', async () => {
     approved()
     const search = vi.spyOn(api, 'board').mockImplementation(async (query = {}) =>
@@ -345,6 +458,36 @@ describe('the job board', () => {
 })
 
 describe('a listing', () => {
+  it('links each pill to the board filtered by it', async () => {
+    approved()
+    vi.spyOn(api, 'listing').mockResolvedValue(listing({ vacancies: 3 }))
+    vi.spyOn(api, 'connections').mockResolvedValue([])
+    vi.spyOn(api, 'fit').mockResolvedValue(fit({ band: 'good' }))
+    const search = vi.spyOn(api, 'board').mockResolvedValue(board())
+    const { user, location } = renderApp('/candidates/john-doe/jobs/board-fjord-grocery')
+
+    await screen.findByRole('heading', { level: 1, name: /Senior Data Scientist/ })
+    const jobs = '/candidates/john-doe/jobs'
+    const links: [string | RegExp, string][] = [
+      ['3 vacancies', `${jobs}?min_vacancies=3`],
+      ['Senior', `${jobs}?seniority=senior`],
+      ['Hybrid', `${jobs}?work_mode=hybrid`],
+      ['EU work permit', `${jobs}?work_permit=EU`],
+      ['Copenhagen', `${jobs}?location=Copenhagen`],
+      ['time series forecasting', `${jobs}?skill=time+series+forecasting`],
+      [/Good fit/, `${jobs}?fit=good`],
+    ]
+    for (const [name, href] of links) expect(screen.getByRole('link', { name })).toHaveAttribute('href', href)
+    expect(screen.getByRole('group', { name: 'Named in the ad' })).toHaveTextContent('pythonsqltime series forecasting')
+    expect(document.querySelector('main')?.textContent).not.toMatch(HIDDEN)
+
+    await user.click(screen.getByRole('link', { name: 'python' }))
+    await waitFor(() => expect(location()).toBe(jobs))
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith({ skill: ['python'] }))
+    const chips = await screen.findByRole('list', { name: 'Active filters' })
+    expect(chips).toHaveTextContent('Skill: python')
+  })
+
   it('shows the ad and vacancies, and connects the profile', async () => {
     approved()
     vi.spyOn(api, 'listing').mockResolvedValue(listing({ vacancies: 3 }))

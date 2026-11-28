@@ -2,10 +2,12 @@
 
 A listing is what a candidate may read about a job: the ad as posted, its vacancies,
 how many candidates connected, were revealed, were asked to apply and applied, and
-the place, work modes and seniority to filter by. Never the rubric's criteria,
-weights or minimum levels. Place and work modes come from the approved rubric's hard
-filters, which are copied from the ad ("Copenhagen, hybrid"), so they say nothing the
-ad doesn't; seniority is read from the title.
+the place, work modes, work permits, seniority and skills to filter by. Never the
+rubric's criteria, weights or minimum levels. Place, work modes and work permits come
+from the approved rubric's hard filters, which are copied from the ad ("Copenhagen,
+hybrid", "EU work permit"), so they say nothing the ad doesn't; seniority is read
+from the title, and the skills are the taxonomy's skills the ad text names, never a
+criterion's.
 
 Connecting is the candidate's one way in to a job: it grants the job consent
 (`unapply.consent`) with its time, so the job can match and rank the profile
@@ -26,8 +28,9 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from unapply.consent import Consent
-from unapply.matching.filters import same_place
+from unapply.matching.filters import permit_covers, same_place
 from unapply.schemas import Job, WorkMode
+from unapply.taxonomy import Taxonomy, default_taxonomy
 
 if TYPE_CHECKING:
     from unapply.db.repository import Repository
@@ -74,6 +77,52 @@ def seniority(title: str) -> Seniority:
     return Seniority.MID
 
 
+# Names this short ("R", "ML", "TS") are found only in capitals, as ads write them,
+# so the letter r or "ts" inside other text never counts.
+_SHORT = 2
+
+
+def _alias_pattern(alias: str) -> re.Pattern[str]:
+    """Make a pattern that finds one skill name in text, as a whole word or phrase."""
+    words = re.sub(r"[-_]", " ", alias).split()
+    short = len("".join(words)) <= _SHORT
+    body = r"[\s_-]+".join(re.escape(w.upper() if short else w) for w in words)
+    # "+" and "#" are part of names such as "c++"; "&" keeps "R&D" from naming R.
+    pattern = rf"(?<![\w+#&]){body}(?![\w+#&])"
+    return re.compile(pattern) if short else re.compile(pattern, re.IGNORECASE)
+
+
+def ad_skills(text: str, taxonomy: Taxonomy | None = None) -> list[str]:
+    """Find the skills an ad names, through the taxonomy so synonyms count.
+
+    Only the ad's own words are read, never a rubric, so this says nothing about
+    what the job scores or how much.
+
+    Parameters
+    ----------
+    text : str
+        The ad, such as "Strong SQL and experience with sklearn".
+    taxonomy : Taxonomy or None, optional
+        The skills to look for, by default `default_taxonomy()`.
+
+    Returns
+    -------
+    list of str
+        Canonical names of the taxonomy's skills the text names by their name or a
+        synonym, in the order the ad first names them, such as ["sql",
+        "scikit-learn"]. Names of one or two letters ("R", "ML") count only in
+        capitals.
+    """
+    taxonomy = taxonomy or default_taxonomy()
+    first: dict[str, int] = {}
+    for skill in taxonomy.skills:
+        for alias in [skill.name, *skill.synonyms]:
+            found = _alias_pattern(alias).search(text)
+            if found and found.start() < first.get(skill.name, len(text) + 1):
+                first[skill.name] = found.start()
+    return sorted(first, key=lambda name: (first[name], name))
+
+
 class ListingCounts(BaseModel):
     """How far a job's candidates got: shown on its listing and to the employer.
 
@@ -114,8 +163,14 @@ class Listing(BaseModel):
         Where the job is, as the ad says. Empty means anywhere.
     work_modes : list of WorkMode
         The work modes it offers. Empty means any.
+    work_permits : list of str
+        Work permits the ad asks for, as ISO country codes or "EU". Empty means
+        none.
     seniority : Seniority
         Read from the title.
+    skills : list of str
+        The taxonomy's skills the ad names (see `ad_skills`), canonical names in
+        the order the ad names them.
     posted_at : datetime
         When the job was posted, local time.
     demo : bool
@@ -132,7 +187,9 @@ class Listing(BaseModel):
     vacancies: int
     locations: list[str]
     work_modes: list[WorkMode]
+    work_permits: list[str] = []
     seniority: Seniority
+    skills: list[str] = []
     posted_at: datetime
     demo: bool = False
     counts: ListingCounts | None = None
@@ -153,6 +210,12 @@ class Board(BaseModel):
         Every work mode on the board, in `WorkMode` order.
     seniorities : list of Seniority
         Every seniority on the board, junior first.
+    work_permits : list of str
+        Every work permit a listing asks for, sorted.
+    vacancies : list of int
+        Every number of vacancies on the board, smallest first.
+    skills : list of str
+        Every skill a listing names, sorted.
     """
 
     listings: list[Listing]
@@ -160,6 +223,9 @@ class Board(BaseModel):
     locations: list[str]
     work_modes: list[WorkMode]
     seniorities: list[Seniority]
+    work_permits: list[str] = []
+    vacancies: list[int] = []
+    skills: list[str] = []
 
 
 class ConnectError(ValueError):
@@ -176,8 +242,8 @@ def listing(
     name : str
         The job's name in the database.
     job : Job
-        The job, with its current rubric; only the rubric's place and work modes
-        are used.
+        The job, with its current rubric; only the rubric's place, work modes and
+        work permits are used, which the ad states.
     demo : bool, optional
         Whether it is a demo job.
     counts : ListingCounts or None, optional
@@ -197,7 +263,9 @@ def listing(
         vacancies=job.vacancies,
         locations=filters.locations,
         work_modes=filters.work_modes,
+        work_permits=filters.required_work_permits,
         seniority=seniority(job.title),
+        skills=ad_skills(job.ad_text),
         posted_at=job.created_at,
         demo=demo,
         counts=counts,
@@ -259,6 +327,10 @@ def search(
     location: str | None = None,
     work_mode: WorkMode | None = None,
     level: Seniority | None = None,
+    work_permit: str | None = None,
+    min_vacancies: int | None = None,
+    skills: list[str] | None = None,
+    taxonomy: Taxonomy | None = None,
 ) -> Board:
     """Filter the board's listings.
 
@@ -275,6 +347,17 @@ def search(
         Only jobs offering this work mode, and jobs that leave it open.
     level : Seniority or None, optional
         Only jobs at this seniority.
+    work_permit : str or None, optional
+        Only jobs open to someone with this work permit: those asking for none,
+        and those whose every permit it covers (see `permit_covers`; "EU" covers
+        "DK").
+    min_vacancies : int or None, optional
+        Only jobs hiring at least this many people.
+    skills : list of str or None, optional
+        Only jobs whose ad names every one of these skills, by any name the
+        taxonomy knows ("sklearn" finds "scikit-learn").
+    taxonomy : Taxonomy or None, optional
+        To read the skill names, by default `default_taxonomy()`.
 
     Returns
     -------
@@ -282,6 +365,9 @@ def search(
         The listings that match, in the order given, and the filter options.
     """
     words = query.casefold().split()
+    tax = taxonomy or default_taxonomy()
+    wanted = {tax.canonical(s) for s in skills or []}
+    permit = (work_permit or "").strip().upper()
 
     def matches(x: Listing) -> bool:
         text = f"{x.title}\n{x.company}\n{x.ad}".casefold()
@@ -295,6 +381,14 @@ def search(
             return False
         if work_mode and x.work_modes and work_mode not in x.work_modes:
             return False
+        if permit and not all(
+            permit_covers(permit, p.strip().upper()) for p in x.work_permits
+        ):
+            return False
+        if min_vacancies is not None and x.vacancies < min_vacancies:
+            return False
+        if not wanted <= set(x.skills):
+            return False
         return level is None or x.seniority == level
 
     return Board(
@@ -303,6 +397,9 @@ def search(
         locations=sorted({p for x in found for p in x.locations}),
         work_modes=[m for m in WorkMode if any(m in x.work_modes for x in found)],
         seniorities=[s for s in Seniority if any(x.seniority == s for x in found)],
+        work_permits=sorted({p for x in found for p in x.work_permits}),
+        vacancies=sorted({x.vacancies for x in found}),
+        skills=sorted({s for x in found for s in x.skills}),
     )
 
 

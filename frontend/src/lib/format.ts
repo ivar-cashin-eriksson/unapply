@@ -89,6 +89,16 @@ export function vacancies(n: number): string {
   return n === 1 ? '1 vacancy' : `${n} vacancies`
 }
 
+/** The board's vacancies filter: "At least 2 vacancies". */
+export function minVacancies(n: number): string {
+  return `At least ${vacancies(n)}`
+}
+
+/** A work permit a job asks for: "EU work permit". */
+export function permitLabel(permit: string): string {
+  return `${permit} work permit`
+}
+
 /** An ISO date and time as "27 Nov 2026". */
 export function day(iso: string): string {
   const [date] = iso.split('T')
