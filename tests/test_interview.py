@@ -133,6 +133,20 @@ def test_answers_become_statements_and_clear_outdated_estimates(profile):
     assert "pandas" not in [name for name, _ in select_topics(estimated)]
 
 
+def test_short_answers_are_kept_as_written(profile):
+    # Typed straight into the sheet, YAML would read these as a boolean and a number.
+    questions = write_questions(profile, select_topics(profile), FakeLLM([]))
+    sheet = export_interview_sheet(profile, questions)
+    sheet = sheet.replace('answer: ""', "answer: Yes", 1)
+    sheet = sheet.replace('answer: ""', "answer: 2019", 1)
+    updated, n = apply_interview_sheet(profile, sheet)
+    assert n == 2
+    first, second = (updated.skill(q.skill) for q in questions[:2])
+    quotes = {e.id: e.quote for e in updated.evidence}
+    assert quotes[first.evidence_ids[-1]] == "Yes"
+    assert quotes[second.evidence_ids[-1]] == "2019"
+
+
 def test_unanswered_sheet_changes_nothing(profile):
     questions = write_questions(profile, select_topics(profile), FakeLLM([]))
     updated, n = apply_interview_sheet(

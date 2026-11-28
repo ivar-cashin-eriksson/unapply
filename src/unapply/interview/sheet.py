@@ -145,8 +145,10 @@ def apply_interview_sheet(profile: Profile, sheet_text: str) -> tuple[Profile, i
 
 
 def _parse(sheet_text: str) -> _Sheet:
+    # Every value in the sheet is text, so it's read as written: an answer of `Yes`,
+    # `No` or `2019` stays that text instead of becoming a boolean or a number.
     try:
-        data: Any = yaml.safe_load(sheet_text)
+        data: Any = yaml.load(sheet_text, Loader=yaml.BaseLoader)
     except yaml.YAMLError as e:
         raise InterviewError(f"the sheet isn't valid YAML: {e}") from e
     if not isinstance(data, dict):
